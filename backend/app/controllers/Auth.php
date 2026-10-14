@@ -4,8 +4,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /**
  * Auth Controller
  * ---------------
- * Handles user registration, login, logout and token refresh
- * for the Life Generation Youth app.
+ * Handles user registration, login, logout and token refresh.
  *
  * Routes:
  *   POST /api/auth/register   → Create a new account
@@ -20,7 +19,7 @@ class Auth extends Controller {
     {
         parent::__construct();
         $this->call->model('User', 'user');
-        $this->call->library('Api');
+        $this->call->library('api');
 
         // All responses are JSON
         header('Content-Type: application/json; charset=utf-8');
@@ -114,21 +113,18 @@ class Auth extends Controller {
             return $this->respond(['status' => 'error', 'message' => 'Your account is inactive. Please contact support.'], 403);
         }
 
-        // ── Issue tokens ──
-        $payload = [
-            'sub'      => $user->id,
-            'username' => $user->username,
-            'role'     => $user->role,
-        ];
-
-        $accessToken  = $this->api->generate_token($payload);
-        $refreshToken = $this->api->generate_refresh_token($user->id);
+        // ── Issue tokens using Api library ──
+        $tokens = $this->api->issue_tokens([
+            'id'     => $user->id,
+            'role'   => $user->role,
+            'scopes' => ['read'],
+        ]);
 
         return $this->respond([
             'status'        => 'success',
             'message'       => 'Login successful.',
-            'access_token'  => $accessToken,
-            'refresh_token' => $refreshToken,
+            'access_token'  => $tokens['access_token'],
+            'refresh_token' => $tokens['refresh_token'],
             'token_type'    => 'Bearer',
             'user'          => [
                 'id'       => $user->id,
@@ -148,11 +144,9 @@ class Auth extends Controller {
         $body         = $this->_json_body();
         $refreshToken = trim($body['refresh_token'] ?? '');
 
-        if (empty($refreshToken)) {
-            return $this->respond(['status' => 'error', 'message' => 'Refresh token is required.'], 422);
+        if (!empty($refreshToken)) {
+            $this->api->revoke_refresh_token($refreshToken);
         }
-
-        $revoked = $this->api->revoke_refresh_token($refreshToken);
 
         return $this->respond([
             'status'  => 'success',
@@ -173,27 +167,17 @@ class Auth extends Controller {
             return $this->respond(['status' => 'error', 'message' => 'Refresh token is required.'], 422);
         }
 
-        $result = $this->api->refresh_access_token($refreshToken);
-
-        if (!$result) {
-            return $this->respond(['status' => 'error', 'message' => 'Invalid or expired refresh token.'], 401);
-        }
-
-        return $this->respond([
-            'status'       => 'success',
-            'access_token' => $result['access_token'],
-            'token_type'   => 'Bearer',
-        ]);
+        // refresh_access_token echoes and exits internally
+        $this->api->refresh_access_token($refreshToken);
     }
 
     // ── GET /api/auth/me ──────────────────────────────────────────────────────
 
     public function me()
     {
-        // Validates JWT and returns payload; responds 401 if invalid
         $jwt = $this->api->require_jwt();
 
-        $user = $this->user->find_by_id((int) $jwt->sub);
+        $user = $this->user->find_by_id((int) $jwt['sub']);
 
         if (!$user) {
             return $this->respond(['status' => 'error', 'message' => 'User not found.'], 404);
@@ -214,9 +198,6 @@ class Auth extends Controller {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /**
-     * Abort with 405 if the request method is not POST.
-     */
     private function _only_post(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -224,23 +205,12 @@ class Auth extends Controller {
         }
     }
 
-    /**
-     * Decode JSON request body into an associative array.
-     *
-     * @return array
-     */
     private function _json_body(): array
     {
         $raw = file_get_contents('php://input');
         return json_decode($raw, true) ?? [];
     }
 
-    /**
-     * Send a JSON response and exit.
-     *
-     * @param  array $data
-     * @param  int   $status  HTTP status code
-     */
     private function respond(array $data, int $status = 200): void
     {
         http_response_code($status);

@@ -26,7 +26,7 @@ class Chatbot extends Controller {
 
     public function ask()
     {
-        $q = trim($this->call->input->get('q') ?? '');
+        $q = trim($_GET['q'] ?? '');
 
         if (empty($q)) {
             return $this->respond([
@@ -58,7 +58,7 @@ class Chatbot extends Controller {
 
     public function faqs()
     {
-        $category = $this->call->input->get('category') ?? null;
+        $category = $_GET['category'] ?? null;
         $data     = $this->chatbot_faq->get_all($category ? trim($category) : null);
 
         return $this->respond([

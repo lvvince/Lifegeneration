@@ -3,7 +3,7 @@ import { askChatbot } from './api'
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Hi! 👋 I\'m the LGY assistant. Ask me anything about schedules, location, prayer, or ministry!' }
+    { from: 'bot', text: "Hi! 👋 I'm the LGY assistant. Ask me anything about schedules, location, prayer, or ministry!" }
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,7 +26,7 @@ export default function Chatbot() {
       const { ok, data } = await askChatbot(q)
       const reply = ok && data.matched
         ? data.answer
-        : (data.answer || 'Sorry, I don\'t have an answer for that yet.')
+        : (data.answer || "Sorry, I don't have an answer for that yet.")
       setMessages(m => [...m, { from: 'bot', text: reply }])
     } catch {
       setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please try again.' }])

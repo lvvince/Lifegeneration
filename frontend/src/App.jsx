@@ -2,20 +2,15 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import Login from './Login'
 import Register from './Register'
-import Chatbot from './Chatbot'
 import './App.css'
 
 function Dashboard() {
   const { user, logout } = useAuth()
-  const [tab, setTab] = useState('chatbot')
 
   return (
     <div className="app">
       <header className="app-header">
         <div className="app-logo">✝ Life Generation Youth</div>
-        <nav>
-          <button className={tab === 'chatbot' ? 'active' : ''} onClick={() => setTab('chatbot')}>Chatbot</button>
-        </nav>
         <div className="app-user">
           <span>👤 {user.username}</span>
           <button className="logout-btn" onClick={logout}>Logout</button>
@@ -23,7 +18,26 @@ function Dashboard() {
       </header>
 
       <main className="app-main">
-        {tab === 'chatbot' && <Chatbot />}
+        <div className="welcome-card">
+          <div className="welcome-icon">✨</div>
+          <h2>Welcome, {user.username}!</h2>
+          <p className="welcome-subtitle">You are successfully logged in to Life Generation Youth.</p>
+
+          <div className="profile-details">
+            <div className="detail-item">
+              <span className="detail-label">Username</span>
+              <span className="detail-value">{user.username}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Email</span>
+              <span className="detail-value">{user.email}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Role</span>
+              <span className="detail-badge">{user.role || 'Member'}</span>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )

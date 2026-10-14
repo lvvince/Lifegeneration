@@ -3,26 +3,16 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 class Chatbot_faq extends Model {
 
-    protected $table      = 'chatbot_faqs';
-    protected $primaryKey = 'id';
+    protected $table = 'chatbot_faqs';
 
     /**
      * Search for a FAQ by matching keywords or question text.
      * Returns the best matching row or NULL.
-     *
-     * @param  string $query  The user's message/question
-     * @return object|null
      */
     public function search(string $query): ?object
     {
         $query = trim($query);
-
-        // 1. Try to match against stored keywords (comma-separated)
-        $rows = $this->db
-            ->select('*')
-            ->from($this->table)
-            ->get()
-            ->result();
+        $rows  = $this->db->table($this->table)->select('*')->get_all(PDO::FETCH_OBJ);
 
         $queryWords = $this->tokenize($query);
         $best       = null;
@@ -36,7 +26,7 @@ class Chatbot_faq extends Model {
                 $rowKeywords = $this->tokenize($row->keywords);
                 foreach ($queryWords as $word) {
                     if (in_array($word, $rowKeywords)) {
-                        $score += 2; // keyword match = higher weight
+                        $score += 2;
                     }
                 }
             }
@@ -60,37 +50,26 @@ class Chatbot_faq extends Model {
 
     /**
      * Get all FAQs, optionally filtered by category.
-     *
-     * @param  string|null $category
-     * @return array
      */
     public function get_all(?string $category = null): array
     {
-        $query = $this->db->select('id, category, question, answer, keywords')
-                          ->from($this->table);
+        $builder = $this->db->table($this->table)->select('id, category, question, answer, keywords');
 
         if ($category) {
-            $query->where('category', $category);
+            $builder->where('category', $category);
         }
 
-        return $query->get()->result();
+        return $builder->get_all(PDO::FETCH_OBJ) ?: [];
     }
 
     /**
      * Get all distinct categories.
-     *
-     * @return array
      */
     public function get_categories(): array
     {
-        return $this->db
-            ->select('DISTINCT category')
-            ->from($this->table)
-            ->get()
-            ->result();
+        $rows = $this->db->table($this->table)->select('DISTINCT category')->get_all(PDO::FETCH_OBJ);
+        return $rows ?: [];
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     /**
      * Tokenize a string into lowercase words (strips punctuation).
@@ -100,7 +79,6 @@ class Chatbot_faq extends Model {
         $text  = strtolower($text);
         $text  = preg_replace('/[^\w\s]/u', ' ', $text);
         $words = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-        // Filter very short/common words
         $stopWords = ['ang', 'ng', 'sa', 'na', 'at', 'ay', 'ko', 'mo', 'ka',
                       'the', 'is', 'a', 'an', 'of', 'to', 'in', 'how', 'do',
                       'i', 'can', 'what', 'where', 'when', 'why'];
