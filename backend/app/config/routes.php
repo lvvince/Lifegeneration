@@ -57,3 +57,19 @@ $router->get('/', 'Welcome::index');
 $router->get('/api/chatbot/ask',        'Chatbot::ask');
 $router->get('/api/chatbot/faqs',       'Chatbot::faqs');
 $router->get('/api/chatbot/categories', 'Chatbot::categories');
+
+/*
+| -------------------------------------------------------------------
+| Auth API Routes
+| -------------------------------------------------------------------
+| POST /api/auth/register  → Create a new account
+| POST /api/auth/login     → Login and receive JWT + refresh token
+| POST /api/auth/logout    → Invalidate refresh token
+| POST /api/auth/refresh   → Exchange refresh token for a new JWT
+| GET  /api/auth/me        → Get authenticated user profile (requires JWT)
+*/
+$router->post('/api/auth/register', 'Auth::register');
+$router->post('/api/auth/login',    'Auth::login');
+$router->post('/api/auth/logout',   'Auth::logout');
+$router->post('/api/auth/refresh',  'Auth::refresh');
+$router->get('/api/auth/me',        'Auth::me');
