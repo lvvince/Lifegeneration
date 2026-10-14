@@ -88,7 +88,7 @@ $config['date_default_timezone'] = 'Asia/Manila';
 | WARNING: You MUST set this value!
 |
 */
-$config['base_url'] 				= '';
+$config['base_url'] 				= 'http://localhost/Lifegenerationyouth/backend/public/';
 
 /*
 |--------------------------------------------------------------------------
@@ -399,7 +399,7 @@ $config['security_headers'] = [
     // ── API ──
     'api_max_body' => 1048576,
     'cors' => [
-        'allowed_origins' => [],
+        'allowed_origins' => ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'],
         'credentials'     => false,
         'methods'         => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'headers'         => 'Authorization, Content-Type, X-Requested-With',
