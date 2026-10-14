@@ -45,3 +45,15 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /** @var object $router **/
 
 $router->get('/', 'Welcome::index');
+
+/*
+| -------------------------------------------------------------------
+| Chatbot FAQ API Routes
+| -------------------------------------------------------------------
+| GET /api/chatbot/ask?q=your+question  → Returns best matching answer
+| GET /api/chatbot/faqs                 → Returns all FAQs
+| GET /api/chatbot/categories           → Returns all categories
+*/
+$router->get('/api/chatbot/ask',        'Chatbot::ask');
+$router->get('/api/chatbot/faqs',       'Chatbot::faqs');
+$router->get('/api/chatbot/categories', 'Chatbot::categories');
