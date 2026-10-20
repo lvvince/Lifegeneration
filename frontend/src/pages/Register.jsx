@@ -39,7 +39,7 @@ const pageStyles = `
     z-index: 2;
   }
   .reg-panel-right {
-    background: #0a0a0f;
+    background: var(--bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,25 +58,25 @@ const pageStyles = `
     display: block;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #cbd5e1;
+    color: var(--text-muted);
     margin-bottom: 5px;
     margin-top: 0;
   }
   .reg-field input {
     width: 100%;
-    background: #1c1c27;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 10px;
     padding: 11px 13px;
     font-size: 0.92rem;
-    color: #f1f5f9;
+    color: var(--input-color);
     font-family: 'Inter', sans-serif;
     transition: border-color 0.2s, box-shadow 0.2s;
     position: relative;
     z-index: 5;
     box-sizing: border-box;
   }
-  .reg-field input::placeholder { color: #475569; }
+  .reg-field input::placeholder { color: var(--text-dim); }
   .reg-field input:focus {
     outline: none;
     border-color: #f97316;
@@ -163,6 +163,48 @@ const pageStyles = `
   }
 `
 
+function FormField({ id, name, label, type = 'text', placeholder = '', value, onChange, error, showToggle = false, isShowingPw = false, onTogglePw }) {
+  return (
+    <div className="reg-field">
+      <label htmlFor={id}>{label}</label>
+      {type === 'password' ? (
+        <div className="reg-pw-wrap">
+          <input
+            id={id}
+            name={name}
+            type={isShowingPw ? 'text' : 'password'}
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            autoComplete="new-password"
+          />
+          {showToggle && (
+            <button
+              type="button"
+              className="reg-pw-toggle"
+              onClick={onTogglePw}
+              tabIndex={-1}
+            >
+              {isShowingPw ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          )}
+        </div>
+      ) : (
+        <input
+          id={id}
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          autoComplete={name}
+        />
+      )}
+      {error && <span className="field-err">{error}</span>}
+    </div>
+  )
+}
+
 export default function Register() {
   const navigate = useNavigate()
   const [form, setForm] = useState(EMPTY)
@@ -208,44 +250,6 @@ export default function Register() {
       setLoading(false)
     }
   }
-
-  const F = ({ name, label, type = 'text', placeholder = '', col2 = false }) => (
-    <div className="reg-field" style={col2 ? {} : {}}>
-      <label htmlFor={`reg-${name}`}>{label}</label>
-      {type === 'password' ? (
-        <div className="reg-pw-wrap">
-          <input
-            id={`reg-${name}`}
-            name={name}
-            type={name === 'confirm' ? (showConfirm ? 'text' : 'password') : (showPw ? 'text' : 'password')}
-            placeholder={placeholder}
-            value={form[name]}
-            onChange={handleChange}
-            autoComplete={name === 'password' ? 'new-password' : 'new-password'}
-          />
-          <button
-            type="button"
-            className="reg-pw-toggle"
-            onClick={() => name === 'confirm' ? setShowConfirm(v => !v) : setShowPw(v => !v)}
-            tabIndex={-1}
-          >
-            {(name === 'confirm' ? showConfirm : showPw) ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        </div>
-      ) : (
-        <input
-          id={`reg-${name}`}
-          name={name}
-          type={type}
-          placeholder={placeholder}
-          value={form[name]}
-          onChange={handleChange}
-          autoComplete={name}
-        />
-      )}
-      {errors[name] && <span className="field-err">{errors[name]}</span>}
-    </div>
-  )
 
   /* SUCCESS */
   if (success) {
@@ -363,10 +367,10 @@ export default function Register() {
               </div>
             </div>
 
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', marginBottom: 6 }}>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>
               Join Life Generation
             </h1>
-            <p style={{ fontSize: '0.88rem', color: '#94a3b8', marginBottom: 22 }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: 22 }}>
               Fill in your details to become an official member.
             </p>
 
@@ -379,19 +383,86 @@ export default function Register() {
 
             <form onSubmit={handleSubmit} noValidate>
               <div className="reg-two-col">
-                <F name="full_name" label="Full Name *" placeholder="John Doe" />
-                <F name="username" label="Username" placeholder="Auto-generated" />
+                <FormField
+                  id="reg-full_name"
+                  name="full_name"
+                  label="Full Name *"
+                  placeholder="John Doe"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  error={errors.full_name}
+                />
+                <FormField
+                  id="reg-username"
+                  name="username"
+                  label="Username"
+                  placeholder="Auto-generated"
+                  value={form.username}
+                  onChange={handleChange}
+                  error={errors.username}
+                />
               </div>
 
-              <F name="email" label="Email Address *" type="email" placeholder="john@email.com" />
+              <FormField
+                id="reg-email"
+                name="email"
+                label="Email Address *"
+                type="email"
+                placeholder="john@email.com"
+                value={form.email}
+                onChange={handleChange}
+                error={errors.email}
+              />
 
               <div className="reg-two-col">
-                <F name="age" label="Age" type="number" placeholder="e.g. 21" />
-                <F name="address" label="Location" placeholder="City, Province" />
+                <FormField
+                  id="reg-age"
+                  name="age"
+                  label="Age"
+                  type="number"
+                  placeholder="e.g. 21"
+                  value={form.age}
+                  onChange={handleChange}
+                  error={errors.age}
+                />
+                <FormField
+                  id="reg-address"
+                  name="address"
+                  label="Location"
+                  placeholder="City, Province"
+                  value={form.address}
+                  onChange={handleChange}
+                  error={errors.address}
+                />
               </div>
 
-              <F name="password" label="Password (min 6 chars) *" type="password" placeholder="••••••••" />
-              <F name="confirm" label="Confirm Password *" type="password" placeholder="••••••••" />
+              <FormField
+                id="reg-password"
+                name="password"
+                label="Password (min 6 chars) *"
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange}
+                error={errors.password}
+                showToggle
+                isShowingPw={showPw}
+                onTogglePw={() => setShowPw(v => !v)}
+              />
+
+              <FormField
+                id="reg-confirm"
+                name="confirm"
+                label="Confirm Password *"
+                type="password"
+                placeholder="••••••••"
+                value={form.confirm}
+                onChange={handleChange}
+                error={errors.confirm}
+                showToggle
+                isShowingPw={showConfirm}
+                onTogglePw={() => setShowConfirm(v => !v)}
+              />
 
               <button type="submit" className="reg-submit-btn" disabled={loading}>
                 {loading
