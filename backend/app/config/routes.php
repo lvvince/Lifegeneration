@@ -1,66 +1,62 @@
 <?php
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
-/**
- * ------------------------------------------------------------------
- * LavaLust - an opensource lightweight PHP MVC Framework
- * ------------------------------------------------------------------
- *
- * MIT License
- *
- * Copyright (c) 2020 Ronald M. Marasigan
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package LavaLust
- * @author Ronald M. Marasigan <ronald.marasigan@yahoo.com>
- * @since Version 1
- * @link https://github.com/ronmarasigan/LavaLust
- * @license https://opensource.org/licenses/MIT MIT License
- */
 
-/*
-| -------------------------------------------------------------------
-| URI ROUTING
-| -------------------------------------------------------------------
-| Here is where you can register web routes for your application.
-|
-|
-*/
 /** @var object $router **/
 
 $router->get('/', 'Welcome::index');
 $router->get('/api', 'Home::index');
 
-// Auth
-$router->post('/api/login', 'Auth::login');
-$router->post('/api/register', 'Auth::register');
-$router->post('/api/logout', 'Auth::logout');
+// 1. Authentication
+$router->post('/api/auth/login',    'Auth::login');
+$router->post('/api/login',         'Auth::login');
+$router->post('/api/auth/register', 'Auth::register');
+$router->post('/api/register',      'Auth::register');
+$router->get('/api/auth/me',        'Auth::me');
+$router->get('/api/me',             'Auth::me');
+$router->post('/api/auth/refresh',  'Auth::refresh');
+$router->post('/api/auth/logout',   'Auth::logout');
+$router->post('/api/logout',        'Auth::logout');
 
-// Public / Member pages
-$router->get('/api/events', 'Events::index');
-$router->get('/api/events/{id}', 'Events::show');
-$router->get('/api/dgroups', 'DGroups::index');
-$router->get('/api/ministries', 'Ministries::index');
-$router->get('/api/prayers', 'Prayers::index');
-$router->get('/api/announcements', 'Announcements::index');
+// 2. Discipleship Groups (D-Groups)
+$router->get('/api/dgroups',        'DGroups::index');
+$router->post('/api/dgroups/join',   'DGroups::join');
+$router->post('/api/dgroups/leave',  'DGroups::leave');
+$router->post('/api/dgroups/create', 'DGroups::create');
+$router->post('/api/dgroups/update', 'DGroups::update');
+$router->post('/api/dgroups/delete', 'DGroups::delete');
 
-// Admin
-$router->get('/api/members', 'Members::index');
-$router->get('/api/registrations', 'Registrations::index');
-$router->get('/api/stats', 'Admin::stats');
+// 3. Ministries & Volunteer Pipeline
+$router->get('/api/ministries',                     'Ministries::index');
+$router->post('/api/ministries/apply',              'Ministries::apply');
+$router->post('/api/ministries/cancel',             'Ministries::cancel');
+$router->get('/api/ministries/applications',        'Ministries::applications');
+$router->post('/api/ministries/update-application', 'Ministries::update_application');
+$router->post('/api/ministries/delete-application', 'Ministries::delete_application');
+$router->post('/api/ministries/create',             'Ministries::create');
+$router->post('/api/ministries/update',             'Ministries::update');
+$router->post('/api/ministries/delete',             'Ministries::delete');
+
+// 4. Events & QR Check-In
+$router->get('/api/events',                 'Events::index');
+$router->get('/api/events/{id}',            'Events::show');
+$router->post('/api/events/rsvp',           'Events::rsvp');
+$router->post('/api/events/cancel-rsvp',    'Events::cancel_rsvp');
+$router->post('/api/events/check-in',       'Events::check_in');
+$router->get('/api/events/{id}/attendees',  'Events::attendees');
+$router->post('/api/events/create',         'Events::create');
+$router->post('/api/events/update',         'Events::update');
+$router->post('/api/events/delete',         'Events::delete');
+
+// 5. Prayer Wall
+$router->get('/api/prayer',                 'Prayers::index');
+$router->get('/api/prayers',                'Prayers::index');
+$router->post('/api/prayer/submit',         'Prayers::submit');
+$router->post('/api/prayers/submit',        'Prayers::submit');
+$router->post('/api/prayer/mark-answered',  'Prayers::mark_answered');
+$router->post('/api/prayer/delete',         'Prayers::delete');
+
+// 6. Member Directory & Admin
+$router->get('/api/members',        'Members::index');
+$router->post('/api/members/update','Members::update');
+$router->get('/api/admin/stats',    'Admin::stats');
+$router->get('/api/stats',          'Admin::stats');

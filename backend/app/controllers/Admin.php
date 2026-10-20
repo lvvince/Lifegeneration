@@ -1,21 +1,32 @@
 <?php
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
-class Admin extends Controller {
-    public function __construct() {
+class Admin extends Controller
+{
+    public function __construct()
+    {
         parent::__construct();
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: http://localhost:5173');
         $this->call->database();
-        $this->call->model('MemberModel');
-        $this->call->model('EventModel');
     }
 
-    public function stats() {
-        echo json_encode([
-            'members' => $this->MemberModel->count_all(),
-            'pending' => $this->MemberModel->count_pending(),
-            'events'  => $this->EventModel->count_all(),
+    public function stats()
+    {
+        $membersCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM members WHERE is_active = 1")->fetch()['total'];
+        $eventsCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM events WHERE is_active = 1")->fetch()['total'];
+        $dgroupsCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM dgroups")->fetch()['total'];
+        $ministriesCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM ministries WHERE is_active = 1")->fetch()['total'];
+        $pendingApps = (int) $this->db->raw("SELECT COUNT(*) AS total FROM ministry_applications WHERE status = 'pending'")->fetch()['total'];
+        $activePrayers = (int) $this->db->raw("SELECT COUNT(*) AS total FROM prayer_requests WHERE status = 'active'")->fetch()['total'];
+        $checkedInCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM event_attendances WHERE checked_in = 1")->fetch()['total'];
+
+        api_response([
+            'members'              => $membersCount,
+            'events'               => $eventsCount,
+            'dgroups'              => $dgroupsCount,
+            'ministries'           => $ministriesCount,
+            'pending_applications' => $pendingApps,
+            'active_prayers'       => $activePrayers,
+            'checked_in_attendees' => $checkedInCount
         ]);
     }
 }

@@ -88,7 +88,7 @@ $config['date_default_timezone'] = 'Asia/Manila';
 | WARNING: You MUST set this value!
 |
 */
-$config['base_url'] = 'http://localhost/Lifegeneration/backend/';
+$config['base_url'] = 'http://localhost/LIFEGEN/backend/public/';
 /*
 |--------------------------------------------------------------------------
 | Static File Proxies
