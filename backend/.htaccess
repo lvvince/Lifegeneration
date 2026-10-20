@@ -1,6 +1,7 @@
 AddDefaultCharset UTF-8
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /Lifegeneration/backend/
 
     # --------------------------------------------------
     # Allow index.php
@@ -10,7 +11,7 @@ AddDefaultCharset UTF-8
 
     # --------------------------------------------------
     # Deny access to sensitive directories
-    RedirectMatch 403 ^/(app|scheme|console|runtime)/
+    RedirectMatch 403 ^/Lifegeneration/backend/(app|scheme|console|runtime)/
 
     # --------------------------------------------------
     # Deny access to sensitive files
@@ -24,6 +25,6 @@ AddDefaultCharset UTF-8
 
     # --------------------------------------------------
     # Route all requests through public/index.php
-    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_URI} !/public/
     RewriteRule ^(.*)$ public/$1 [L,QSA]
 </IfModule>

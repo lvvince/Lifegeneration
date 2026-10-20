@@ -182,3 +182,60 @@
     border-right-color: var(--border);
   }
 }
+
+/* Idagdag sa dulo ng global CSS mo (index.css / App.css). Hindi nito ginagalaw ang .card at .container mo. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  margin: 0; /* grid na ang bahala sa spacing */
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.dash-card:hover {
+  box-shadow: 0 8px 20px rgba(27, 35, 73, 0.12);
+  transform: translateY(-2px);
+}
+
+.dash-card .muted {
+  flex: 1;
+}
+
+.dash-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+  font-size: 1.3rem;
+  background: #eef0fa;
+  border-radius: 10px;
+}
+
+.dash-btn {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: #1b2349;
+  border-radius: 8px;
+}
+
+.dash-btn:hover {
+  background: #2c3670;
+}
+
+.event-meta {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: #1b2349;
+}
+

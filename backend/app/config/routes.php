@@ -45,3 +45,22 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /** @var object $router **/
 
 $router->get('/', 'Welcome::index');
+$router->get('/api', 'Home::index');
+
+// Auth
+$router->post('/api/login', 'Auth::login');
+$router->post('/api/register', 'Auth::register');
+$router->post('/api/logout', 'Auth::logout');
+
+// Public / Member pages
+$router->get('/api/events', 'Events::index');
+$router->get('/api/events/{id}', 'Events::show');
+$router->get('/api/dgroups', 'DGroups::index');
+$router->get('/api/ministries', 'Ministries::index');
+$router->get('/api/prayers', 'Prayers::index');
+$router->get('/api/announcements', 'Announcements::index');
+
+// Admin
+$router->get('/api/members', 'Members::index');
+$router->get('/api/registrations', 'Registrations::index');
+$router->get('/api/stats', 'Admin::stats');
