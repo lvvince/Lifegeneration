@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { apiGet, getUser } from '../api.js'
 import {
   Users, Calendar, HeartHandshake, MessageSquare,
-  ArrowRight, Zap, Shield, ChevronRight
+  ArrowRight, Zap, Shield, ChevronRight, Flame
 } from 'lucide-react'
 
 export default function Home() {
@@ -43,7 +43,7 @@ export default function Home() {
           </h1>
 
           <p className="hero-sub">
-            Connect with discipleship groups, discover your purpose in ministry, attend life-changing gatherings, and lift one another in prayer.
+            An empowered generation that is able to inspire the community through their kindled passion in Christ.
           </p>
 
           <div className="hero-cta">
@@ -93,6 +93,55 @@ export default function Home() {
 
       {/* ===== CONTENT BELOW HERO ===== */}
       <div className="home-content">
+
+        {/* ===== OUR VISION ===== */}
+        <div style={{
+          textAlign: 'center',
+          maxWidth: 820,
+          margin: '0 auto 48px',
+          padding: '36px 32px',
+          background: 'var(--card)',
+          border: '1px solid var(--card-border)',
+          borderRadius: 20,
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow)'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: '20%',
+            right: '20%',
+            height: 3,
+            background: 'linear-gradient(90deg, transparent, var(--orange), var(--blue), transparent)'
+          }} />
+
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color: 'var(--orange)',
+            marginBottom: 14
+          }}>
+            <Flame size={15} /> Our Vision
+          </div>
+
+          <blockquote style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 'clamp(1.1rem, 2.5vw, 1.35rem)',
+            fontWeight: 600,
+            lineHeight: 1.6,
+            color: 'var(--text)',
+            fontStyle: 'italic',
+            margin: 0
+          }}>
+            &ldquo;An empowered generation that is able to inspire the community through their kindled passion in Christ.&rdquo;
+          </blockquote>
+        </div>
 
         {/* ===== FEATURE CARDS ===== */}
         <div className="section-label">
