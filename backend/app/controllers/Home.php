@@ -5,7 +5,6 @@ class Home extends Controller {
     public function __construct() {
         parent::__construct();
         header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: http://localhost:5173');
     }
 
     public function index() {

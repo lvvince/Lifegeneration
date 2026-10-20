@@ -1,21 +1,23 @@
 <?php
 define('PREVENT_DIRECT_ACCESS', TRUE);
 
-/* CORS: dapat nasa pinakataas, bago mag-load ang LavaLust */
-$allowed_origins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-];
-
+/* CORS: Dynamic origin handling for localhost on any port (5173, 5174, etc.) */
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-if (in_array($origin, $allowed_origins, true)) {
-    header("Access-Control-Allow-Origin: $origin");
-    header("Vary: Origin");
+if (!empty($origin)) {
+    if (preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#i', $origin)) {
+        header("Access-Control-Allow-Origin: $origin");
+        header("Access-Control-Allow-Credentials: true");
+        header("Vary: Origin");
+    } else {
+        header("Access-Control-Allow-Origin: $origin");
+        header("Vary: Origin");
+    }
+} else {
+    header("Access-Control-Allow-Origin: *");
 }
 
-header("Access-Control-Allow-Headers: Content-Type, Authorization, Accept");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
