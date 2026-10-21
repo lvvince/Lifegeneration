@@ -22,3 +22,6 @@ dist/
 # Database dumps
 *.sql
 *.sqlite
+
+# Allow official schema dump
+!database.sql

@@ -34,8 +34,8 @@ class Initial_setup {
                     'default' => 'CURRENT_TIMESTAMP',
                 ],
             ])
-            ->add_key('id', primary: TRUE)
-            ->add_key('migration', unique: TRUE, name: 'migration_unique')
+            ->add_key('id', TRUE)
+            ->add_key('migration', FALSE, TRUE, 'migration_unique')
             ->create_table('migrations');
     }
 

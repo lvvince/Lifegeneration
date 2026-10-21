@@ -65,10 +65,10 @@ class Create_users_table {
                     'default' => NULL,
                 ],
             ])
-            ->add_key('id', primary: TRUE)
-            ->add_key('username', unique: TRUE, name: 'username_unique')
-            ->add_key('email', name: 'email_idx')
-            ->add_key('role', name: 'role_idx')
+            ->add_key('id', TRUE)
+            ->add_key('username', FALSE, TRUE, 'username_unique')
+            ->add_key('email', FALSE, FALSE, 'email_idx')
+            ->add_key('role', FALSE, FALSE, 'role_idx')
             ->create_table('users');
     }
 

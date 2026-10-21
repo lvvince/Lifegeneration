@@ -2,10 +2,12 @@
 <?php
 (PHP_SAPI !== 'cli' || isset($_SERVER['HTTP_USER_AGENT'])) && die('CLI only');
 
+define('LAVA_CLI', TRUE);
 define('APP_DIR', dirname(__DIR__, 1) . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR);
 define('PUBLIC_DIR', dirname(__DIR__, 1) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR);
 define('RUNTIME_DIR', dirname(__DIR__, 1) . DIRECTORY_SEPARATOR . 'runtime' . DIRECTORY_SEPARATOR);
 define('COMMANDS_DIR', APP_DIR . 'commands' . DIRECTORY_SEPARATOR);
+define('SEEDS_DIR', APP_DIR . 'seeds' . DIRECTORY_SEPARATOR);
 
 // Command Registry
 $commands = [];
@@ -53,6 +55,27 @@ register_command('make:middleware', 'handle_make_middleware', 'Creates a middlew
     'name' => 'Middleware name (e.g., Auth or Admin/Role)'
 ]);
 
+register_command('migrate', 'handle_migrate', 'Run all pending database migrations', [
+    '[--seed]' => 'Run database seeders after migrating'
+]);
+register_command('migrate:rollback', 'handle_migrate_rollback', 'Rollback the last applied database migration', []);
+register_command('migrate:refresh', 'handle_migrate_refresh', 'Rollback and re-run all migrations', [
+    '[--seed]' => 'Run database seeders after refreshing'
+]);
+register_command('migrate:fresh', 'handle_migrate_fresh', 'Drop all tables and re-run all migrations', [
+    '[--seed]' => 'Run database seeders after fresh migration'
+]);
+register_command('migrate:status', 'handle_migrate_status', 'Display migration status', []);
+register_command('make:migration', 'handle_make_migration', 'Creates a new migration file', [
+    'name' => 'Migration name (e.g., create_products_table)'
+]);
+register_command('db:seed', 'handle_db_seed', 'Run database seeders', [
+    '[name]' => 'Specific seeder class name (default: runs all or DatabaseSeeder)'
+]);
+register_command('make:seeder', 'handle_make_seeder', 'Creates a new seeder file', [
+    'name' => 'Seeder name (e.g., UserSeeder)'
+]);
+
 register_command('cache:clear', 'handle_cache_clear', 'Clear all files in runtime/cache', []);
 
 register_command('make:command', 'handle_make_command', 'Creates a custom CLI command', [
@@ -62,11 +85,6 @@ register_command('make:command', 'handle_make_command', 'Creates a custom CLI co
 register_command('route:list', 'handle_route_list', 'Display all registered routes', []);
 
 register_command('key:generate', 'handle_key_generate', 'Generate a new application key', []);
-
-register_command('jwt:generate', 'handle_jwt_generate', 'Generate JWT_SECRET and REFRESH_TOKEN_KEY and save them to .env', [
-    '[--force]' => 'Overwrite values that are already set in .env',
-    '[--show]'  => 'Print the generated values to the terminal'
-]);
 
 register_command('env:check', 'handle_env_check', 'Display current environment configuration summary', []);
 
@@ -78,7 +96,7 @@ $flags      = [];
 $positional = [];
 
 for ($i = 2; $i < $argc; $i++) {
-    if (str_starts_with($argv[$i], '--')) {
+    if (strpos($argv[$i], '--') === 0) {
         // --key=value  or  --key (boolean)
         $pair = explode('=', ltrim($argv[$i], '-'), 2);
         $flags[$pair[0]] = $pair[1] ?? true;
@@ -88,7 +106,6 @@ for ($i = 2; $i < $argc; $i++) {
 }
 
 $input = $positional[0] ?? null;
-$input2 = $positional[1] ?? null;
 
 if (!$command) {
     echo help_text($commands);
@@ -101,7 +118,7 @@ if (!isset($commands[$command])) {
     exit;
 }
 
-call_user_func($commands[$command]['handler'], $input, $flags, $input2);
+call_user_func($commands[$command]['handler'], $input, $flags);
 
 /**
  * Scan app/commands/ for classes that declare:
@@ -170,7 +187,8 @@ function handle_run_command($port = null, array $flags = []) {
     echo "Server running on: \033[1;36m{$url}\033[0m" . PHP_EOL;
     echo "Press Ctrl+C to stop the server." . PHP_EOL . PHP_EOL;
 
-    $command = sprintf('php -S %s:%d -t %s', $host, $port, escapeshellarg(PUBLIC_DIR));
+    $router_script = escapeshellarg(PUBLIC_DIR . 'router.php');
+    $command = sprintf('php -S %s:%d -t %s %s', $host, $port, escapeshellarg(PUBLIC_DIR), $router_script);
     passthru($command);
 }
 
@@ -252,6 +270,200 @@ function handle_make_language($name) {
  */
 function handle_make_config($name) {
     generate_config_file($name);
+}
+
+function get_migration_instance() {
+    if (!defined('PREVENT_DIRECT_ACCESS')) {
+        define('PREVENT_DIRECT_ACCESS', TRUE);
+    }
+    if (!defined('ROOT_DIR')) {
+        define('ROOT_DIR', dirname(__DIR__, 1) . DIRECTORY_SEPARATOR);
+    }
+    if (!defined('SYSTEM_DIR')) {
+        define('SYSTEM_DIR', ROOT_DIR . 'scheme' . DIRECTORY_SEPARATOR);
+    }
+    require_once SYSTEM_DIR . 'kernel/LavaLust.php';
+    $lava = lava_instance();
+    $lava->call->library('migration');
+    return $lava->migration;
+}
+
+function handle_migrate($input = null, array $flags = []) {
+    $migration = get_migration_instance();
+    $migration->migrate();
+
+    if (!empty($flags['seed'])) {
+        handle_db_seed();
+    }
+}
+
+function handle_migrate_rollback() {
+    $migration = get_migration_instance();
+    $migration->rollback();
+}
+
+function handle_migrate_refresh($input = null, array $flags = []) {
+    $migration = get_migration_instance();
+    $migration->refresh();
+
+    if (!empty($flags['seed'])) {
+        handle_db_seed();
+    }
+}
+
+function handle_migrate_fresh($input = null, array $flags = []) {
+    $migration = get_migration_instance();
+    $lava = lava_instance();
+    $lava->call->database();
+    $lava->call->dbforge();
+
+    echo "\033[1;33mDropping existing tables...\033[0m" . PHP_EOL;
+
+    // Drop users, refresh_tokens, sessions, migrations, etc.
+    $tables = ['users', 'refresh_tokens', 'sessions', 'migrations'];
+    foreach ($tables as $table) {
+        if ($lava->dbforge->table_exists($table)) {
+            $lava->dbforge->drop_table($table);
+            echo "  ✓ Dropped table: {$table}" . PHP_EOL;
+        }
+    }
+
+    echo "\033[1;34mRunning migrations...\033[0m" . PHP_EOL;
+    $migration->migrate();
+
+    if (!empty($flags['seed'])) {
+        handle_db_seed();
+    }
+}
+
+function handle_migrate_status() {
+    $migration = get_migration_instance();
+    $migration->status();
+}
+
+function handle_make_migration($name) {
+    if (!$name) {
+        echo danger("Migration name is required. Example: php lava make:migration create_products_table");
+        exit(1);
+    }
+    $migration = get_migration_instance();
+    $migration->create_migration($name);
+}
+
+function handle_db_seed($name = null) {
+    get_migration_instance(); // Bootstrap framework instance
+    $lava = lava_instance();
+    $lava->call->database();
+
+    if (!is_dir(SEEDS_DIR)) {
+        echo danger("Seeds directory not found at: " . SEEDS_DIR) . PHP_EOL;
+        exit(1);
+    }
+
+    if ($name) {
+        $file = SEEDS_DIR . ucfirst($name) . '.php';
+        if (!file_exists($file)) {
+            $file = SEEDS_DIR . $name . '.php';
+        }
+
+        if (!file_exists($file)) {
+            echo danger("Seeder file not found: {$name}.php") . PHP_EOL;
+            exit(1);
+        }
+
+        require_once $file;
+        $class_name = pathinfo($file, PATHINFO_FILENAME);
+        if (class_exists($class_name)) {
+            $seeder = new $class_name();
+            if (method_exists($seeder, 'run')) {
+                echo "\033[1;34mSeeding:\033[0m {$class_name}..." . PHP_EOL;
+                $seeder->run();
+                echo success("✓ Seeded: {$class_name}") . PHP_EOL;
+            }
+        }
+    } else {
+        // Run DatabaseSeeder or all seeders in seeds directory
+        $main_seeder = SEEDS_DIR . 'DatabaseSeeder.php';
+        if (file_exists($main_seeder)) {
+            require_once $main_seeder;
+            if (class_exists('DatabaseSeeder')) {
+                $seeder = new DatabaseSeeder();
+                echo "\033[1;34mRunning DatabaseSeeder...\033[0m" . PHP_EOL;
+                $seeder->run();
+                echo success("✓ DatabaseSeeder completed successfully.") . PHP_EOL;
+                return;
+            }
+        }
+
+        // Otherwise run all seed files
+        $files = glob(SEEDS_DIR . '*.php');
+        if (empty($files)) {
+            echo "\033[0;33mNo seeder files found in app/seeds/.\033[0m" . PHP_EOL;
+            return;
+        }
+
+        foreach ($files as $file) {
+            require_once $file;
+            $class_name = pathinfo($file, PATHINFO_FILENAME);
+            if (class_exists($class_name)) {
+                $seeder = new $class_name();
+                if (method_exists($seeder, 'run')) {
+                    echo "\033[1;34mSeeding:\033[0m {$class_name}..." . PHP_EOL;
+                    $seeder->run();
+                    echo success("✓ Seeded: {$class_name}") . PHP_EOL;
+                }
+            }
+        }
+        echo success("All seeders executed.") . PHP_EOL;
+    }
+}
+
+function handle_make_seeder($name) {
+    if (!$name) {
+        echo danger("Seeder name is required. Example: php lava make:seeder UserSeeder");
+        exit(1);
+    }
+
+    $class_name = ucfirst($name);
+    $file_path  = SEEDS_DIR . "{$class_name}.php";
+
+    if (!is_dir(SEEDS_DIR)) mkdir(SEEDS_DIR, 0777, true);
+
+    $content = <<<PHP
+<?php
+defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
+
+class {$class_name} {
+
+    private \$_lava;
+
+    public function __construct()
+    {
+        \$this->_lava = lava_instance();
+        \$this->_lava->call->database();
+    }
+
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        // Example:
+        // \$this->_lava->db->table('users')->insert([
+        //     'username'   => 'admin',
+        //     'email'      => 'admin@example.com',
+        //     'password'   => password_hash('password123', PASSWORD_DEFAULT),
+        //     'role'       => 'admin',
+        //     'is_active'  => 1,
+        //     'created_at' => date('Y-m-d H:i:s')
+        // ]);
+    }
+}
+PHP;
+
+    write_file($file_path, $content, 'Seeder', $class_name);
 }
 
 /**
@@ -427,97 +639,6 @@ function handle_key_generate() {
 }
 
 /**
- * Handle JWT Generate Command
- *
- * Generates JWT_SECRET and REFRESH_TOKEN_KEY and saves them to .env.
- * Values that are already set are kept unless --force is given.
- *
- * php lava jwt:generate            Generate missing keys
- * php lava jwt:generate --force    Overwrite keys already set in .env
- * php lava jwt:generate --show     Also print the generated values
- *
- * @param string|null $input
- * @param array       $flags
- * @return void
- */
-function handle_jwt_generate($input = null, array $flags = []) {
-    $env_file = dirname(__DIR__, 1) . DIRECTORY_SEPARATOR . '.env';
-    $force    = !empty($flags['force']);
-    $show     = !empty($flags['show']);
-
-    if (file_exists($env_file)) {
-        $env = file_get_contents($env_file);
-    } else {
-        $env = '';
-        echo "\033[0;33mNo .env file found. A new one will be created at {$env_file}\033[0m" . PHP_EOL;
-    }
-
-    foreach (['JWT_SECRET', 'REFRESH_TOKEN_KEY'] as $name) {
-        $current = env_file_get($env, $name);
-
-        if ($current !== null && $current !== '' && !$force) {
-            echo "\033[0;33m{$name} is already set. Skipped (use --force to overwrite).\033[0m" . PHP_EOL;
-            continue;
-        }
-
-        $value = bin2hex(random_bytes(32)); // 64-char hex key, generated separately for each name
-        $env   = env_file_set($env, $name, $value);
-
-        echo success("{$name} generated and saved to .env") . PHP_EOL;
-
-        if ($show) {
-            echo "  {$name}={$value}" . PHP_EOL;
-        }
-    }
-
-    if (file_put_contents($env_file, $env) === false) {
-        echo danger("Could not write to {$env_file}");
-        exit(1);
-    }
-
-    echo PHP_EOL . "Keep .env out of version control." . PHP_EOL;
-    echo "Tokens signed with a replaced key will stop working." . PHP_EOL;
-}
-
-/**
- * Read a value from .env contents. Returns null when the key is absent.
- *
- * @param string $env
- * @param string $name
- * @return string|null
- */
-function env_file_get($env, $name) {
-    if (preg_match('/^' . preg_quote($name, '/') . '[ \t]*=[ \t]*(.*?)[ \t]*\r?$/m', $env, $m)) {
-        return trim($m[1], " \t\"'");
-    }
-    return null;
-}
-
-/**
- * Set a value in .env contents: replace the line if it exists, append it otherwise.
- *
- * @param string $env
- * @param string $name
- * @param string $value
- * @return string
- */
-function env_file_set($env, $name, $value) {
-    $pattern = '/^' . preg_quote($name, '/') . '[ \t]*=.*$/m';
-
-    if (preg_match($pattern, $env)) {
-        return preg_replace_callback($pattern, function () use ($name, $value) {
-            return "{$name}={$value}";
-        }, $env, 1);
-    }
-
-    if ($env !== '' && substr($env, -1) !== "\n") {
-        $env .= PHP_EOL;
-    }
-
-    return $env . "{$name}={$value}" . PHP_EOL;
-}
-
-/**
  * Handle Environment Check Command
  *
  * @return void
@@ -538,7 +659,7 @@ function handle_env_check() {
     $lines = file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
     foreach ($lines as $line) {
-        if (str_starts_with(trim($line), '#')) continue;
+        if (strpos(trim($line), '#') === 0) continue;
 
         [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
         $key   = trim($key);
@@ -854,7 +975,7 @@ function help_text($commands) {
         'Server'    => ['serve', 'run'],
         'Cache'     => ['cache:clear'],
         'Makers'    => ['make:controller', 'make:model', 'make:middleware', 'make:helper', 'make:library', 'make:view', 'make:language', 'make:config', 'make:command'],
-        'Utilities' => ['route:list', 'key:generate', 'jwt:generate', 'env:check'],
+        'Utilities' => ['route:list', 'key:generate', 'env:check'],
     ];
 
     $all_built_in = array_merge(...array_values($built_in_groups));
@@ -898,8 +1019,7 @@ function help_text($commands) {
     $help .= "  php lava make:model User\n";
     $help .= "  php lava cache:clear\n";
     $help .= "  php lava route:list\n";
-    $help .= "  php lava key:generate\n";
-    $help .= "  php lava jwt:generate\n\n";
+    $help .= "  php lava key:generate\n\n";
 
     return $help;
 }
