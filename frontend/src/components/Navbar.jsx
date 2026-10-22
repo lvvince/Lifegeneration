@@ -7,6 +7,7 @@ import {
   LogOut, User, MessageSquare, Menu, X, Sun, Moon
 } from 'lucide-react'
 import { useTheme } from '../useTheme.js'
+import { useAuthModal } from '../context/AuthModal.jsx'
 
 function LogoutModal({ onCancel, onConfirm }) {
   return createPortal(
@@ -71,6 +72,7 @@ export default function Navbar() {
   const user = getUser()
   const [open, setOpen] = useState(false)
   const { theme, toggle } = useTheme()
+  const { openRegister } = useAuthModal()
 
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
@@ -249,7 +251,7 @@ export default function Navbar() {
             }}>
               Sign In
             </Link>
-            <Link to="/register" style={{
+            <button type="button" onClick={openRegister} style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
@@ -262,12 +264,13 @@ export default function Navbar() {
               fontSize: '0.85rem',
               boxShadow: '0 3px 14px rgba(249,115,22,0.35)',
               transition: 'filter 0.2s, transform 0.15s',
+              border: 'none', cursor: 'pointer', width: 'auto', margin: 0, fontFamily: 'Inter, sans-serif',
             }}
             onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
               Join LifeGen
-            </Link>
+            </button>
           </>
         )}
 
@@ -370,9 +373,9 @@ export default function Navbar() {
               <LogOut size={16} /> Sign Out
             </button>
           ) : (
-            <Link to="/register" onClick={() => setOpen(false)} className="btn" style={{ marginTop: 12, justifyContent: 'center', borderRadius: 12 }}>
+            <button type="button" onClick={() => { setOpen(false); openRegister() }} className="btn" style={{ marginTop: 12, justifyContent: 'center', borderRadius: 12, width: '100%' }}>
               Join Life Generation
-            </Link>
+            </button>
           )}
         </div>
       )}

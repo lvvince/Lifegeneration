@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiGet, getUser } from '../api.js'
+import GlassIcon from '../components/GlassIcon.jsx'
+import { useAuthModal } from '../context/AuthModal.jsx'
 import {
   Users, Calendar, HeartHandshake, MessageSquare,
   ArrowRight, Zap, Shield, ChevronRight, Flame
@@ -11,6 +13,7 @@ export default function Home() {
   const [dgroups, setDgroups] = useState([])
   const [ministries, setMinistries] = useState([])
   const user = getUser()
+  const { openRegister } = useAuthModal()
 
   useEffect(() => {
     apiGet('/api/events').then(data => Array.isArray(data) && setEvents(data.slice(0, 3))).catch(() => {})
@@ -53,9 +56,9 @@ export default function Home() {
               </Link>
             ) : (
               <>
-                <Link to="/register" className="btn">
+                <button type="button" className="btn" onClick={openRegister} style={{ width: 'auto', margin: 0 }}>
                   Join the Movement <ArrowRight size={16} />
-                </Link>
+                </button>
                 <Link to="/login" className="btn-ghost">
                   Sign In
                 </Link>
@@ -151,9 +154,7 @@ export default function Home() {
         <div className="feature-grid" style={{ marginTop: 20 }}>
           {/* D-Groups */}
           <div className="feature-card">
-            <div className="feature-icon">
-              <Users size={22} color="#f97316" />
-            </div>
+            <GlassIcon icon={Users} tint="#f97316" size={52} />
             <div>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Discipleship Groups</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
@@ -175,9 +176,7 @@ export default function Home() {
 
           {/* Ministries */}
           <div className="feature-card">
-            <div className="feature-icon" style={{ background: 'rgba(59,130,246,0.12)', borderColor: 'rgba(59,130,246,0.2)' }}>
-              <HeartHandshake size={22} color="#3b82f6" />
-            </div>
+            <GlassIcon icon={HeartHandshake} tint="#3b82f6" size={52} />
             <div>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Ministry Teams</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
@@ -199,9 +198,7 @@ export default function Home() {
 
           {/* Prayer Wall */}
           <div className="feature-card">
-            <div className="feature-icon" style={{ background: 'rgba(168,85,247,0.12)', borderColor: 'rgba(168,85,247,0.2)' }}>
-              <MessageSquare size={22} color="#a855f7" />
-            </div>
+            <GlassIcon icon={MessageSquare} tint="#a855f7" size={52} />
             <div>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Prayer Wall</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
@@ -223,9 +220,7 @@ export default function Home() {
 
           {/* Events */}
           <div className="feature-card">
-            <div className="feature-icon" style={{ background: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.2)' }}>
-              <Calendar size={22} color="#22c55e" />
-            </div>
+            <GlassIcon icon={Calendar} tint="#22c55e" size={52} />
             <div>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Gatherings & Events</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
@@ -373,9 +368,9 @@ export default function Home() {
                 Become an official member of Life Generation and start your journey with an amazing community.
               </p>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link to="/register" className="btn">
+                <button type="button" className="btn" onClick={openRegister} style={{ width: 'auto', margin: 0 }}>
                   Join Life Generation <ArrowRight size={16} />
-                </Link>
+                </button>
                 <Link to="/login" className="btn-ghost" style={{ borderRadius: 999 }}>
                   Sign In
                 </Link>

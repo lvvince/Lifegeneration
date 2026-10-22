@@ -1,9 +1,12 @@
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import PortalLayout from './components/portal/PortalLayout.jsx'
+import { getUser } from './api.js'
 import Home from './pages/Home.jsx'
 import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
+import NotFound from './pages/NotFound.jsx'
 import DGroups from './pages/DGroups.jsx'
 import Ministries from './pages/Ministries.jsx'
 import PrayerWall from './pages/PrayerWall.jsx'
@@ -14,53 +17,81 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminMembers from './pages/admin/AdminMembers.jsx'
 import AdminApplications from './pages/admin/AdminApplications.jsx'
 import AdminCheckIn from './pages/admin/AdminCheckIn.jsx'
+import AdminEvents from './pages/admin/AdminEvents.jsx'
+import AdminDGroups from './pages/admin/AdminDGroups.jsx'
+import AdminMinistries from './pages/admin/AdminMinistries.jsx'
+import AdminReports from './pages/admin/AdminReports.jsx'
 
-// Pages that should render full-screen without the constrained <main> wrapper
+// Public pages na walang portal layout at may sariling full-width na itsura
 const FULL_BLEED = ['/', '/login', '/register']
+
+function PageRoutes() {
+  return (
+    <Routes>
+      <Route path="/events" element={<Events />} />
+      <Route path="/events/:id" element={<EventDetail />} />
+      <Route path="/dgroups" element={<DGroups />} />
+      <Route path="/ministries" element={<Ministries />} />
+      <Route path="/prayer" element={<PrayerWall />} />
+      <Route path="/prayers" element={<PrayerWall />} />
+
+      {/* Member */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/profile" element={<Dashboard />} />
+      </Route>
+
+      {/* Admin */}
+      <Route element={<ProtectedRoute role="admin" />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/members" element={<AdminMembers />} />
+        <Route path="/admin/applications" element={<AdminApplications />} />
+        <Route path="/admin/events" element={<AdminEvents />} />
+        <Route path="/admin/check-in" element={<AdminCheckIn />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/dgroups" element={<AdminDGroups />} />
+        <Route path="/admin/ministries" element={<AdminMinistries />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  )
+}
 
 export default function App() {
   const { pathname } = useLocation()
-  const isFullBleed = FULL_BLEED.includes(pathname)
+  const user = getUser()
 
-  return (
-    <>
-      <Navbar />
-      {isFullBleed ? (
-        // Full-bleed: no max-width, no side padding
+  // Home, Login, Register
+  if (FULL_BLEED.includes(pathname)) {
+    return (
+      <>
+        <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Fallback also goes here so hero shows */}
-          <Route path="*" element={<Home />} />
         </Routes>
-      ) : (
-        <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px 60px' }}>
-          <Routes>
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:id" element={<EventDetail />} />
-            <Route path="/dgroups" element={<DGroups />} />
-            <Route path="/ministries" element={<Ministries />} />
-            <Route path="/prayer" element={<PrayerWall />} />
-            <Route path="/prayers" element={<PrayerWall />} />
+      </>
+    )
+  }
 
-            {/* Member Protected */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/profile" element={<Dashboard />} />
-            </Route>
+  // Naka-login: portal (sidebar). Ang /admin ay para sa admin lang (hawak ng ProtectedRoute).
+  if (user) {
+    return (
+      <PortalLayout>
+        <PageRoutes />
+      </PortalLayout>
+    )
+  }
 
-            {/* Admin Protected */}
-            <Route element={<ProtectedRoute role="admin" />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/members" element={<AdminMembers />} />
-              <Route path="/admin/applications" element={<AdminApplications />} />
-              <Route path="/admin/check-in" element={<AdminCheckIn />} />
-              <Route path="/admin/events" element={<Events />} />
-            </Route>
-          </Routes>
-        </main>
-      )}
+  // Bisita: public pages na may navbar
+  return (
+    <>
+      <Navbar />
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px 60px' }}>
+        <PageRoutes />
+      </main>
     </>
   )
 }

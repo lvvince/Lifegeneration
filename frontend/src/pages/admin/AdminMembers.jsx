@@ -1,191 +1,255 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { apiGet, apiPost } from '../../api.js'
-import { Search, ArrowLeft, Check, X, Shield } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Search, Download, Users } from 'lucide-react'
+import { apiGet, apiPost, getUser } from '../../api.js'
+import { fmtDate } from '../../lib/format.js'
+import { downloadCsv } from '../../lib/csv.js'
+import {
+  PageHeader, Empty, Loading, Switch, Badge, ConfirmDialog, useToast,
+} from '../../components/portal/ui.jsx'
+
+const isOn = (m) => Number(m.is_active ?? m.user_active) === 1
 
 export default function AdminMembers() {
+  const me = getUser()
+  const toast = useToast()
   const [members, setMembers] = useState([])
-  const [search, setSearch] = useState('')
-  const [error, setError] = useState('')
-  const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(true)
-  const [updatingId, setUpdatingId] = useState(null)
-
-  const loadMembers = async () => {
-    try {
-      setLoading(true)
-      const data = await apiGet('/api/members')
-      setMembers(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [error, setError] = useState('')
+  const [q, setQ] = useState('')
+  const [role, setRole] = useState('all')
+  const [status, setStatus] = useState('all')
+  const [busyId, setBusyId] = useState(null)
+  const [confirm, setConfirm] = useState(null)
 
   useEffect(() => {
-    loadMembers()
+    apiGet('/api/members')
+      .then((d) => setMembers(Array.isArray(d) ? d : []))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
-  const handleToggleStatus = async (user_id, currentStatus) => {
-    setUpdatingId(user_id)
-    setMsg('')
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase()
+    return members.filter((m) => {
+      if (role !== 'all' && m.role !== role) return false
+      if (status === 'active' && !isOn(m)) return false
+      if (status === 'inactive' && isOn(m)) return false
+      if (!term) return true
+      return [m.member_id, m.full_name, m.email, m.username].some((v) =>
+        String(v || '').toLowerCase().includes(term)
+      )
+    })
+  }, [members, q, role, status])
+
+  // Isinasama ang kasalukuyang profile para hindi mabura ang name/age/address
+  async function save(m, patch, okMsg) {
+    setBusyId(m.user_id)
     try {
-      const nextStatus = currentStatus ? 0 : 1
       await apiPost('/api/members/update', {
-        user_id,
-        is_active: nextStatus
+        user_id: m.user_id,
+        full_name: m.full_name ?? '',
+        age: m.age ?? '',
+        address: m.address ?? '',
+        ...patch,
       })
-      setMsg('Member status updated.')
-      loadMembers()
-    } catch (err) {
-      setError(err.message || 'Failed to update member status.')
+      setMembers((list) =>
+        list.map((x) =>
+          x.user_id === m.user_id
+            ? {
+                ...x,
+                ...(patch.role ? { role: patch.role } : {}),
+                ...(patch.is_active !== undefined
+                  ? { is_active: patch.is_active, user_active: patch.is_active }
+                  : {}),
+              }
+            : x
+        )
+      )
+      toast(okMsg)
+    } catch (e) {
+      toast(e.message || 'Update failed.', 'bad')
     } finally {
-      setUpdatingId(null)
+      setBusyId(null)
+      setConfirm(null)
     }
   }
 
-  const handleRoleChange = async (user_id, role) => {
-    setUpdatingId(user_id)
-    setMsg('')
-    try {
-      await apiPost('/api/members/update', {
-        user_id,
-        role
+  function askRole(m, next) {
+    if (next === m.role) return
+    if (next === 'admin' || m.role === 'admin') {
+      setConfirm({
+        m,
+        title: next === 'admin' ? 'Make this member an admin?' : 'Remove admin access?',
+        message:
+          next === 'admin'
+            ? `${m.full_name} will be able to manage members, events and reports.`
+            : `${m.full_name} will lose access to the admin pages.`,
+        label: 'Change role',
+        run: () => save(m, { role: next }, `${m.full_name} is now ${next}.`),
       })
-      setMsg(`Role updated to ${role}.`)
-      loadMembers()
-    } catch (err) {
-      setError(err.message || 'Failed to update role.')
-    } finally {
-      setUpdatingId(null)
+    } else {
+      save(m, { role: next }, `${m.full_name} is now ${next}.`)
     }
   }
 
-  const filtered = members.filter((m) => {
-    const q = search.toLowerCase()
-    return (
-      (m.member_id && m.member_id.toLowerCase().includes(q)) ||
-      (m.full_name && m.full_name.toLowerCase().includes(q)) ||
-      (m.email && m.email.toLowerCase().includes(q)) ||
-      (m.username && m.username.toLowerCase().includes(q))
-    )
-  })
+  function askStatus(m) {
+    const next = isOn(m) ? 0 : 1
+    if (next === 0) {
+      setConfirm({
+        m,
+        title: 'Deactivate this member?',
+        message: `${m.full_name} will no longer be counted as an active member. You can turn this back on anytime.`,
+        label: 'Deactivate',
+        danger: true,
+        run: () => save(m, { is_active: next }, `${m.full_name} deactivated.`),
+      })
+    } else {
+      save(m, { is_active: next }, `${m.full_name} is active again.`)
+    }
+  }
+
+  function exportCsv() {
+    downloadCsv('members.csv', filtered, [
+      { key: 'member_id', label: 'Member ID' },
+      { key: 'full_name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'age', label: 'Age' },
+      { key: 'address', label: 'Address' },
+      { key: 'dgroup_name', label: 'D-Group' },
+      { key: 'ministry_name', label: 'Ministry' },
+      { key: 'role', label: 'Role' },
+      { key: 'joined_at', label: 'Joined' },
+    ])
+  }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Link to="/admin" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <ArrowLeft size={16} /> Back to Admin
-        </Link>
-        <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-          Total Members: {members.length}
-        </span>
-      </div>
+    <>
+      <PageHeader
+        title="Members"
+        desc="Find a member, change their role, or turn their account on or off."
+        actions={
+          <button type="button" className="p-btn p-btn-secondary" onClick={exportCsv} disabled={!filtered.length}>
+            <Download size={16} /> Export CSV
+          </button>
+        }
+      />
 
-      <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>Member Directory</h1>
-      <p className="muted" style={{ marginBottom: 20 }}>
-        Search, verify Member IDs, toggle active status, and assign administrative privileges.
-      </p>
-
-      {msg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{msg}</div>}
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
-      {/* Search Bar */}
-      <div style={{ position: 'relative', marginBottom: 20 }}>
-        <Search size={18} color="var(--muted)" style={{ position: 'absolute', top: 12, left: 14 }} />
-        <input
-          type="text"
-          placeholder="Search by Member ID (e.g. LG-2026-XXXXX), Name, or Email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ paddingLeft: 40, width: '100%' }}
-        />
+      <div className="p-toolbar">
+        <div className="p-search">
+          <Search size={16} />
+          <input
+            className="p-input"
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name, email or member ID"
+            aria-label="Search members"
+          />
+        </div>
+        <select className="p-input p-auto" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Filter by role">
+          <option value="all">All roles</option>
+          <option value="user">Member</option>
+          <option value="moderator">Moderator</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select className="p-input p-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
+          <option value="all">Any status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
       </div>
 
-      {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">Loading members...</p>
-        </div>
-      ) : (
-        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: 'rgba(47,143,91,0.08)', borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '12px 16px' }}>Member ID</th>
-                <th style={{ padding: '12px 16px' }}>Name & Email</th>
-                <th style={{ padding: '12px 16px' }}>D-Group</th>
-                <th style={{ padding: '12px 16px' }}>Ministry</th>
-                <th style={{ padding: '12px 16px' }}>Role</th>
-                <th style={{ padding: '12px 16px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
+      <section className="p-panel">
+        {loading ? (
+          <Loading rows={6} />
+        ) : filtered.length === 0 ? (
+          <Empty
+            icon={Users}
+            title={members.length ? 'No members match' : 'No members yet'}
+            desc={members.length ? 'Try a different search or clear the filters.' : 'New sign-ups will show up here.'}
+          />
+        ) : (
+          <div className="p-table-wrap">
+            <table className="p-table" style={{ minWidth: 820 }}>
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted)' }}>
-                    No members match your search criteria.
-                  </td>
+                  <th>Member</th>
+                  <th>D-Group</th>
+                  <th>Ministry</th>
+                  <th>Role</th>
+                  <th>Joined</th>
+                  <th>Status</th>
                 </tr>
-              ) : (
-                filtered.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontWeight: 700, color: '#15803d' }}>
-                      {m.member_id || `LG-2026-${m.id}`}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 600 }}>{m.full_name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{m.email}</div>
-                    </td>
-                    <td style={{ padding: '12px 16px', color: m.dgroup_name ? 'var(--navy)' : 'var(--muted)' }}>
-                      {m.dgroup_name || '— None —'}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: m.ministry_name ? 'var(--navy)' : 'var(--muted)' }}>
-                      {m.ministry_name || '— None —'}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <select
-                        value={m.role}
-                        disabled={updatingId === m.user_id}
-                        onChange={(e) => handleRoleChange(m.user_id, e.target.value)}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: 6,
-                          border: '1px solid var(--border)',
-                          background: m.role === 'admin' ? '#fef3c7' : '#fff',
-                          fontWeight: m.role === 'admin' ? 700 : 'normal'
-                        }}
-                      >
-                        <option value="user">User</option>
-                        <option value="moderator">Moderator</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button
-                        onClick={() => handleToggleStatus(m.user_id, Number(m.is_active ?? m.user_active))}
-                        disabled={updatingId === m.user_id}
-                        style={{
-                          background: (m.is_active ?? m.user_active) ? '#e3f5ea' : '#fee2e2',
-                          color: (m.is_active ?? m.user_active) ? '#166534' : '#991b1b',
-                          border: 'none',
-                          padding: '4px 10px',
-                          borderRadius: 20,
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {(m.is_active ?? m.user_active) ? '✓ Active' : '✕ Inactive'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((m) => {
+                  const self = m.user_id === me?.id
+                  const busy = busyId === m.user_id
+                  return (
+                    <tr key={m.id}>
+                      <td>
+                        <div className="p-row-title">
+                          {m.full_name || m.username} {self && <Badge>You</Badge>}
+                        </div>
+                        <div className="p-row-sub">{m.email}</div>
+                        <div className="p-mono">{m.member_id}</div>
+                      </td>
+                      <td className={m.dgroup_name ? '' : 'p-muted'}>{m.dgroup_name || '—'}</td>
+                      <td className={m.ministry_name ? '' : 'p-muted'}>{m.ministry_name || '—'}</td>
+                      <td>
+                        <select
+                          className="p-input p-auto"
+                          style={{ padding: '5px 8px', fontSize: 13 }}
+                          value={m.role}
+                          disabled={busy || self}
+                          title={self ? 'You cannot change your own role' : undefined}
+                          aria-label={`Role for ${m.full_name}`}
+                          onChange={(e) => askRole(m, e.target.value)}
+                        >
+                          <option value="user">Member</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="p-num p-muted">{fmtDate(m.joined_at)}</td>
+                      <td>
+                        <span className="p-inline">
+                          <Switch
+                            checked={isOn(m)}
+                            disabled={busy || self}
+                            label={`${isOn(m) ? 'Deactivate' : 'Activate'} ${m.full_name}`}
+                            onChange={() => askStatus(m)}
+                          />
+                          <span className={isOn(m) ? '' : 'p-muted'}>{isOn(m) ? 'Active' : 'Inactive'}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      {!loading && members.length > 0 && (
+        <p className="p-hint" style={{ marginTop: 10 }}>
+          Showing {filtered.length} of {members.length} members.
+        </p>
       )}
-    </div>
+
+      {confirm && (
+        <ConfirmDialog
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.label}
+          danger={confirm.danger}
+          busy={busyId === confirm.m.user_id}
+          onConfirm={confirm.run}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </>
   )
 }

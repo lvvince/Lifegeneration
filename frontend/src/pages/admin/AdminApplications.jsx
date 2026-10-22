@@ -1,168 +1,132 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { ClipboardList } from 'lucide-react'
 import { apiGet, apiPost } from '../../api.js'
-import { ArrowLeft, Check, X, Clock, HeartHandshake } from 'lucide-react'
+import { fmtDate } from '../../lib/format.js'
+import {
+  PageHeader, Empty, Loading, Tabs, Badge, useToast,
+} from '../../components/portal/ui.jsx'
+
+const TONE = { pending: 'warn', approved: 'ok', rejected: 'bad' }
 
 export default function AdminApplications() {
+  const toast = useToast()
   const [apps, setApps] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [msg, setMsg] = useState('')
-  const [processingId, setProcessingId] = useState(null)
+  const [tab, setTab] = useState('pending')
+  const [busyId, setBusyId] = useState(null)
 
-  const loadApplications = async () => {
-    try {
-      setLoading(true)
-      const data = await apiGet('/api/ministries/applications')
-      setApps(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const load = () =>
+    apiGet('/api/ministries/applications')
+      .then((d) => setApps(Array.isArray(d) ? d : []))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
 
   useEffect(() => {
-    loadApplications()
+    load()
   }, [])
 
-  const handleUpdate = async (id, status) => {
-    setProcessingId(id)
-    setMsg('')
+  const counts = useMemo(() => {
+    const c = { pending: 0, approved: 0, rejected: 0 }
+    apps.forEach((a) => {
+      if (c[a.status] !== undefined) c[a.status]++
+    })
+    return c
+  }, [apps])
+
+  const shown = tab === 'all' ? apps : apps.filter((a) => a.status === tab)
+
+  async function setStatus(a, status) {
+    setBusyId(a.id)
     try {
-      const res = await apiPost('/api/ministries/update-application', {
-        application_id: id,
-        status
-      })
-      setMsg(res.message || `Application ${status}!`)
-      loadApplications()
-    } catch (err) {
-      setError(err.message || 'Failed to update application.')
+      const res = await apiPost('/api/ministries/update-application', { application_id: a.id, status })
+      toast(res.message || `Application ${status}.`)
+      await load()
+    } catch (e) {
+      toast(e.message || 'Could not update the application.', 'bad')
     } finally {
-      setProcessingId(null)
+      setBusyId(null)
     }
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Link to="/admin" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <ArrowLeft size={16} /> Back to Admin
-        </Link>
-        <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-          Total Applications: {apps.length}
-        </span>
-      </div>
-
-      <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>Volunteer Ministry Applications</h1>
-      <p className="muted" style={{ marginBottom: 20 }}>
-        Review member applications to serve in ministries. Approving an applicant automatically connects them to their chosen team.
-      </p>
-
-      {msg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{msg}</div>}
+    <>
+      <PageHeader
+        title="Applications"
+        desc="Members who want to serve in a ministry. Approving one adds the member to that ministry."
+      />
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
-      {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">Loading applications...</p>
-        </div>
-      ) : apps.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">No volunteer applications submitted yet.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {apps.map((a) => (
-            <div key={a.id} className="card" style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              borderLeft: a.status === 'approved' ? '4px solid #16a34a' : a.status === 'rejected' ? '4px solid #dc2626' : '4px solid #f59e0b'
-            }}>
-              <div style={{ flex: '1 1 300px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: '1.2rem' }}>{a.ministry_icon || '✦'}</span>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--navy)' }}>{a.ministry_name}</h3>
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    padding: '2px 8px',
-                    borderRadius: 12,
-                    background: a.status === 'approved' ? '#dcfce7' : a.status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                    color: a.status === 'approved' ? '#15803d' : a.status === 'rejected' ? '#991b1b' : '#92400e'
-                  }}>
-                    {a.status}
-                  </span>
-                </div>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: 'pending', label: 'Pending', count: counts.pending },
+          { value: 'approved', label: 'Approved', count: counts.approved },
+          { value: 'rejected', label: 'Rejected', count: counts.rejected },
+          { value: 'all', label: 'All', count: apps.length },
+        ]}
+      />
 
-                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#1f2d25' }}>
-                  {a.member_name} ({a.member_id || 'LG-MEMBER'}) &bull; <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{a.email}</span>
+      <section className="p-panel">
+        {loading ? (
+          <Loading rows={4} />
+        ) : shown.length === 0 ? (
+          <Empty
+            icon={ClipboardList}
+            title={tab === 'pending' ? 'Nothing to review' : 'No applications here'}
+            desc={tab === 'pending' ? 'New applications will show up here.' : undefined}
+          />
+        ) : (
+          shown.map((a) => (
+            <div className="p-row p-row-wrap" key={a.id}>
+              <div className="p-row-main">
+                <div className="p-row-title">
+                  {a.member_name} <span className="p-muted" style={{ fontWeight: 400 }}>applied to</span> {a.ministry_name}
                 </div>
-
-                {a.message && (
-                  <div style={{
-                    marginTop: 8,
-                    fontSize: '0.88rem',
-                    background: 'rgba(0,0,0,0.02)',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    borderLeft: '2px solid var(--border)'
-                  }}>
-                    "{a.message}"
-                  </div>
-                )}
-
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 6 }}>
-                  Applied on {new Date(a.created_at).toLocaleDateString()}
+                <div className="p-row-sub">
+                  <span className="p-mono">{a.member_id || '—'}</span>
+                  {a.email ? ` · ${a.email}` : ''} · {fmtDate(a.created_at)}
                 </div>
+                {a.message && <p className="p-quote">{a.message}</p>}
               </div>
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="p-inline" style={{ flexWrap: 'wrap' }}>
+                <Badge tone={TONE[a.status]}>{a.status}</Badge>
                 {a.status !== 'approved' && (
                   <button
-                    onClick={() => handleUpdate(a.id, 'approved')}
-                    disabled={processingId === a.id}
-                    style={{
-                      background: '#16a34a',
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '8px 14px',
-                      fontSize: '0.85rem'
-                    }}
+                    type="button"
+                    className="p-btn p-btn-primary p-btn-sm"
+                    disabled={busyId === a.id}
+                    onClick={() => setStatus(a, 'approved')}
                   >
-                    <Check size={16} /> Approve
+                    Approve
                   </button>
                 )}
-
                 {a.status !== 'rejected' && (
                   <button
-                    onClick={() => handleUpdate(a.id, 'rejected')}
-                    disabled={processingId === a.id}
-                    style={{
-                      background: '#fff',
-                      color: '#b3261e',
-                      border: '1px solid #b3261e',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '8px 14px',
-                      fontSize: '0.85rem'
-                    }}
+                    type="button"
+                    className="p-btn p-btn-secondary p-btn-sm"
+                    disabled={busyId === a.id}
+                    onClick={() => setStatus(a, 'rejected')}
                   >
-                    <X size={16} /> Reject
+                    Reject
+                  </button>
+                )}
+                {a.status !== 'pending' && (
+                  <button
+                    type="button"
+                    className="p-btn p-btn-quiet p-btn-sm"
+                    disabled={busyId === a.id}
+                    onClick={() => setStatus(a, 'pending')}
+                  >
+                    Reset
                   </button>
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+          ))
+        )}
+      </section>
+    </>
   )
 }
