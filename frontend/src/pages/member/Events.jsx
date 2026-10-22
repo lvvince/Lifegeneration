@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, CheckCircle, Ticket } from 'lucide-react'
+import { FacebookIcon } from '../../components/Footer.jsx'
+import { shareEventOnFacebook } from '../../utils/share.js'
 
 export default function Events() {
   const [events, setEvents] = useState([])
@@ -147,7 +149,7 @@ export default function Events() {
                 </div>
               </div>
 
-              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {!user ? (
                   <Link to="/login" className="btn" style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
                     Sign In to RSVP
@@ -162,7 +164,9 @@ export default function Events() {
                         background: '#fff',
                         color: '#666',
                         border: '1px solid #ccc',
-                        padding: '8px 12px'
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        cursor: 'pointer'
                       }}
                     >
                       {processingId === e.id ? 'Cancelling...' : 'Cancel RSVP'}
@@ -187,6 +191,32 @@ export default function Events() {
                     {processingId === e.id ? 'Reserving...' : 'RSVP for Event'}
                   </button>
                 )}
+
+                {/* Facebook Share Button */}
+                <button
+                  type="button"
+                  onClick={() => shareEventOnFacebook(e.id, e.title)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(24, 119, 242, 0.08)',
+                    border: '1px solid rgba(24, 119, 242, 0.25)',
+                    color: '#1877F2',
+                    padding: '7px 12px',
+                    borderRadius: 8,
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#1877F2'; e.currentTarget.style.color = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(24, 119, 242, 0.08)'; e.currentTarget.style.color = '#1877F2' }}
+                >
+                  <FacebookIcon size={14} color="currentColor" /> Share on Facebook
+                </button>
               </div>
             </div>
           ))}

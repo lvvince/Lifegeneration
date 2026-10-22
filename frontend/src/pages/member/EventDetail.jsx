@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle } from 'lucide-react'
+import { FacebookIcon } from '../../components/Footer.jsx'
+import { shareEventOnFacebook } from '../../utils/share.js'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -134,34 +136,69 @@ export default function EventDetail() {
           {event.description}
         </div>
 
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-          {!user ? (
-            <Link to="/login" className="btn" style={{ padding: '10px 24px' }}>
-              Sign In to RSVP
-            </Link>
-          ) : event.user_rsvp === 'attending' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ color: '#1e7a46', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <CheckCircle size={20} /> You're registered for this event!
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          paddingTop: 20,
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12
+        }}>
+          <div>
+            {!user ? (
+              <Link to="/login" className="btn" style={{ padding: '10px 24px' }}>
+                Sign In to RSVP
+              </Link>
+            ) : event.user_rsvp === 'attending' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ color: '#1e7a46', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle size={20} /> You're registered for this event!
+                </div>
+                <button
+                  onClick={handleCancelRsvp}
+                  disabled={rsvpLoading}
+                  style={{ background: '#fff', color: '#666', border: '1px solid #ccc', padding: '6px 14px', borderRadius: 8, cursor: 'pointer' }}
+                >
+                  {rsvpLoading ? 'Updating...' : 'Cancel RSVP'}
+                </button>
               </div>
+            ) : (
               <button
-                onClick={handleCancelRsvp}
+                onClick={handleRsvp}
                 disabled={rsvpLoading}
-                style={{ background: '#fff', color: '#666', border: '1px solid #ccc', padding: '6px 14px' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px' }}
               >
-                {rsvpLoading ? 'Updating...' : 'Cancel RSVP'}
+                <Ticket size={18} />
+                {rsvpLoading ? 'Reserving...' : 'RSVP for Event'}
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleRsvp}
-              disabled={rsvpLoading}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px' }}
-            >
-              <Ticket size={18} />
-              {rsvpLoading ? 'Reserving...' : 'RSVP for Event'}
-            </button>
-          )}
+            )}
+          </div>
+
+          {/* Facebook Share Button */}
+          <button
+            type="button"
+            onClick={() => shareEventOnFacebook(event.id, event.title)}
+            style={{
+              background: '#1877F2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              padding: '10px 18px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 4px 14px rgba(24, 119, 242, 0.3)',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <FacebookIcon size={16} color="#fff" /> Share on Facebook
+          </button>
         </div>
       </div>
     </div>

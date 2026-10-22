@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiGet, getUser } from '../api.js'
 import GlassIcon from '../components/GlassIcon.jsx'
+import Footer, { FacebookIcon, InstagramIcon, TikTokIcon } from '../components/Footer.jsx'
+import { shareEventOnFacebook } from '../utils/share.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
 import {
   Users, Calendar, HeartHandshake, MessageSquare,
-  ArrowRight, Zap, Shield, ChevronRight, Flame
+  ArrowRight, Zap, Shield, ChevronRight, Flame, Globe, ExternalLink, Share2
 } from 'lucide-react'
 
 export default function Home() {
@@ -22,7 +24,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* ===== HERO ===== */}
       <section className="hero-section">
         <div className="hero-bg" />
@@ -95,7 +97,7 @@ export default function Home() {
       </section>
 
       {/* ===== CONTENT BELOW HERO ===== */}
-      <div className="home-content">
+      <div className="home-content" style={{ flex: 1 }}>
 
         {/* ===== OUR VISION ===== */}
         <div style={{
@@ -313,22 +315,390 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <Link to={`/events/${ev.id}`} style={{
-                    display: 'inline-flex',
+                  {/* Actions row: Details & Facebook Share */}
+                  <div style={{
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 4,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: 'var(--orange)',
-                    marginTop: 4
+                    justifyContent: 'space-between',
+                    marginTop: 8,
+                    paddingTop: 10,
+                    borderTop: '1px solid rgba(255,255,255,0.06)'
                   }}>
-                    Details & RSVP <ArrowRight size={13} />
-                  </Link>
+                    <Link to={`/events/${ev.id}`} style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: 'var(--orange)'
+                    }}>
+                      Details & RSVP <ArrowRight size={13} />
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        shareEventOnFacebook(ev.id, ev.title)
+                      }}
+                      title="Share event on Facebook"
+                      style={{
+                        background: 'rgba(24, 119, 242, 0.12)',
+                        border: '1px solid rgba(24, 119, 242, 0.3)',
+                        color: '#38bdf8',
+                        padding: '5px 11px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#1877F2'
+                        e.currentTarget.style.color = '#fff'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(24, 119, 242, 0.12)'
+                        e.currentTarget.style.color = '#38bdf8'
+                      }}
+                    >
+                      <FacebookIcon size={13} color="currentColor" /> Share
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {/* ===== SOCIAL FEEDS & FACEBOOK PAGE PLUGIN ===== */}
+        <div style={{ marginBottom: 54 }}>
+          <div style={{ marginBottom: 20 }}>
+            <div className="section-label">
+              <Globe size={14} /> Official Social Channels
+            </div>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: 6, marginBottom: 8 }}>
+              Stay Connected with the Community
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', maxWidth: 640 }}>
+              Follow our official feeds to catch live updates, youth encounters, stories, and inspiring messages from Life Generation Calapan.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 24,
+            alignItems: 'start'
+          }}>
+            {/* Left: Facebook Page Plugin */}
+            <div style={{
+              background: 'var(--card)',
+              border: '1px solid var(--card-border)',
+              borderRadius: 20,
+              padding: '22px',
+              boxShadow: 'var(--shadow)',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+                paddingBottom: 14,
+                borderBottom: '1px solid rgba(255,255,255,0.08)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: '#1877F2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff'
+                  }}>
+                    <FacebookIcon size={20} color="#fff" />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#fff' }}>
+                      Life Generation Calapan
+                    </h4>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Official Facebook Page</span>
+                  </div>
+                </div>
+
+                <a
+                  href="https://www.facebook.com/life.generation.calapan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    width: 'auto',
+                    margin: 0
+                  }}
+                >
+                  Follow Page <ExternalLink size={12} />
+                </a>
+              </div>
+
+              {/* Responsive Facebook Page Embed */}
+              <div style={{
+                width: '100%',
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: '#0d1117'
+              }}>
+                <iframe
+                  src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Flife.generation.calapan&tabs=timeline&width=500&height=400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
+                  width="100%"
+                  height="400"
+                  style={{ border: 'none', overflow: 'hidden', display: 'block' }}
+                  scrolling="no"
+                  frameBorder="0"
+                  allowFullScreen={true}
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                  title="Life Generation Calapan Facebook Page"
+                />
+              </div>
+            </div>
+
+            {/* Right: Social Media Spotlight Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Radical LED Calapan Card */}
+              <div style={{
+                background: 'var(--card)',
+                border: '1px solid var(--card-border)',
+                borderRadius: 18,
+                padding: '20px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 4,
+                  bottom: 0,
+                  background: 'linear-gradient(180deg, #00C6FF, #0072FF)'
+                }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: 'rgba(0,198,255,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <FacebookIcon size={19} color="#00C6FF" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
+                        Radical LED Calapan
+                      </h4>
+                      <span style={{ fontSize: '0.74rem', color: '#38bdf8' }}>Youth Leadership & Campus Movement</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    background: 'rgba(0,198,255,0.12)',
+                    color: '#00C6FF',
+                    padding: '3px 8px',
+                    borderRadius: 12
+                  }}>
+                    Movement
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
+                  Join the radical generation of student leaders, campus disciples, and empowered youth advancing God's kingdom across Calapan!
+                </p>
+
+                <a
+                  href="https://www.facebook.com/radicalledcalapan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: '#00C6FF',
+                    textDecoration: 'none'
+                  }}
+                >
+                  Visit Radical LED Facebook <ArrowRight size={13} />
+                </a>
+              </div>
+
+              {/* Instagram Card */}
+              <div style={{
+                background: 'var(--card)',
+                border: '1px solid var(--card-border)',
+                borderRadius: 18,
+                padding: '20px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 4,
+                  bottom: 0,
+                  background: 'linear-gradient(180deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)'
+                }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: 'rgba(228,64,95,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <InstagramIcon size={19} color="#E4405F" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
+                        @lifegencalapan
+                      </h4>
+                      <span style={{ fontSize: '0.74rem', color: '#f472b6' }}>Instagram Highlights</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    background: 'rgba(228,64,95,0.12)',
+                    color: '#E4405F',
+                    padding: '3px 8px',
+                    borderRadius: 12
+                  }}>
+                    Photos & Reels
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
+                  Behind-the-scenes moments, Sunday service highlights, youth camp recaps, and weekly photo drops.
+                </p>
+
+                <a
+                  href="https://www.instagram.com/lifegencalapan?psln=ZDNlZDc0MzIxNw=="
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: '#E4405F',
+                    textDecoration: 'none'
+                  }}
+                >
+                  Follow on Instagram <ArrowRight size={13} />
+                </a>
+              </div>
+
+              {/* TikTok Card */}
+              <div style={{
+                background: 'var(--card)',
+                border: '1px solid var(--card-border)',
+                borderRadius: 18,
+                padding: '20px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 4,
+                  bottom: 0,
+                  background: 'linear-gradient(180deg, #25F4EE, #FE2C55)'
+                }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: 'rgba(37,244,238,0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <TikTokIcon size={19} color="#25F4EE" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
+                        @life.generation7
+                      </h4>
+                      <span style={{ fontSize: '0.74rem', color: '#2dd4bf' }}>TikTok Community</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    background: 'rgba(37,244,238,0.12)',
+                    color: '#25F4EE',
+                    padding: '3px 8px',
+                    borderRadius: 12
+                  }}>
+                    Shorts & Clips
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
+                  Short inspiring sermon clips, funny youth group moments, and worship snippets on TikTok!
+                </p>
+
+                <a
+                  href="https://www.tiktok.com/@life.generation7?is_from_webapp=1&sender_device=pc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: '#2dd4bf',
+                    textDecoration: 'none'
+                  }}
+                >
+                  Watch on TikTok <ArrowRight size={13} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* ===== CTA BANNER ===== */}
         {!user && (
@@ -379,6 +749,9 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* ===== GLOBAL FOOTER ===== */}
+      <Footer />
     </div>
   )
 }
