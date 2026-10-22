@@ -89,7 +89,7 @@ export default function App() {
   return (
     <>
       <Navbar />
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px 60px' }}>
+      <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 60px' }}>
         <PageRoutes />
       </main>
     </>

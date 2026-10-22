@@ -270,28 +270,42 @@ export default function Home() {
               </Link>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
               {events.map((ev, i) => (
                 <div key={ev.id} style={{
                   background: 'var(--card)',
                   border: '1px solid var(--card-border)',
-                  borderRadius: 16,
-                  padding: '22px 24px',
+                  borderRadius: 18,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 10,
-                  transition: 'border-color 0.2s, transform 0.2s',
+                  transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow)'
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.35)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.4)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
-                  {/* Event Photo Banner */}
-                  {ev.banner_image && (
-                    <div style={{ margin: '-22px -24px 10px -24px', height: 140, overflow: 'hidden', position: 'relative' }}>
-                      <img src={resolveImageUrl(ev.banner_image)} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(10,10,15,0.7) 100%)' }} />
+                  {/* Event Photo Banner / Pubmat */}
+                  {ev.banner_image ? (
+                    <div style={{ width: '100%', height: 210, overflow: 'hidden', position: 'relative', background: '#090d16' }}>
+                      <img
+                        src={resolveImageUrl(ev.banner_image)}
+                        alt={ev.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.5) 100%)' }} />
+                    </div>
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: 120,
+                      background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(59,130,246,0.15))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Calendar size={32} color="var(--orange)" style={{ opacity: 0.6 }} />
                     </div>
                   )}
 
@@ -309,9 +323,10 @@ export default function Home() {
                       : 'linear-gradient(90deg, #a855f7, #7c3aed)'
                   }} />
 
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginTop: 6 }}>
-                    {ev.title}
-                  </h4>
+                  <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1, gap: 12 }}>
+                    <h4 style={{ fontSize: '1.12rem', fontWeight: 700, color: 'var(--text)', margin: 0, lineHeight: 1.35 }}>
+                      {ev.title}
+                    </h4>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
@@ -329,9 +344,9 @@ export default function Home() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    marginTop: 8,
-                    paddingTop: 10,
-                    borderTop: '1px solid rgba(255,255,255,0.06)'
+                    marginTop: 'auto',
+                    paddingTop: 14,
+                    borderTop: '1px solid var(--border)'
                   }}>
                     <Link to={`/events/${ev.id}`} style={{
                       display: 'inline-flex',
@@ -376,6 +391,7 @@ export default function Home() {
                     >
                       <FacebookIcon size={13} color="currentColor" /> Share
                     </button>
+                  </div>
                   </div>
                 </div>
               ))}

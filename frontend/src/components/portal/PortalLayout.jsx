@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { getUser, logout } from '../../api.js'
 import { useTheme } from '../../useTheme.js'
-import { initials } from '../../lib/format.js'
+import { initials, resolveImageUrl } from '../../lib/format.js'
 import { ToastProvider, ConfirmDialog } from './ui.jsx'
 import '../../styles/portal.css'
 
@@ -140,8 +140,16 @@ export default function PortalLayout({ children }) {
 
           <div className="p-side-foot">
             <div className="p-user">
-              <div className="p-avatar" aria-hidden="true">
-                {initials(displayName)}
+              <div className="p-avatar" aria-hidden="true" style={{ overflow: 'hidden' }}>
+                {user?.avatar || user?.member?.avatar ? (
+                  <img
+                    src={resolveImageUrl(user.avatar || user.member.avatar)}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  initials(displayName)
+                )}
               </div>
               <div>
                 <b>{displayName}</b>
