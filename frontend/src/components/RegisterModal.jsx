@@ -63,6 +63,7 @@ export default function RegisterModal({ onClose }) {
             size: "large",
             shape: "pill",
             text: "signup_with",
+            locale: "en",
             width: 280,
           })
         } catch (e) {
