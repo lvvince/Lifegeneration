@@ -123,6 +123,21 @@ function get_auth_user() {
     }
     
     $lava = lava_instance();
+    
+    if (!empty($payload['role']) && $payload['role'] === 'admin') {
+        $aStmt = $lava->db->raw(
+            "SELECT id, 'LG-ADMIN' AS member_id, username, full_name, email, role, is_active,
+                    NULL AS member_record_id, NULL AS dgroup_id, NULL AS ministry_id, NULL AS age, NULL AS address, avatar
+             FROM admins
+             WHERE id = ? AND is_active = 1
+             LIMIT 1",
+            [$payload['sub']]
+        );
+        $admin = $aStmt->fetch(PDO::FETCH_ASSOC);
+        if ($admin) {
+            return $admin;
+        }
+    }
     $stmt = $lava->db->raw(
         "SELECT u.id, u.member_id, u.username, u.full_name, u.email, u.role, u.is_active, u.membership_tier,
                 m.id AS member_record_id, m.dgroup_id, m.ministry_id, m.age, m.address, m.avatar

@@ -343,3 +343,38 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-card, .auth-overlay, .auth-modal { animation: none; }
 }
+
+/* Google Auth Divider & Button Box */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0 16px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--input-border, rgba(255, 255, 255, 0.15));
+}
+.auth-divider span {
+  padding: 0 14px;
+}
+.auth-google-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  min-height: 46px;
+  border-radius: 999px;
+  overflow: hidden;
+  transition: transform 0.15s ease;
+}
+.auth-google-wrapper:hover {
+  transform: translateY(-1px);
+}

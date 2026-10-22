@@ -11,6 +11,8 @@ $router->post('/api/auth/login',    'Auth::login');
 $router->post('/api/login',         'Auth::login');
 $router->post('/api/auth/register', 'Auth::register');
 $router->post('/api/register',      'Auth::register');
+$router->post('/api/auth/google',   'Auth::google');
+$router->post('/api/google',        'Auth::google');
 $router->get('/api/auth/me',        'Auth::me');
 $router->get('/api/me',             'Auth::me');
 $router->post('/api/auth/refresh',  'Auth::refresh');

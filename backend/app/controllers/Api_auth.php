@@ -316,7 +316,39 @@ class Api_auth extends Controller {
         $name    = trim($payload["name"] ?? ($payload["given_name"] ?? explode("@", $email)[0]));
         $picture = $payload["picture"] ?? null;
 
-        // Check if user exists in database by email
+        // 1. Check if email belongs to an Admin (dedicated admins table)
+        $admin = $this->Admin_model->find_by_identifier($email);
+        if ($admin) {
+            if (isset($admin["is_active"]) && (int)$admin["is_active"] === 0) {
+                $this->api->respond_error("Your administrator account is inactive. Contact support.", 403);
+            }
+            if (!empty($picture) && empty($admin["avatar"])) {
+                $this->Admin_model->update_admin($admin["id"], ["avatar" => $picture]);
+                $admin["avatar"] = $picture;
+            }
+            $tokens = $this->api->issue_tokens([
+                "id"       => $admin["id"],
+                "role"     => "admin",
+                "is_admin" => true,
+            ]);
+            return $this->api->respond([
+                "message" => "Admin Google login successful.",
+                "user"    => [
+                    "id"          => $admin["id"],
+                    "username"    => $admin["username"],
+                    "email"       => $admin["email"],
+                    "role"        => "admin",
+                    "member_id"   => "LG-ADMIN",
+                    "full_name"   => $admin["full_name"],
+                    "avatar"      => $admin["avatar"] ?? $picture,
+                    "dgroup_id"   => null,
+                    "ministry_id" => null,
+                ],
+                "tokens"  => $tokens,
+            ]);
+        }
+
+        // 2. Check regular users table
         $user = $this->User_model->find_by_identifier($email);
 
         if (!$user) {

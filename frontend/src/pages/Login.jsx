@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { apiPost, setUser, saveTokens } from "../api.js"
 import { User, Lock, LogIn, AlertCircle } from "lucide-react"
@@ -12,11 +12,68 @@ export default function Login() {
   const [form, setForm] = useState({ identity: "", password: "" })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const googleBtnRef = useRef(null)
 
   const handleChange = (e) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
     setError("")
   }
+
+  const handleGoogleSuccess = async (response) => {
+    if (!response.credential) {
+      setError("No Google credential received.")
+      return
+    }
+    setLoading(true)
+    setError("")
+    try {
+      const data = await apiPost("/api/auth/google", { credential: response.credential })
+      const user = data.user || data.data || data
+      setUser(user)
+      if (data.tokens) saveTokens(data.tokens)
+      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true })
+    } catch (err) {
+      setError(err.message || "Google sign-in failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "464887399568-1fpv2kl0l9r37gb5mtpg2553k8dg0j9j.apps.googleusercontent.com"
+
+    const renderGoogle = () => {
+      if (window.google?.accounts?.id && googleBtnRef.current) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleSuccess,
+          })
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: "filled_blue",
+            size: "large",
+            shape: "pill",
+            text: "continue_with",
+            width: 280,
+          })
+        } catch (e) {
+          console.error("Google init error:", e)
+        }
+      }
+    }
+
+    if (window.google?.accounts?.id) {
+      renderGoogle()
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval)
+          renderGoogle()
+        }
+      }, 250)
+      return () => clearInterval(interval)
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -79,12 +136,22 @@ export default function Login() {
               value={form.password} onChange={handleChange} autoComplete="current-password" />
 
             <button type="submit" className="auth-submit" disabled={loading}>
-              {loading ? <><span className="auth-spin" /> Logging in…</> : <><LogIn size={17} /> Log in</>}
+              {loading ? <><span className="auth-spin" /> Logging in...</> : <><LogIn size={17} /> Log in</>}
             </button>
           </form>
 
+          {/* Google Sign-in Divider */}
+          <div className="auth-divider">
+            <span>or continue with</span>
+          </div>
+
+          {/* Google Sign-in Official Button */}
+          <div className="auth-google-wrapper">
+            <div ref={googleBtnRef} id="googleBtnContainer" />
+          </div>
+
           <p className="auth-switch">
-            Don’t have an account?{" "}
+            Don't have an account?{" "}
             <button type="button" className="auth-link" onClick={openRegister}>Sign up!</button>
           </p>
         </div>

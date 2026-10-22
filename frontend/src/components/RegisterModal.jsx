@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useNavigate } from "react-router-dom"
 import { apiPost, setUser, saveTokens } from "../api.js"
@@ -16,6 +16,7 @@ export default function RegisterModal({ onClose }) {
   const [serverError, setServerError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(null)
+  const googleBtnRef = useRef(null)
 
   // Esc to close + lock page scroll while open
   useEffect(() => {
@@ -28,6 +29,60 @@ export default function RegisterModal({ onClose }) {
       document.body.style.overflow = prev
     }
   }, [onClose])
+
+  const handleGoogleSuccess = async (response) => {
+    if (!response.credential) return
+    setLoading(true)
+    setServerError("")
+    try {
+      const data = await apiPost("/api/auth/google", { credential: response.credential })
+      const user = data.user || data.data || data
+      setUser(user)
+      if (data.tokens) saveTokens(data.tokens)
+      onClose()
+      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true })
+    } catch (err) {
+      setServerError(err.message || "Google sign-up failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "464887399568-1fpv2kl0l9r37gb5mtpg2553k8dg0j9j.apps.googleusercontent.com"
+
+    const renderGoogle = () => {
+      if (window.google?.accounts?.id && googleBtnRef.current) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleSuccess,
+          })
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: "filled_blue",
+            size: "large",
+            shape: "pill",
+            text: "signup_with",
+            width: 280,
+          })
+        } catch (e) {
+          console.error("Google init error:", e)
+        }
+      }
+    }
+
+    if (window.google?.accounts?.id) {
+      renderGoogle()
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval)
+          renderGoogle()
+        }
+      }, 250)
+      return () => clearInterval(interval)
+    }
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -76,7 +131,7 @@ export default function RegisterModal({ onClose }) {
         {success ? (
           <div className="auth-success">
             <GlassIcon icon={CheckCircle} tint="#22c55e" size={64} />
-            <h2>You’re in!</h2>
+            <h2>You're in!</h2>
             <p>Your account has been created.</p>
             {memberId && (
               <div className="auth-memberid">
@@ -127,9 +182,19 @@ export default function RegisterModal({ onClose }) {
                 value={form.confirm} onChange={handleChange} error={errors.confirm} autoComplete="new-password" />
 
               <button type="submit" className="auth-submit block" disabled={loading}>
-                {loading ? <><span className="auth-spin" /> Creating…</> : <><UserPlus size={17} /> Create account</>}
+                {loading ? <><span className="auth-spin" /> Creating...</> : <><UserPlus size={17} /> Create account</>}
               </button>
             </form>
+
+            {/* Google Sign-in Divider */}
+            <div className="auth-divider">
+              <span>or sign up with</span>
+            </div>
+
+            {/* Google Sign-in Button */}
+            <div className="auth-google-wrapper">
+              <div ref={googleBtnRef} id="googleRegisterBtnContainer" />
+            </div>
 
             <p className="auth-switch">
               Already have an account?{" "}
