@@ -1,782 +1,385 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiGet, getUser } from '../api.js'
-import GlassIcon from '../components/GlassIcon.jsx'
-import Footer, { FacebookIcon, InstagramIcon, TikTokIcon } from '../components/Footer.jsx'
-import { shareEventOnFacebook } from '../utils/share.js'
-import { resolveImageUrl } from '../lib/format.js'
-import { useAuthModal } from '../context/AuthModal.jsx'
 import {
-  Users, Calendar, HeartHandshake, MessageSquare,
-  ArrowRight, Zap, Shield, ChevronRight, Flame, Globe, ExternalLink, Share2
+  ArrowRight, Clock, MapPin, Share2, Users, HeartHandshake, MessageSquare,
+  BookOpen, Music, Flame,
 } from 'lucide-react'
+import { apiGet, getUser } from '../api.js'
+import { useAuthModal } from '../context/AuthModal.jsx'
+import { shareEventOnFacebook } from '../utils/share.js'
+import { resolveImageUrl } from '../lib/media.js'
+import { useHomeMotion } from '../components/home/motion.js'
+import HomeFooter from '../components/home/HomeFooter.jsx'
+import { FacebookIcon, InstagramIcon, TikTokIcon, SOCIALS } from '../components/home/SocialIcons.jsx'
+import '../styles/home.css'
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+
+function parseDate(d) {
+  const [y, m, day] = String(d || '').slice(0, 10).split('-').map(Number)
+  return y ? new Date(y, m - 1, day) : null
+}
+
+function dateParts(d) {
+  const x = parseDate(d)
+  return x ? { day: x.getDate(), mon: MONTHS[x.getMonth()], dow: DAYS[x.getDay()] } : null
+}
+
+const VISION = 'An empowered generation that is able to inspire the community through their kindled passion in Christ.'
+// Palitan ang caption dito kung gusto mo
+const GALLERY = [
+  { img: 'gallery-1', w: 1000, h: 702, cap: 'Life Generation Fellowship' },
+  { img: 'gallery-2', w: 1000, h: 750, cap: 'Growing in faith, living in fellowship.' },
+  { img: 'gallery-3', w: 760, h: 937, cap: 'United in His calling.' },
+  { img: 'gallery-4', w: 1000, h: 750, cap: 'Group photo' },
+  { img: 'gallery-5', w: 1000, h: 750, cap: 'United by purpose.' },
+]
+
+const KEY_FROM = 'kindled'
+
+const STRIP = [
+  { icon: Music, label: 'Worship' },
+  { icon: BookOpen, label: 'Discipleship' },
+  { icon: MessageSquare, label: 'Prayer' },
+  { icon: HeartHandshake, label: 'Service' },
+  { icon: Users, label: 'Community' },
+]
+
+function Tile({ tile }) {
+  const Icon = tile.icon
+  const inner = (
+    <>
+      <span className="lg-tile-img" data-parallax="0.07" aria-hidden="true">
+        <img src={`/images/${tile.img}.webp`} alt="" width="640" height="800" loading="lazy" decoding="async" />
+      </span>
+      <span className="lg-tile-go" aria-hidden="true">
+        <ArrowRight size={18} />
+      </span>
+      <span className="lg-tile-body">
+        <span className="lg-tile-chip" aria-hidden="true">
+          <Icon size={20} strokeWidth={1.8} />
+        </span>
+        <span className="lg-tile-title">{tile.title}</span>
+        <span className="lg-tile-sub">{tile.sub}</span>
+      </span>
+    </>
+  )
+  return tile.action ? (
+    <button type="button" className="lg-tile" onClick={tile.action}>
+      {inner}
+    </button>
+  ) : (
+    <Link to={tile.to} className="lg-tile">
+      {inner}
+    </Link>
+  )
+}
 
 export default function Home() {
-  const [events, setEvents] = useState([])
-  const [dgroups, setDgroups] = useState([])
-  const [ministries, setMinistries] = useState([])
   const user = getUser()
   const { openRegister } = useAuthModal()
+  const rootRef = useRef(null)
+  const [events, setEvents] = useState([])
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    apiGet('/api/events').then(data => Array.isArray(data) && setEvents(data.slice(0, 3))).catch(() => {})
-    apiGet('/api/dgroups').then(data => Array.isArray(data) && setDgroups(data.slice(0, 3))).catch(() => {})
-    apiGet('/api/ministries').then(data => Array.isArray(data) && setMinistries(data.slice(0, 3))).catch(() => {})
+    apiGet('/api/events')
+      .then((d) => Array.isArray(d) && setEvents(d))
+      .catch(() => {})
+      .finally(() => setLoaded(true))
   }, [])
 
+  const upcoming = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return events
+      .filter((e) => {
+        const d = parseDate(e.event_date)
+        return d && d >= today
+      })
+      .sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)))
+      .slice(0, 4)
+  }, [events])
+
+  const next = upcoming[0]
+  const nextParts = next && dateParts(next.event_date)
+
+  useHomeMotion(rootRef, `${loaded}-${upcoming.length}`)
+
+  const tiles = [
+    user
+      ? { title: 'Join an event', sub: 'See what is coming up and sign up.', icon: Flame, to: '/events', img: 'tile-new' }
+      : { title: "I'm new", sub: 'Make your free member account in a minute.', icon: Flame, action: openRegister, img: 'tile-new' },
+    { title: 'Find a D-Group', sub: 'Small groups where you grow with friends.', icon: Users, to: '/dgroups', img: 'tile-dgroup' },
+    { title: 'I need prayer', sub: 'Share a request on the prayer wall.', icon: MessageSquare, to: '/prayer', img: 'tile-prayer' },
+    { title: 'I want to serve', sub: 'Join a ministry team that fits you.', icon: HeartHandshake, to: '/ministries', img: 'tile-serve' },
+  ]
+
+  const words = VISION.split(' ')
+  const keyIndex = words.findIndex((w) => w.startsWith(KEY_FROM))
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <>
+    <main className="lg-home" ref={rootRef}>
       {/* ===== HERO ===== */}
-      <section className="hero-section">
-        <div className="hero-bg" />
+      <section className="lg-hero" data-hero aria-label="Welcome">
+        <div className="lg-hero-media" data-parallax="0.28" aria-hidden="true">
+          <img src="/hero-bg.jpg" alt="" width="1376" height="768" fetchPriority="high" decoding="async" />
+        </div>
 
-        <div className="hero-content">
-          <div className="hero-badge">
-            <Zap size={14} />
-            Life Generation Community
-          </div>
+        <div className="lg-wrap">
+          <div className="lg-hero-inner" data-hero-fade>
+            <div className="lg-hero-text">
+              <span className="lg-eyebrow" data-reveal>Youth organization · Calapan</span>
+              <h1 className="lg-title">
+                <span className="lg-line"><span style={{ '--d': '0.1s' }}>A place for</span></span>
+                <span className="lg-line"><span className="lg-accent" style={{ '--d': '0.25s' }}>Imperfect people</span></span>
+              </h1>
+              <p className="lg-hero-sub" data-reveal style={{ '--d': '0.45s' }}>
+                {VISION}
+              </p>
+              <div className="lg-cta" data-reveal style={{ '--d': '0.6s' }}>
+                {user ? (
+                  <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="lg-btn lg-btn-primary">
+                    {user.role === 'admin' ? 'Open admin' : 'My profile'} <ArrowRight size={18} />
+                  </Link>
+                ) : (
+                  <>
+                    <button type="button" className="lg-btn lg-btn-primary" onClick={openRegister}>
+                      Join the movement <ArrowRight size={18} />
+                    </button>
+                    <Link to="/login" className="lg-btn lg-btn-line">
+                      Sign in
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
 
-          <h1 className="hero-title">
-            A Place Where<br />
-            <span style={{
-              background: 'linear-gradient(135deg, #f97316, #3b82f6)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              Youth Belong.
-            </span>
-          </h1>
-
-          <p className="hero-sub">
-            An empowered generation that is able to inspire the community through their kindled passion in Christ.
-          </p>
-
-          <div className="hero-cta">
-            {user ? (
-              <Link to="/dashboard" className="btn">
-                My Dashboard <ArrowRight size={16} />
+            {next && nextParts && (
+              <Link to={`/events/${next.id}`} className="lg-next" data-reveal style={{ '--d': '0.75s' }}>
+                <span className="lg-next-date">
+                  <span>
+                    <b>{nextParts.day}</b>
+                    <small>{nextParts.mon}</small>
+                  </span>
+                </span>
+                <span className="lg-next-body">
+                  <em>Next gathering</em>
+                  <strong>{next.title}</strong>
+                  <span>
+                    {[nextParts.dow, next.event_time, next.location].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+                <ArrowRight size={18} />
               </Link>
-            ) : (
-              <>
-                <button type="button" className="btn" onClick={openRegister} style={{ width: 'auto', margin: 0 }}>
-                  Join the Movement <ArrowRight size={16} />
-                </button>
-                <Link to="/login" className="btn-ghost">
-                  Sign In
-                </Link>
-              </>
             )}
           </div>
         </div>
+      </section>
 
-        {/* Scroll indicator */}
-        <div style={{
-          position: 'absolute',
-          bottom: 32,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
-          color: 'rgba(255,255,255,0.45)',
-          fontSize: '0.72rem',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          animation: 'bounce 2s infinite'
-        }}>
-          <style>{`
-            @keyframes bounce {
-              0%,100%{transform:translateX(-50%) translateY(0)}
-              50%{transform:translateX(-50%) translateY(6px)}
-            }
-          `}</style>
-          <ChevronRight style={{ transform: 'rotate(90deg)' }} size={18} />
+      {/* ===== STRIP (hindi gumagalaw) ===== */}
+      <ul className="lg-strip">
+        {STRIP.map(({ icon: Icon, label }) => (
+          <li key={label}>
+            <Icon size={22} strokeWidth={1.8} /> {label}
+          </li>
+        ))}
+      </ul>
+
+      {/* ===== GATHERINGS ===== */}
+      <section className="lg-section" id="gatherings">
+        <div className="lg-wrap lg-split">
+          <div className="lg-split-aside" data-reveal>
+            <span className="lg-eyebrow">Gatherings</span>
+            <h2 className="lg-h2">Come as you are</h2>
+            <p className="lg-lead">Meetings, youth nights and special events. Sign up so we can save you a spot.</p>
+          </div>
+
+          <div>
+            <div className="lg-events">
+              {upcoming.length === 0 ? (
+                <p className="lg-empty" data-reveal>
+                  {loaded
+                    ? 'No gatherings are posted right now. Follow our Facebook page to hear about the next one.'
+                    : 'Loading gatherings…'}
+                  {loaded && (
+                    <>
+                      {' '}
+                      <a href={SOCIALS.facebook} target="_blank" rel="noopener noreferrer">Open Facebook</a>
+                    </>
+                  )}
+                </p>
+              ) : (
+                upcoming.map((ev, i) => {
+                  const p = dateParts(ev.event_date)
+                  return (
+                    <div className="lg-event" key={ev.id} data-reveal style={{ '--d': `${i * 0.08}s` }}>
+                      <Link to={`/events/${ev.id}`} className="lg-event-main">
+                        <span className="lg-event-date">
+                          <b>{p?.day}</b>
+                          <small>{p ? `${p.mon} · ${p.dow}` : ''}</small>
+                        </span>
+                        <span>
+                          <span className="lg-event-title">{ev.title}</span>
+                          <span className="lg-event-meta">
+                            {ev.event_time && (
+                              <span><Clock size={15} /> {ev.event_time}</span>
+                            )}
+                            {ev.location && (
+                              <span><MapPin size={15} /> {ev.location}</span>
+                            )}
+                          </span>
+                        </span>
+                        <span className="lg-event-end" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          {ev.banner_image && (
+                            <img
+                              className="lg-event-thumb"
+                              src={resolveImageUrl(ev.banner_image)}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          )}
+                          <span className="lg-event-go" aria-hidden="true">
+                            <ArrowRight size={20} />
+                          </span>
+                        </span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="lg-share"
+                        onClick={() => shareEventOnFacebook(ev.id, ev.title)}
+                        aria-label={`Share ${ev.title} on Facebook`}
+                        title="Share on Facebook"
+                      >
+                        <Share2 size={18} />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            <div className="lg-more" data-reveal>
+              <Link to="/events" className="lg-btn lg-btn-outline">
+                See all events <ArrowRight size={18} />
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ===== CONTENT BELOW HERO ===== */}
-      <div className="home-content" style={{ flex: 1 }}>
-
-        {/* ===== OUR VISION ===== */}
-        <div style={{
-          textAlign: 'center',
-          maxWidth: 820,
-          margin: '0 auto 48px',
-          padding: '36px 32px',
-          background: 'var(--card)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 20,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow)'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: '20%',
-            right: '20%',
-            height: 3,
-            background: 'linear-gradient(90deg, transparent, var(--orange), var(--blue), transparent)'
-          }} />
-
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: '0.78rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.14em',
-            color: 'var(--orange)',
-            marginBottom: 14
-          }}>
-            <Flame size={15} /> Our Vision
-          </div>
-
-          <blockquote style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 'clamp(1.1rem, 2.5vw, 1.35rem)',
-            fontWeight: 600,
-            lineHeight: 1.6,
-            color: 'var(--text)',
-            fontStyle: 'italic',
-            margin: 0
-          }}>
-            &ldquo;An empowered generation that is able to inspire the community through their kindled passion in Christ.&rdquo;
-          </blockquote>
-        </div>
-
-        {/* ===== FEATURE CARDS ===== */}
-        <div className="section-label">
-          <Zap size={14} /> What We Offer
-        </div>
-
-        <div className="feature-grid" style={{ marginTop: 20 }}>
-          {/* D-Groups */}
-          <div className="feature-card">
-            <GlassIcon icon={Users} tint="#f97316" size={52} />
+      {/* ===== START HERE (tiles) ===== */}
+      <section className="lg-section" id="start" style={{ paddingTop: 0 }}>
+        <div className="lg-wrap">
+          <div className="lg-tiles-head" data-reveal>
             <div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Discipleship Groups</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                Walk hand-in-hand with mentors and peers. Build lifelong bonds through weekly Bible study and prayer.
-              </p>
+              <span className="lg-eyebrow">Find your place</span>
+              <h2 className="lg-h2">Where do you<br />want to start?</h2>
             </div>
-            <Link to="/dgroups" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              color: 'var(--orange)',
-              marginTop: 4
-            }}>
-              Explore D-Groups <ArrowRight size={14} />
-            </Link>
+            <p className="lg-lead" style={{ margin: 0 }}>Four easy ways in. Pick the one that fits you today.</p>
           </div>
-
-          {/* Ministries */}
-          <div className="feature-card">
-            <GlassIcon icon={HeartHandshake} tint="#3b82f6" size={52} />
-            <div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Ministry Teams</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                Serve in worship, audio/visual, ushers, hospitality, creative outreach, or intercession teams.
-              </p>
-            </div>
-            <Link to="/ministries" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              color: '#3b82f6',
-              marginTop: 4
-            }}>
-              Find Your Ministry <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {/* Prayer Wall */}
-          <div className="feature-card">
-            <GlassIcon icon={MessageSquare} tint="#a855f7" size={52} />
-            <div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Prayer Wall</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                Post petitions for healing, direction, and breakthrough. Share testimonies when God moves.
-              </p>
-            </div>
-            <Link to="/prayer" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              color: '#a855f7',
-              marginTop: 4
-            }}>
-              Visit Prayer Wall <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {/* Events */}
-          <div className="feature-card">
-            <GlassIcon icon={Calendar} tint="#22c55e" size={52} />
-            <div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>Gatherings & Events</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                Join life-changing services, youth nights, camps, and special encounters throughout the year.
-              </p>
-            </div>
-            <Link to="/events" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              color: '#22c55e',
-              marginTop: 4
-            }}>
-              See Events <ArrowRight size={14} />
-            </Link>
+          <div className="lg-tiles" data-reveal style={{ '--d': '0.1s' }}>
+            {tiles.map((t) => (
+              <Tile tile={t} key={t.title} />
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* ===== UPCOMING EVENTS ===== */}
-        {events.length > 0 && (
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <div className="section-label">
-                  <Calendar size={14} /> Upcoming Gatherings
+      {/* ===== GALLERY ===== */}
+      <section className="lg-section lg-wall" id="moments">
+        <div className="lg-wrap">
+          <div className="lg-tiles-head" data-reveal>
+            <div>
+              <span className="lg-eyebrow">Our people</span>
+              <h2 className="lg-h2">Moments together</h2>
+            </div>
+            <p className="lg-lead" style={{ margin: 0 }}>A few snapshots from our gatherings.</p>
+          </div>
+          <div className="lg-gallery">
+            {GALLERY.map((g, i) => (
+              <figure className={`lg-pic lg-pic-${i + 1}`} key={g.img} data-reveal style={{ '--d': `${i * 0.08}s` }}>
+                <div className="lg-pic-in" data-parallax={i % 2 ? '-0.03' : '0.04'}>
+                  <div className="lg-pic-frame">
+                    <span className="lg-pic-photo">
+                      <img src={`/images/${g.img}.webp`} alt={g.cap} width={g.w} height={g.h} loading="lazy" decoding="async" />
+                    </span>
+                  </div>
+                  <figcaption>{g.cap}</figcaption>
                 </div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: 6 }}>
-                  Don't Miss What's Next
-                </h2>
-              </div>
-              <Link to="/events" className="btn-ghost" style={{
-                padding: '8px 18px',
-                fontSize: '0.85rem',
-                borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'var(--text-muted)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6
-              }}>
-                View All <ArrowRight size={14} />
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== STATEMENT ===== */}
+      <section className="lg-section lg-statement-sec">
+        <div className="lg-wrap">
+          <span className="lg-eyebrow" data-reveal>Our vision</span>
+          <p className="lg-statement" data-statement aria-label={VISION}>
+            {words.map((w, i) => (
+              <span key={i} aria-hidden="true">
+                <span className={`lg-w${keyIndex >= 0 && i >= keyIndex ? ' is-key' : ''}`}>{w}</span>{' '}
+              </span>
+            ))}
+          </p>
+          <span className="lg-note" data-reveal>young, rooted, and sent out.</span>
+        </div>
+      </section>
+
+      {/* ===== FOLLOW ALONG ===== */}
+      <section className="lg-section" id="updates">
+        <div className="lg-wrap">
+          <div className="lg-tiles-head" data-reveal>
+            <div>
+              <span className="lg-eyebrow">What is happening</span>
+              <h2 className="lg-h2">Follow along</h2>
+            </div>
+            <p className="lg-lead" style={{ margin: 0 }}>Photos, recaps and announcements from Life Generation.</p>
+          </div>
+          <div className="lg-channels" data-reveal style={{ '--d': '0.1s' }}>
+            {[
+              { icon: FacebookIcon, name: 'Facebook', sub: 'Our official page', cta: 'Follow us', href: SOCIALS.facebook },
+              { icon: FacebookIcon, name: 'Radical LED Calapan', sub: 'Youth leadership and campus movement', cta: 'Visit page', href: SOCIALS.radical },
+              { icon: InstagramIcon, name: 'Instagram', sub: '@lifegencalapan', cta: 'Follow us', href: SOCIALS.instagram },
+              { icon: TikTokIcon, name: 'TikTok', sub: '@life.generation7', cta: 'Watch', href: SOCIALS.tiktok },
+            ].map(({ icon: Icon, name, sub, cta, href }) => (
+              <a className="lg-channel" key={name} href={href} target="_blank" rel="noopener noreferrer">
+                <span className="lg-channel-ico"><Icon size={26} /></span>
+                <strong>{name}</strong>
+                <span className="lg-channel-sub">{sub}</span>
+                <span className="lg-channel-cta">{cta} <ArrowRight size={16} /></span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CTA (guests lang) ===== */}
+      {!user && (
+        <section className="lg-section lg-cta-band">
+          <div className="lg-wrap">
+            <h2 className="lg-h2" data-reveal>Ready for your next step?</h2>
+            <p data-reveal style={{ '--d': '0.1s' }}>
+              Become a member of Life Generation. It is free, and you can sign up in a minute.
+            </p>
+            <div className="lg-cta" data-reveal style={{ '--d': '0.2s' }}>
+              <button type="button" className="lg-btn lg-btn-dark" onClick={openRegister}>
+                Join Life Generation <ArrowRight size={18} />
+              </button>
+              <Link to="/login" className="lg-btn lg-btn-outline">
+                I already have an account
               </Link>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
-              {events.map((ev, i) => (
-                <div key={ev.id} style={{
-                  background: 'var(--card)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: 18,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  boxShadow: 'var(--shadow)'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.4)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                  {/* Event Photo Banner / Pubmat */}
-                  {ev.banner_image ? (
-                    <div style={{ width: '100%', height: 210, overflow: 'hidden', position: 'relative', background: '#090d16' }}>
-                      <img
-                        src={resolveImageUrl(ev.banner_image)}
-                        alt={ev.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.5) 100%)' }} />
-                    </div>
-                  ) : (
-                    <div style={{
-                      width: '100%',
-                      height: 120,
-                      background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(59,130,246,0.15))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <Calendar size={32} color="var(--orange)" style={{ opacity: 0.6 }} />
-                    </div>
-                  )}
-
-                  {/* Color stripe */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 3,
-                    background: i === 0
-                      ? 'linear-gradient(90deg, #f97316, #ea6000)'
-                      : i === 1
-                      ? 'linear-gradient(90deg, #3b82f6, #1d4ed8)'
-                      : 'linear-gradient(90deg, #a855f7, #7c3aed)'
-                  }} />
-
-                  <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1, gap: 12 }}>
-                    <h4 style={{ fontSize: '1.12rem', fontWeight: 700, color: 'var(--text)', margin: 0, lineHeight: 1.35 }}>
-                      {ev.title}
-                    </h4>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                      <Calendar size={13} color="var(--orange)" />
-                      {ev.event_date} &bull; {ev.event_time}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                      <Shield size={13} color="var(--orange)" />
-                      {ev.location}
-                    </div>
-                  </div>
-
-                  {/* Actions row: Details & Facebook Share */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginTop: 'auto',
-                    paddingTop: 14,
-                    borderTop: '1px solid var(--border)'
-                  }}>
-                    <Link to={`/events/${ev.id}`} style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      color: 'var(--orange)'
-                    }}>
-                      Details & RSVP <ArrowRight size={13} />
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        shareEventOnFacebook(ev.id, ev.title)
-                      }}
-                      title="Share event on Facebook"
-                      style={{
-                        background: 'rgba(24, 119, 242, 0.12)',
-                        border: '1px solid rgba(24, 119, 242, 0.3)',
-                        color: '#38bdf8',
-                        padding: '5px 11px',
-                        borderRadius: 8,
-                        fontSize: '0.78rem',
-                        fontWeight: 600,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = '#1877F2'
-                        e.currentTarget.style.color = '#fff'
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(24, 119, 242, 0.12)'
-                        e.currentTarget.style.color = '#38bdf8'
-                      }}
-                    >
-                      <FacebookIcon size={13} color="currentColor" /> Share
-                    </button>
-                  </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
+        </section>
+      )}
 
-        {/* ===== SOCIAL FEEDS & FACEBOOK PAGE PLUGIN ===== */}
-        <div style={{ marginBottom: 54 }}>
-          <div style={{ marginBottom: 20 }}>
-            <div className="section-label">
-              <Globe size={14} /> Official Social Channels
-            </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: 6, marginBottom: 8 }}>
-              Stay Connected with the Community
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', maxWidth: 640 }}>
-              Follow our official feeds to catch live updates, youth encounters, stories, and inspiring messages from Life Generation Calapan.
-            </p>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 24,
-            alignItems: 'start'
-          }}>
-            {/* Left: Facebook Page Plugin */}
-            <div style={{
-              background: 'var(--card)',
-              border: '1px solid var(--card-border)',
-              borderRadius: 20,
-              padding: '22px',
-              boxShadow: 'var(--shadow)',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 16,
-                paddingBottom: 14,
-                borderBottom: '1px solid rgba(255,255,255,0.08)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: '#1877F2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff'
-                  }}>
-                    <FacebookIcon size={20} color="#fff" />
-                  </div>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#fff' }}>
-                      Life Generation Calapan
-                    </h4>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Official Facebook Page</span>
-                  </div>
-                </div>
-
-                <a
-                  href="https://www.facebook.com/life.generation.calapan"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn"
-                  style={{
-                    fontSize: '0.78rem',
-                    padding: '6px 14px',
-                    borderRadius: 20,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    width: 'auto',
-                    margin: 0
-                  }}
-                >
-                  Follow Page <ExternalLink size={12} />
-                </a>
-              </div>
-
-              {/* Responsive Facebook Page Embed */}
-              <div style={{
-                width: '100%',
-                borderRadius: 12,
-                overflow: 'hidden',
-                background: '#0d1117'
-              }}>
-                <iframe
-                  src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Flife.generation.calapan&tabs=timeline&width=500&height=400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
-                  width="100%"
-                  height="400"
-                  style={{ border: 'none', overflow: 'hidden', display: 'block' }}
-                  scrolling="no"
-                  frameBorder="0"
-                  allowFullScreen={true}
-                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                  title="Life Generation Calapan Facebook Page"
-                />
-              </div>
-            </div>
-
-            {/* Right: Social Media Spotlight Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Radical LED Calapan Card */}
-              <div style={{
-                background: 'var(--card)',
-                border: '1px solid var(--card-border)',
-                borderRadius: 18,
-                padding: '20px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 4,
-                  bottom: 0,
-                  background: 'linear-gradient(180deg, #00C6FF, #0072FF)'
-                }} />
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      background: 'rgba(0,198,255,0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <FacebookIcon size={19} color="#00C6FF" />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
-                        Radical LED Calapan
-                      </h4>
-                      <span style={{ fontSize: '0.74rem', color: '#38bdf8' }}>Youth Leadership & Campus Movement</span>
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    background: 'rgba(0,198,255,0.12)',
-                    color: '#00C6FF',
-                    padding: '3px 8px',
-                    borderRadius: 12
-                  }}>
-                    Movement
-                  </span>
-                </div>
-
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
-                  Join the radical generation of student leaders, campus disciples, and empowered youth advancing God's kingdom across Calapan!
-                </p>
-
-                <a
-                  href="https://www.facebook.com/radicalledcalapan"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    color: '#00C6FF',
-                    textDecoration: 'none'
-                  }}
-                >
-                  Visit Radical LED Facebook <ArrowRight size={13} />
-                </a>
-              </div>
-
-              {/* Instagram Card */}
-              <div style={{
-                background: 'var(--card)',
-                border: '1px solid var(--card-border)',
-                borderRadius: 18,
-                padding: '20px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 4,
-                  bottom: 0,
-                  background: 'linear-gradient(180deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)'
-                }} />
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      background: 'rgba(228,64,95,0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <InstagramIcon size={19} color="#E4405F" />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
-                        @lifegencalapan
-                      </h4>
-                      <span style={{ fontSize: '0.74rem', color: '#f472b6' }}>Instagram Highlights</span>
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    background: 'rgba(228,64,95,0.12)',
-                    color: '#E4405F',
-                    padding: '3px 8px',
-                    borderRadius: 12
-                  }}>
-                    Photos & Reels
-                  </span>
-                </div>
-
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
-                  Behind-the-scenes moments, Sunday service highlights, youth camp recaps, and weekly photo drops.
-                </p>
-
-                <a
-                  href="https://www.instagram.com/lifegencalapan?psln=ZDNlZDc0MzIxNw=="
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    color: '#E4405F',
-                    textDecoration: 'none'
-                  }}
-                >
-                  Follow on Instagram <ArrowRight size={13} />
-                </a>
-              </div>
-
-              {/* TikTok Card */}
-              <div style={{
-                background: 'var(--card)',
-                border: '1px solid var(--card-border)',
-                borderRadius: 18,
-                padding: '20px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 4,
-                  bottom: 0,
-                  background: 'linear-gradient(180deg, #25F4EE, #FE2C55)'
-                }} />
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      background: 'rgba(37,244,238,0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <TikTokIcon size={19} color="#25F4EE" />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>
-                        @life.generation7
-                      </h4>
-                      <span style={{ fontSize: '0.74rem', color: '#2dd4bf' }}>TikTok Community</span>
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    background: 'rgba(37,244,238,0.12)',
-                    color: '#25F4EE',
-                    padding: '3px 8px',
-                    borderRadius: 12
-                  }}>
-                    Shorts & Clips
-                  </span>
-                </div>
-
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: '8px 0 14px' }}>
-                  Short inspiring sermon clips, funny youth group moments, and worship snippets on TikTok!
-                </p>
-
-                <a
-                  href="https://www.tiktok.com/@life.generation7?is_from_webapp=1&sender_device=pc"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    color: '#2dd4bf',
-                    textDecoration: 'none'
-                  }}
-                >
-                  Watch on TikTok <ArrowRight size={13} />
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== CTA BANNER ===== */}
-        {!user && (
-          <div style={{
-            borderRadius: 22,
-            padding: '48px 40px',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(59,130,246,0.12) 100%)',
-            border: '1px solid rgba(249,115,22,0.2)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              position: 'absolute',
-              top: '-60px',
-              right: '-60px',
-              width: 200,
-              height: 200,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(249,115,22,0.15), transparent 70%)'
-            }} />
-            <div style={{
-              position: 'absolute',
-              bottom: '-60px',
-              left: '-60px',
-              width: 200,
-              height: 200,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%)'
-            }} />
-
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 10 }}>
-                Ready to take your next step?
-              </h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: 28, maxWidth: 480, margin: '0 auto 28px' }}>
-                Become an official member of Life Generation and start your journey with an amazing community.
-              </p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button type="button" className="btn" onClick={openRegister} style={{ width: 'auto', margin: 0 }}>
-                  Join Life Generation <ArrowRight size={16} />
-                </button>
-                <Link to="/login" className="btn-ghost" style={{ borderRadius: 999 }}>
-                  Sign In
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ===== GLOBAL FOOTER ===== */}
-      <Footer />
-    </div>
+    </main>
+    <HomeFooter />
+    </>
   )
 }
