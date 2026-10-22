@@ -62,6 +62,8 @@ $router->post('/api/prayer/delete',         'Prayers::delete');
 // 6. Member Directory & Admin
 $router->get('/api/members',        'Members::index');
 $router->post('/api/members/update','Members::update');
+$router->post('/api/members/upload-avatar', 'Members::upload_avatar');
+$router->post('/api/members/remove-avatar', 'Members::remove_avatar');
 $router->get('/api/admin/stats',    'Admin::stats');
 $router->get('/api/stats',          'Admin::stats');
 $router->get('/api/reports/summary', 'Reports::summary');

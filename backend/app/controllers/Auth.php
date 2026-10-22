@@ -432,6 +432,7 @@ class Auth extends Controller
         );
         $member = $mStmt->fetch(PDO::FETCH_ASSOC);
         $user['member'] = $member;
+        $user['avatar'] = $member['avatar'] ?? null;
 
         api_response(['user' => $user]);
     }

@@ -95,4 +95,67 @@ class Members extends Controller
 
         api_response(['success' => true, 'message' => 'Member updated successfully.']);
     }
+    public function upload_avatar()
+    {
+        $user = require_auth_user();
+
+        if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
+            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        }
+
+        $file = $_FILES['avatar'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowed)) {
+            api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
+        }
+
+        if ($file['size'] > 25 * 1024 * 1024) {
+            api_response(['error' => 'File size exceeds 25MB limit.'], 422);
+        }
+
+        $filename = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
+
+        $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
+        $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'avatars' . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            api_response(['error' => 'Failed to save avatar image.'], 500);
+        }
+
+        $relativeUrl = 'uploads/avatars/' . $filename;
+
+        if (!empty($user['role']) && $user['role'] === 'admin') {
+            $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]);
+        } else {
+            $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
+        }
+
+        api_response([
+            'success' => true,
+            'message' => 'Profile picture updated successfully!',
+            'avatar'  => $relativeUrl
+        ]);
+    }
+
+    public function remove_avatar()
+    {
+        $user = require_auth_user();
+
+        if (!empty($user['role']) && $user['role'] === 'admin') {
+            $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ?", [$user['id']]);
+        } else {
+            $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]);
+        }
+
+        api_response([
+            'success' => true,
+            'message' => 'Profile picture removed.'
+        ]);
+    }
 }
