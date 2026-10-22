@@ -60,3 +60,4 @@ $router->get('/api/members',        'Members::index');
 $router->post('/api/members/update','Members::update');
 $router->get('/api/admin/stats',    'Admin::stats');
 $router->get('/api/stats',          'Admin::stats');
+$router->get('/api/reports/summary', 'Reports::summary');

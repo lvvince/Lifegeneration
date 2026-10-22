@@ -11,6 +11,7 @@ class Admin extends Controller
 
     public function stats()
     {
+        require_admin_user();
         $membersCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM members WHERE is_active = 1")->fetch()['total'];
         $eventsCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM events WHERE is_active = 1")->fetch()['total'];
         $dgroupsCount = (int) $this->db->raw("SELECT COUNT(*) AS total FROM dgroups")->fetch()['total'];
