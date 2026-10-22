@@ -295,8 +295,8 @@ class Events extends Controller
             api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
         }
 
-        if ($file['size'] > 5 * 1024 * 1024) {
-            api_response(['error' => 'File size exceeds 5MB limit.'], 422);
+        if ($file['size'] > 60 * 1024 * 1024) {
+            api_response(['error' => 'File size exceeds 60MB limit.'], 422);
         }
 
         $filename = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;

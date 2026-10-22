@@ -167,7 +167,7 @@ function EventForm({ initial, onClose, onSaved }) {
                   {uploading ? 'Uploading image...' : 'Click to upload event photo'}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                  Supports JPG, PNG, WEBP (Max 5MB)
+                  Supports JPG, PNG, WEBP (Max 60MB)
                 </div>
               </div>
             )}
