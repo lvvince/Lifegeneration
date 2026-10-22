@@ -4,6 +4,7 @@ import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, CheckCircle, Ticket } from 'lucide-react'
 import { FacebookIcon } from '../../components/Footer.jsx'
 import { shareEventOnFacebook } from '../../utils/share.js'
+import { resolveImageUrl } from '../../lib/format.js'
 
 export default function Events() {
   const [events, setEvents] = useState([])
@@ -91,6 +92,11 @@ export default function Events() {
               position: 'relative'
             }}>
               <div>
+                {e.banner_image && (
+                  <div style={{ margin: '-20px -20px 14px -20px', height: 160, overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
+                    <img src={resolveImageUrl(e.banner_image)} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
                 {e.checked_in === 1 ? (
                   <div style={{
                     position: 'absolute',

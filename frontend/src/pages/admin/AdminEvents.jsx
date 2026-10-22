@@ -1,20 +1,66 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Plus, Pencil, Trash2, UserCheck } from 'lucide-react'
-import { apiGet, apiPost } from '../../api.js'
-import { fmtDate, isUpcoming, to12h, to24h } from '../../lib/format.js'
+import { CalendarDays, Plus, Pencil, Trash2, UserCheck, Upload, Image as ImageIcon, X } from 'lucide-react'
+import { apiGet, apiPost, API_URL } from '../../api.js'
+import { fmtDate, isUpcoming, to12h, to24h, resolveImageUrl } from '../../lib/format.js'
 import {
   PageHeader, Empty, Loading, Tabs, Modal, Field, ConfirmDialog, useToast,
 } from '../../components/portal/ui.jsx'
 
-const blank = { id: null, title: '', description: '', location: '', event_date: '', time: '10:00', capacity: '' }
+const blank = {
+  id: null,
+  title: '',
+  description: '',
+  location: '',
+  event_date: '',
+  time: '10:00',
+  capacity: '',
+  banner_image: '',
+}
 
 function EventForm({ initial, onClose, onSaved }) {
   const toast = useToast()
   const [f, setF] = useState(initial)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
+  const fileInputRef = useRef(null)
+
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+
+  async function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setErr('')
+    try {
+      const token = localStorage.getItem('access_token')
+      const fd = new FormData()
+      fd.append('banner', file)
+
+      const res = await fetch(`${API_URL}/api/events/upload-banner`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: fd,
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to upload image')
+      }
+
+      setF((s) => ({ ...s, banner_image: data.url }))
+      toast('Photo uploaded successfully!')
+    } catch (e2) {
+      setErr(e2.message || 'Error uploading photo.')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -32,6 +78,7 @@ function EventForm({ initial, onClose, onSaved }) {
         event_date: f.event_date,
         event_time: to12h(f.time),
         capacity: f.capacity === '' ? '' : Number(f.capacity),
+        banner_image: f.banner_image?.trim() || '',
       }
       if (f.id) await apiPost('/api/events/update', { id: f.id, ...body })
       else await apiPost('/api/events/create', body)
@@ -43,11 +90,105 @@ function EventForm({ initial, onClose, onSaved }) {
     }
   }
 
+  const previewSrc = resolveImageUrl(f.banner_image)
+
   return (
     <Modal title={f.id ? 'Edit event' : 'New event'} onClose={onClose}>
       <form onSubmit={submit}>
         <div className="p-modal-body">
           {err && <div className="p-banner bad" style={{ marginBottom: 14 }}>{err}</div>}
+
+          {/* Event Photo / Banner Upload */}
+          <div style={{ marginBottom: 16 }}>
+            <label className="p-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <ImageIcon size={15} color="#f97316" /> Event Photo / Banner
+              <span className="p-muted" style={{ fontWeight: 400, fontSize: '0.75rem' }}>(Admin only)</span>
+            </label>
+
+            {previewSrc ? (
+              <div style={{
+                position: 'relative',
+                borderRadius: 12,
+                overflow: 'hidden',
+                border: '1px solid var(--border)',
+                maxHeight: 180,
+                background: '#090d16',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8
+              }}>
+                <img
+                  src={previewSrc}
+                  alt="Event Banner Preview"
+                  style={{ width: '100%', height: 180, objectFit: 'cover' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setF(s => ({ ...s, banner_image: '' }))}
+                  title="Remove image"
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    background: 'rgba(0,0,0,0.7)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '50%',
+                    width: 28,
+                    height: 28,
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed rgba(255,255,255,0.15)',
+                  borderRadius: 12,
+                  padding: '24px 16px',
+                  textAlign: 'center',
+                  background: 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer',
+                  marginBottom: 8,
+                  transition: 'border-color 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(249,115,22,0.5)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'}
+              >
+                <Upload size={24} style={{ color: '#f97316', margin: '0 auto 6px' }} />
+                <div style={{ fontSize: '0.86rem', fontWeight: 600, color: '#fff' }}>
+                  {uploading ? 'Uploading image...' : 'Click to upload event photo'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                  Supports JPG, PNG, WEBP (Max 5MB)
+                </div>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
+
+            <input
+              className="p-input"
+              placeholder="Or paste image URL (e.g. https://...)"
+              value={f.banner_image || ''}
+              onChange={set('banner_image')}
+              style={{ fontSize: '0.82rem' }}
+            />
+          </div>
+
           <Field label="Title" htmlFor="ev-title">
             <input id="ev-title" className="p-input" value={f.title} onChange={set('title')} autoFocus required />
           </Field>
@@ -70,11 +211,11 @@ function EventForm({ initial, onClose, onSaved }) {
           </Field>
         </div>
         <div className="p-modal-foot">
-          <button type="button" className="p-btn p-btn-secondary" onClick={onClose} disabled={saving}>
+          <button type="button" className="p-btn p-btn-secondary" onClick={onClose} disabled={saving || uploading}>
             Cancel
           </button>
-          <button type="submit" className="p-btn p-btn-primary" disabled={saving}>
-            {saving ? 'Saving…' : f.id ? 'Save changes' : 'Create event'}
+          <button type="submit" className="p-btn p-btn-primary" disabled={saving || uploading}>
+            {saving ? 'Saving...' : f.id ? 'Save changes' : 'Create event'}
           </button>
         </div>
       </form>
@@ -121,6 +262,7 @@ export default function AdminEvents() {
       event_date: String(e.event_date || '').slice(0, 10),
       time: to24h(e.event_time),
       capacity: e.capacity ?? '',
+      banner_image: e.banner_image || '',
     })
   }
 
@@ -142,7 +284,7 @@ export default function AdminEvents() {
     <>
       <PageHeader
         title="Events"
-        desc="Create gatherings, set a capacity, and see who signed up."
+        desc="Create gatherings, set a capacity, upload photos, and see who signed up."
         actions={
           <button type="button" className="p-btn p-btn-primary" onClick={() => setForm(blank)}>
             <Plus size={16} /> New event
@@ -168,7 +310,7 @@ export default function AdminEvents() {
           <Empty
             icon={CalendarDays}
             title="No events here"
-            desc={tab === 'upcoming' ? 'Create an event so members can sign up.' : undefined}
+            desc={tab === 'upcoming' ? 'Create an event with a banner photo so members can sign up.' : undefined}
             action={
               tab === 'upcoming' && (
                 <button type="button" className="p-btn p-btn-primary p-btn-sm" onClick={() => setForm(blank)}>
@@ -189,49 +331,84 @@ export default function AdminEvents() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((e) => (
-                  <tr key={e.id}>
-                    <td>
-                      <div className="p-row-title">{e.title}</div>
-                      <div className="p-row-sub">{e.location || 'No location set'}</div>
-                    </td>
-                    <td className="p-num">
-                      {fmtDate(e.event_date)}
-                      <div className="p-row-sub">{e.event_time || ''}</div>
-                    </td>
-                    <td className="p-num">
-                      {e.attendee_count}
-                      {e.capacity ? <span className="p-muted"> / {e.capacity}</span> : null}
-                    </td>
-                    <td>
-                      <div className="p-inline" style={{ justifyContent: 'flex-end' }}>
-                        <Link
-                          to={`/admin/check-in?event=${e.id}`}
-                          className="p-btn p-btn-quiet p-btn-sm"
-                          title="Attendance and check-in"
-                        >
-                          <UserCheck size={15} /> Attendance
-                        </Link>
-                        <button
-                          type="button"
-                          className="p-btn p-btn-quiet p-btn-icon"
-                          onClick={() => edit(e)}
-                          aria-label={`Edit ${e.title}`}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-btn p-btn-quiet p-btn-icon"
-                          onClick={() => setDel(e)}
-                          aria-label={`Delete ${e.title}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {shown.map((e) => {
+                  const img = resolveImageUrl(e.banner_image)
+                  return (
+                    <tr key={e.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          {img ? (
+                            <img
+                              src={img}
+                              alt={e.title}
+                              style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 8,
+                                objectFit: 'cover',
+                                flexShrink: 0,
+                                border: '1px solid var(--border)'
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 8,
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid var(--border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <ImageIcon size={20} color="var(--muted)" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="p-row-title">{e.title}</div>
+                            <div className="p-row-sub">{e.location || 'No location set'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-num">
+                        {fmtDate(e.event_date)}
+                        <div className="p-row-sub">{e.event_time || ''}</div>
+                      </td>
+                      <td className="p-num">
+                        {e.attendee_count}
+                        {e.capacity ? <span className="p-muted"> / {e.capacity}</span> : null}
+                      </td>
+                      <td>
+                        <div className="p-inline" style={{ justifyContent: 'flex-end' }}>
+                          <Link
+                            to={`/admin/check-in?event=${e.id}`}
+                            className="p-btn p-btn-quiet p-btn-sm"
+                            title="Attendance and check-in"
+                          >
+                            <UserCheck size={15} /> Attendance
+                          </Link>
+                          <button
+                            type="button"
+                            className="p-btn p-btn-quiet p-btn-icon"
+                            onClick={() => edit(e)}
+                            aria-label={`Edit ${e.title}`}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="p-btn p-btn-quiet p-btn-icon"
+                            onClick={() => setDel(e)}
+                            aria-label={`Delete ${e.title}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

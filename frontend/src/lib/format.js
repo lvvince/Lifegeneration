@@ -50,3 +50,17 @@ export function initials(name) {
   if (!parts.length) return '?'
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
 }
+
+/**
+ * Resolves local upload paths and external URLs into valid image sources
+ */
+export function resolveImageUrl(path) {
+  if (!path) return null
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path
+  }
+  const base = import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.replace(/\/+$/, '')
+    : 'http://localhost/LIFEGEN/backend/public'
+  return `${base}/${path.replace(/^\/+/, '')}`
+}

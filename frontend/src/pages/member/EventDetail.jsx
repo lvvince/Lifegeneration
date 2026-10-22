@@ -4,6 +4,7 @@ import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle } from 'lucide-react'
 import { FacebookIcon } from '../../components/Footer.jsx'
 import { shareEventOnFacebook } from '../../utils/share.js'
+import { resolveImageUrl } from '../../lib/format.js'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -74,6 +75,11 @@ export default function EventDetail() {
       {msg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{msg}</div>}
 
       <div className="card">
+        {event.banner_image && (
+          <div style={{ width: '100%', maxHeight: 320, borderRadius: 14, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--border)' }}>
+            <img src={resolveImageUrl(event.banner_image)} alt={event.title} style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }} />
+          </div>
+        )}
         {event.checked_in === 1 && (
           <div style={{
             background: '#15803d',

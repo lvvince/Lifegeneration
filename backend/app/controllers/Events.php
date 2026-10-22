@@ -214,6 +214,7 @@ class Events extends Controller
 
         $title       = trim($input['title'] ?? '');
         $description = trim($input['description'] ?? '');
+        $bannerImage = trim($input['banner_image'] ?? $input['image'] ?? '');
         $location    = trim($input['location'] ?? $input['venue'] ?? '');
         $eventDate   = trim($input['event_date'] ?? date('Y-m-d'));
         $eventTime   = trim($input['event_time'] ?? '10:00 AM');
@@ -224,9 +225,9 @@ class Events extends Controller
         }
 
         $this->db->raw(
-            "INSERT INTO events (title, description, location, event_date, event_time, capacity, is_active, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, 1, NOW())",
-            [$title, $description, $location, $eventDate, $eventTime, $capacity]
+            "INSERT INTO events (title, description, banner_image, location, event_date, event_time, capacity, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())",
+            [$title, $description, $bannerImage ?: null, $location, $eventDate, $eventTime, $capacity]
         );
 
         api_response([
@@ -248,6 +249,7 @@ class Events extends Controller
 
         $title       = trim($input['title'] ?? '');
         $description = trim($input['description'] ?? '');
+        $bannerImage = trim($input['banner_image'] ?? $input['image'] ?? '');
         $location    = trim($input['location'] ?? $input['venue'] ?? '');
         $eventDate   = trim($input['event_date'] ?? date('Y-m-d'));
         $eventTime   = trim($input['event_time'] ?? '');
@@ -255,9 +257,9 @@ class Events extends Controller
 
         $this->db->raw(
             "UPDATE events
-             SET title = ?, description = ?, location = ?, event_date = ?, event_time = ?, capacity = ?, updated_at = NOW()
+             SET title = ?, description = ?, banner_image = ?, location = ?, event_date = ?, event_time = ?, capacity = ?, updated_at = NOW()
              WHERE id = ?",
-            [$title, $description, $location, $eventDate, $eventTime, $capacity, $id]
+            [$title, $description, $bannerImage ?: null, $location, $eventDate, $eventTime, $capacity, $id]
         );
 
         api_response(['success' => true, 'message' => 'Event updated successfully.']);
@@ -275,5 +277,48 @@ class Events extends Controller
 
         $this->db->raw("DELETE FROM events WHERE id = ?", [$id]);
         api_response(['success' => true, 'message' => 'Event deleted.']);
+    }
+
+    public function upload_banner()
+    {
+        require_admin_user();
+
+        if (!isset($_FILES['banner']) || $_FILES['banner']['error'] !== UPLOAD_ERR_OK) {
+            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        }
+
+        $file = $_FILES['banner'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowed)) {
+            api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            api_response(['error' => 'File size exceeds 5MB limit.'], 422);
+        }
+
+        $filename = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        
+        // Base public path
+        $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
+        $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            api_response(['error' => 'Failed to save uploaded image.'], 500);
+        }
+
+        // Return relative path
+        $relativeUrl = 'uploads/events/' . $filename;
+        api_response([
+            'success' => true,
+            'url'     => $relativeUrl,
+            'message' => 'Event banner uploaded successfully.'
+        ]);
     }
 }

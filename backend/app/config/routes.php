@@ -48,6 +48,8 @@ $router->get('/api/events/{id}/attendees',  'Events::attendees');
 $router->post('/api/events/create',         'Events::create');
 $router->post('/api/events/update',         'Events::update');
 $router->post('/api/events/delete',         'Events::delete');
+$router->post('/api/events/upload-banner',  'Events::upload_banner');
+$router->post('/api/events/upload',         'Events::upload_banner');
 
 // 5. Prayer Wall
 $router->get('/api/prayer',                 'Prayers::index');

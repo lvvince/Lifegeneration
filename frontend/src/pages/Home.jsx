@@ -4,6 +4,7 @@ import { apiGet, getUser } from '../api.js'
 import GlassIcon from '../components/GlassIcon.jsx'
 import Footer, { FacebookIcon, InstagramIcon, TikTokIcon } from '../components/Footer.jsx'
 import { shareEventOnFacebook } from '../utils/share.js'
+import { resolveImageUrl } from '../lib/format.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
 import {
   Users, Calendar, HeartHandshake, MessageSquare,
@@ -286,6 +287,14 @@ export default function Home() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.35)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
+                  {/* Event Photo Banner */}
+                  {ev.banner_image && (
+                    <div style={{ margin: '-22px -24px 10px -24px', height: 140, overflow: 'hidden', position: 'relative' }}>
+                      <img src={resolveImageUrl(ev.banner_image)} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(10,10,15,0.7) 100%)' }} />
+                    </div>
+                  )}
+
                   {/* Color stripe */}
                   <div style={{
                     position: 'absolute',
