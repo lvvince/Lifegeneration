@@ -14,6 +14,7 @@ import PrayerWall from './pages/PrayerWall.jsx'
 import Events from './pages/member/Events.jsx'
 import EventDetail from './pages/member/EventDetail.jsx'
 import Dashboard from './pages/member/Dashboard.jsx'
+import Overview from './pages/member/Overview.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminMembers from './pages/admin/AdminMembers.jsx'
 import AdminApplications from './pages/admin/AdminApplications.jsx'
@@ -41,6 +42,7 @@ function PageRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/profile" element={<Dashboard />} />
+        <Route path="/dashboard/overview" element={<Overview />} />
       </Route>
 
       {/* Admin */}

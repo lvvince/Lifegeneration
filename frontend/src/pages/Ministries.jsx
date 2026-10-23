@@ -6,6 +6,7 @@ import {
   Monitor, UserCheck, Globe, Music, Star, Megaphone,
   Camera, Headphones, Tent, Brush, ChevronRight
 } from 'lucide-react'
+import '../styles/pages.css'
 
 /* Map icon name stored in DB → Lucide component */
 const ICON_MAP = {
@@ -99,7 +100,7 @@ export default function Ministries() {
   }
 
   return (
-    <div className="min-vol-page">
+    <div className="min-vol-page pg-root">
       {/* ── Hero ── */}
       <div className="min-vol-hero">
         <div className="min-vol-hero-badge">

@@ -7,6 +7,7 @@ import {
   Network, UserPlus, ChevronRight, MessageCircle,
   Lock, Clock, ExternalLink, AlertCircle
 } from 'lucide-react'
+import '../styles/pages.css'
 
 export default function DGroups() {
   const [groups, setGroups]             = useState([])
@@ -83,7 +84,7 @@ export default function DGroups() {
   }
 
   return (
-    <div className="dg-page">
+    <div className="dg-page pg-root">
       {/* ── Hero ── */}
       <div className="dg-hero">
         <div className="dg-hero-badge">

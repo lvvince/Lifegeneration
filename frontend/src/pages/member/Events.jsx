@@ -1,240 +1,143 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Calendar, Clock, MapPin, Users, Ticket, Check, ImageOff } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../../api.js'
-import { Calendar, Clock, MapPin, Users, CheckCircle, Ticket } from 'lucide-react'
-import { FacebookIcon } from '../../components/Footer.jsx'
+import { isUpcoming, parseDate, resolveImageUrl } from '../../lib/format.js'
 import { shareEventOnFacebook } from '../../utils/share.js'
-import { resolveImageUrl } from '../../lib/format.js'
+import { FacebookIcon } from '../../components/home/SocialIcons.jsx'
 import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
+import { useToast } from '../../components/portal/ui.jsx'
+import '../../styles/pages.css'
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
 export default function Events() {
-  const [events, setEvents] = useState([])
-  const [error, setError] = useState('')
-  const [msg, setMsg] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [processingId, setProcessingId] = useState(null)
-
   const user = getUser()
+  const toast = useToast()
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [busyId, setBusyId] = useState(null)
+  const [tab, setTab] = useState('upcoming')
 
-  const loadEvents = async () => {
-    try {
-      setLoading(true)
-      const data = await apiGet('/api/events')
-      setEvents(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const load = () =>
+    apiGet('/api/events')
+      .then((d) => setEvents(Array.isArray(d) ? d : []))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
 
   useEffect(() => {
-    loadEvents()
+    load()
   }, [])
 
-  const handleRsvp = async (id) => {
-    if (!user) return
-    setProcessingId(id)
-    setMsg('')
+  async function act(path, id, okMsg) {
+    setBusyId(id)
+    setError('')
     try {
-      const res = await apiPost('/api/events/rsvp', { event_id: id })
-      setMsg(res.message || 'RSVP confirmed!')
-      loadEvents()
-    } catch (err) {
-      setError(err.message || 'Failed to RSVP.')
+      const res = await apiPost(path, { event_id: id })
+      toast(res.message || okMsg)
+      await load()
+    } catch (e) {
+      setError(e.message || 'Something went wrong. Please try again.')
     } finally {
-      setProcessingId(null)
+      setBusyId(null)
     }
   }
 
-  const handleCancelRsvp = async (id) => {
-    if (!user) return
-    setProcessingId(id)
-    setMsg('')
-    try {
-      const res = await apiPost('/api/events/cancel-rsvp', { event_id: id })
-      setMsg(res.message || 'RSVP cancelled.')
-      loadEvents()
-    } catch (err) {
-      setError(err.message || 'Failed to cancel RSVP.')
-    } finally {
-      setProcessingId(null)
-    }
+  const going = (e) => e.user_rsvp === 'attending'
+  const counts = {
+    upcoming: events.filter((e) => isUpcoming(e.event_date)).length,
+    going: events.filter(going).length,
+    past: events.filter((e) => !isUpcoming(e.event_date)).length,
   }
+  const shown = events.filter((e) => (tab === 'going' ? going(e) : tab === 'past' ? !isUpcoming(e.event_date) : isUpcoming(e.event_date)))
+  const tabs = [['upcoming', 'Upcoming'], ...(user ? [['going', 'Going']] : []), ['past', 'Past']]
 
   return (
-    <div>
-      <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.2rem', marginBottom: 8 }}>Church Gatherings & Events</h1>
-        <p className="muted" style={{ maxWidth: 620, margin: '0 auto', fontSize: '1.05rem' }}>
-          Be part of the movement! Join our Sunday encounter services, youth nights, worship summits, and leadership gatherings.
-        </p>
+    <div className="pg-root">
+      <section className="pg-hero">
+        <span className="pg-chip"><Calendar size={13} /> Gatherings</span>
+        <h1>Events and gatherings</h1>
+        <p>Youth nights, worship, and special days. Sign up so we can save you a spot.</p>
+      </section>
+
+      {error && <div className="pg-alert">{error}</div>}
+
+      <div className="pg-tabs" role="tablist">
+        {tabs.map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} className={tab === key ? 'is-on' : ''} onClick={() => setTab(key)}>
+            {label}<small>{counts[key]}</small>
+          </button>
+        ))}
       </div>
 
-      {msg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{msg}</div>}
-      {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
-
       {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">Loading upcoming events...</p>
+        <div className="pg-grid">
+          {[0, 1, 2].map((i) => <div key={i} className="dg-skel-card" style={{ height: 360 }}><div className="dg-skel-img" style={{ height: '45%' }} /></div>)}
         </div>
-      ) : events.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">No upcoming events scheduled right now. Check back soon!</p>
+      ) : shown.length === 0 ? (
+        <div className="pg-empty">
+          <Calendar size={30} strokeWidth={1.5} />
+          <b>{tab === 'going' ? 'You have not signed up for any event yet' : tab === 'past' ? 'No past events' : 'No upcoming events'}</b>
+          <span>{tab === 'upcoming' ? 'Check back soon.' : ''}</span>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 20 }}>
-          {events.map((e) => (
-            <div key={e.id} className="card" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              border: e.user_rsvp === 'attending' ? '2px solid #2f8f5b' : '1px solid var(--border)',
-              position: 'relative'
-            }}>
-              <div>
-                {e.banner_image && (
-                  <div style={{ margin: '-20px -20px 14px -20px', height: 160, overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
-                    <img src={resolveImageUrl(e.banner_image)} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-                {e.checked_in === 1 ? (
-                  <div style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    background: '#15803d',
-                    color: '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: 20
-                  }}>
-                    ✓ Checked-In
-                  </div>
-                ) : e.user_rsvp === 'attending' ? (
-                  <div style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    background: '#e3f5ea',
-                    color: '#1e7a46',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: 20
-                  }}>
-                    ✓ Attending
-                  </div>
-                ) : null}
+        <div className="pg-grid">
+          {shown.map((e, i) => {
+            const d = parseDate(e.event_date)
+            const pct = e.capacity ? Math.min(100, Math.round((e.attendee_count / e.capacity) * 100)) : 0
+            const full = e.capacity && e.attendee_count >= e.capacity
+            const busy = busyId === e.id
+            return (
+              <article className="pg-card" key={e.id} style={{ '--i': i }}>
+                <Link to={`/events/${e.id}`} className="pg-media" aria-label={`Open ${e.title}`}>
+                  {e.banner_image ? (
+                    <img src={resolveImageUrl(e.banner_image)} alt="" loading="lazy" />
+                  ) : (
+                    <span className="pg-media-empty"><ImageOff size={28} strokeWidth={1.4} /></span>
+                  )}
+                  <span className="pg-date"><span><b>{d?.getDate()}</b><small>{d ? MONTHS[d.getMonth()] : ''}</small></span></span>
+                  {e.checked_in === 1 ? (
+                    <span className="pg-pill"><Check size={13} /> Checked in</span>
+                  ) : going(e) ? (
+                    <span className="pg-pill"><Check size={13} /> Going</span>
+                  ) : null}
+                </Link>
 
-                <h3 style={{ fontSize: '1.25rem', color: 'var(--navy)', marginBottom: 8, paddingRight: e.user_rsvp ? 80 : 0 }}>
-                  {e.title}
-                </h3>
+                <div className="pg-body">
+                  <h3 className="pg-title">{e.title}</h3>
+                  {e.description && <p className="pg-desc">{e.description}</p>}
+                  <div className="pg-meta">
+                    {e.event_time && <span><Clock size={15} /> {e.event_time}</span>}
+                    {e.location && <span><MapPin size={15} /> {e.location}</span>}
+                    <span><Users size={15} /> {e.attendee_count} going{e.capacity ? ` of ${e.capacity}` : ''}</span>
+                  </div>
+                  {e.capacity ? <div className="pg-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div> : null}
 
-                <p style={{ fontSize: '0.92rem', color: '#445', marginBottom: 16 }}>
-                  {e.description}
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.86rem', color: 'var(--muted)', marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Calendar size={15} color="var(--navy)" />
-                    <span>{e.event_date}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Clock size={15} color="var(--navy)" />
-                    <span>{e.event_time}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MapPin size={15} color="var(--navy)" />
-                    <span>{e.location}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Users size={15} color="var(--navy)" />
-                    <span>{e.attendee_count} attending {e.capacity ? `/ ${e.capacity} capacity` : ''}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {!user ? (
-                  <Link to="/login" className="btn" style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
-                    Sign In to RSVP
-                  </Link>
-                ) : e.user_rsvp === 'attending' ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => handleCancelRsvp(e.id)}
-                      disabled={processingId === e.id}
-                      style={{
-                        flex: 1,
-                        background: '#fff',
-                        color: '#666',
-                        border: '1px solid #ccc',
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {processingId === e.id ? 'Cancelling...' : 'Cancel RSVP'}
+                  <div className="pg-actions">
+                    {!user ? (
+                      <Link to="/login" className="pg-btn">Sign in to RSVP</Link>
+                    ) : going(e) ? (
+                      <>
+                        <button type="button" className="pg-btn-ghost" disabled={busy} onClick={() => act('/api/events/cancel-rsvp', e.id, 'RSVP cancelled.')}>
+                          {busy ? 'Please wait…' : 'Cancel RSVP'}
+                        </button>
+                        <Link to={`/events/${e.id}`} className="pg-btn">Details</Link>
+                      </>
+                    ) : (
+                      <button type="button" className="pg-btn" disabled={busy || full || !isUpcoming(e.event_date)} onClick={() => act('/api/events/rsvp', e.id, 'RSVP confirmed!')}>
+                        <Ticket size={16} /> {busy ? 'Reserving…' : full ? 'Event is full' : 'RSVP'}
+                      </button>
+                    )}
+                    <AddToCalendarButton event={e} variant="small" label="Calendar" />
+                    <button type="button" className="pg-btn-ghost" onClick={() => shareEventOnFacebook(e.id, e.title)} aria-label="Share on Facebook">
+                      <FacebookIcon size={16} />
                     </button>
-                    <Link to={`/events/${e.id}`} className="btn" style={{ padding: '8px 14px' }}>
-                      Details
-                    </Link>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => handleRsvp(e.id)}
-                    disabled={processingId === e.id}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <Ticket size={16} />
-                    {processingId === e.id ? 'Reserving...' : 'RSVP for Event'}
-                  </button>
-                )}
-
-                {/* Share & Calendar Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
-                  <AddToCalendarButton
-                    event={e}
-                    variant="small"
-                    label="Add to Calendar"
-                    style={{ width: '100%', justifyContent: 'center', padding: '7px 8px', fontSize: '0.8rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => shareEventOnFacebook(e.id, e.title)}
-                    style={{
-                      width: '100%',
-                      background: 'rgba(24, 119, 242, 0.08)',
-                      border: '1px solid rgba(24, 119, 242, 0.25)',
-                      color: '#1877F2',
-                      padding: '7px 8px',
-                      borderRadius: 6,
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={ev => { ev.currentTarget.style.background = '#1877F2'; ev.currentTarget.style.color = '#fff' }}
-                    onMouseLeave={ev => { ev.currentTarget.style.background = 'rgba(24, 119, 242, 0.08)'; ev.currentTarget.style.color = '#1877F2' }}
-                  >
-                    <FacebookIcon size={14} color="currentColor" /> Facebook
-                  </button>
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            )
+          })}
         </div>
       )}
     </div>

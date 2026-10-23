@@ -59,7 +59,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
 
         {/* Pass Top Card Header — Orange & Blue Brand Palette */}
         <div style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #ea580c 100%)',
+          background: 'linear-gradient(135deg, #1c1917 0%, #44281a 55%, #ea580c 100%)',
           padding: '24px 20px',
           color: '#fff',
           textAlign: 'center',
@@ -356,12 +356,12 @@ export default function Dashboard() {
     <div>
       {/* Top Banner & Official ID Card — Orange & Blue Brand Palette */}
       <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #ea580c 100%)',
+        background: "linear-gradient(rgba(12,12,16,.52), rgba(12,12,16,.8)), url('/hero-bg.jpg') center 40% / cover",
         color: '#fff',
-        borderRadius: 20,
-        padding: '32px 28px',
-        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.4), 0 0 20px rgba(234, 88, 12, 0.15)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 28,
+        padding: '34px 30px',
+        boxShadow: '0 24px 50px -26px rgba(20, 30, 70, 0.55)',
+        border: 'none',
         marginBottom: 24,
         display: 'flex',
         flexWrap: 'wrap',
@@ -447,7 +447,7 @@ export default function Dashboard() {
               Official Member Profile
             </div>
             <h1 style={{ color: '#fff', fontSize: '2.1rem', margin: '0 0 6px', fontWeight: 800 }}>{name}</h1>
-            <p style={{ color: '#bfdbfe', margin: 0, fontSize: '0.95rem' }}>
+            <p style={{ color: 'rgba(255,255,255,.82)', margin: 0, fontSize: '0.95rem' }}>
               {profile?.email} &bull; <span style={{ color: '#fed7aa', fontWeight: 600 }}>{profile?.membership_tier || 'Standard Member'}</span>
             </p>
 
@@ -533,7 +533,7 @@ export default function Dashboard() {
             <div style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
               Life Generation ID
             </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'monospace', margin: '3px 0' }}>
+            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--p-text, #1c1917)', fontFamily: 'monospace', margin: '3px 0' }}>
               {memberId}
             </div>
             <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
@@ -549,7 +549,7 @@ export default function Dashboard() {
               background: '#fff',
               padding: 6,
               borderRadius: 10,
-              border: '1px solid #bfdbfe',
+              border: '1px solid var(--p-border-strong, #d6dbe8)',
               boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
               display: 'inline-flex',
               flexDirection: 'column',
