@@ -153,6 +153,24 @@ class Ministries extends Controller
                 "UPDATE members SET ministry_id = ?, updated_at = NOW() WHERE user_id = ?",
                 [$app['ministry_id'], $app['user_id']]
             );
+
+            // Send automated acceptance email
+            try {
+                require_once dirname(dirname(__FILE__)) . '/helpers/mailer_helper.php';
+                $applicant = $this->db->raw(
+                    "SELECT u.email, u.username, COALESCE(u.full_name, m.full_name, u.username) AS full_name, min.name AS ministry_name, min.icon AS ministry_icon
+                     FROM users u
+                     LEFT JOIN members m ON m.user_id = u.id
+                     LEFT JOIN ministries min ON min.id = ?
+                     WHERE u.id = ?
+                     LIMIT 1",
+                    [$app['ministry_id'], $app['user_id']]
+                )->fetch(PDO::FETCH_ASSOC);
+
+                if ($applicant) {
+                    send_ministry_accepted_email($applicant);
+                }
+            } catch (Exception $e) {}
         } elseif ($status === 'rejected') {
             // If was previously connected to this ministry, remove
             $this->db->raw(
@@ -187,6 +205,7 @@ class Ministries extends Controller
         $input = api_input();
         $name        = trim($input['name'] ?? '');
         $icon        = trim($input['icon'] ?? '✦');
+        $image       = trim($input['image'] ?? '');
         $description = trim($input['description'] ?? '');
         $slots       = !empty($input['slots_available']) ? (int) $input['slots_available'] : null;
 
@@ -195,9 +214,9 @@ class Ministries extends Controller
         }
 
         $this->db->raw(
-            "INSERT INTO ministries (name, icon, description, slots_available, is_active, created_at)
-             VALUES (?, ?, ?, ?, 1, NOW())",
-            [$name, $icon, $description, $slots]
+            "INSERT INTO ministries (name, icon, image, description, slots_available, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, 1, NOW())",
+            [$name, $icon, $image ?: null, $description, $slots]
         );
 
         api_response(['success' => true, 'message' => 'Ministry created successfully.', 'id' => $this->db->last_id()], 201);
@@ -217,10 +236,19 @@ class Ministries extends Controller
             api_response(['error' => 'Ministry ID and name are required.'], 422);
         }
 
-        $this->db->raw(
-            "UPDATE ministries SET name = ?, icon = ?, description = ?, slots_available = ? WHERE id = ?",
-            [$name, $icon, $description, $slots, $id]
-        );
+        // If image key present, update it; otherwise leave it unchanged
+        if (array_key_exists('image', $input)) {
+            $image = trim($input['image'] ?? '');
+            $this->db->raw(
+                "UPDATE ministries SET name = ?, icon = ?, image = ?, description = ?, slots_available = ? WHERE id = ?",
+                [$name, $icon, $image ?: null, $description, $slots, $id]
+            );
+        } else {
+            $this->db->raw(
+                "UPDATE ministries SET name = ?, icon = ?, description = ?, slots_available = ? WHERE id = ?",
+                [$name, $icon, $description, $slots, $id]
+            );
+        }
 
         api_response(['success' => true, 'message' => 'Ministry updated successfully.']);
     }
@@ -239,5 +267,45 @@ class Ministries extends Controller
         $this->db->raw("DELETE FROM ministries WHERE id = ?", [$id]);
 
         api_response(['success' => true, 'message' => 'Ministry deleted.']);
+    }
+
+    public function upload_image()
+    {
+        require_admin_user();
+
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        }
+
+        $file = $_FILES['image'];
+        $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowed)) {
+            api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
+        }
+
+        if ($file['size'] > 20 * 1024 * 1024) {
+            api_response(['error' => 'File size exceeds 20MB limit.'], 422);
+        }
+
+        $filename  = 'ministry_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
+        $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'ministries' . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            api_response(['error' => 'Failed to save uploaded image.'], 500);
+        }
+
+        $relativeUrl = 'uploads/ministries/' . $filename;
+        api_response([
+            'success' => true,
+            'url'     => $relativeUrl,
+            'message' => 'Ministry image uploaded successfully.'
+        ]);
     }
 }

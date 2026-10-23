@@ -5,6 +5,7 @@ import { Calendar, Clock, MapPin, Users, CheckCircle, Ticket } from 'lucide-reac
 import { FacebookIcon } from '../../components/Footer.jsx'
 import { shareEventOnFacebook } from '../../utils/share.js'
 import { resolveImageUrl } from '../../lib/format.js'
+import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
 
 export default function Events() {
   const [events, setEvents] = useState([])
@@ -198,31 +199,39 @@ export default function Events() {
                   </button>
                 )}
 
-                {/* Facebook Share Button */}
-                <button
-                  type="button"
-                  onClick={() => shareEventOnFacebook(e.id, e.title)}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(24, 119, 242, 0.08)',
-                    border: '1px solid rgba(24, 119, 242, 0.25)',
-                    color: '#1877F2',
-                    padding: '7px 12px',
-                    borderRadius: 8,
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#1877F2'; e.currentTarget.style.color = '#fff' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(24, 119, 242, 0.08)'; e.currentTarget.style.color = '#1877F2' }}
-                >
-                  <FacebookIcon size={14} color="currentColor" /> Share on Facebook
-                </button>
+                {/* Share & Calendar Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+                  <AddToCalendarButton
+                    event={e}
+                    variant="small"
+                    label="Add to Calendar"
+                    style={{ width: '100%', justifyContent: 'center', padding: '7px 8px', fontSize: '0.8rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => shareEventOnFacebook(e.id, e.title)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(24, 119, 242, 0.08)',
+                      border: '1px solid rgba(24, 119, 242, 0.25)',
+                      color: '#1877F2',
+                      padding: '7px 8px',
+                      borderRadius: 6,
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={ev => { ev.currentTarget.style.background = '#1877F2'; ev.currentTarget.style.color = '#fff' }}
+                    onMouseLeave={ev => { ev.currentTarget.style.background = 'rgba(24, 119, 242, 0.08)'; ev.currentTarget.style.color = '#1877F2' }}
+                  >
+                    <FacebookIcon size={14} color="currentColor" /> Facebook
+                  </button>
+                </div>
               </div>
             </div>
           ))}

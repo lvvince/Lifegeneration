@@ -5,6 +5,7 @@ import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle } from '
 import { FacebookIcon } from '../../components/Footer.jsx'
 import { shareEventOnFacebook } from '../../utils/share.js'
 import { resolveImageUrl } from '../../lib/format.js'
+import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -181,30 +182,35 @@ export default function EventDetail() {
             )}
           </div>
 
-          {/* Facebook Share Button */}
-          <button
-            type="button"
-            onClick={() => shareEventOnFacebook(event.id, event.title)}
-            style={{
-              background: '#1877F2',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 18px',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              boxShadow: '0 4px 14px rgba(24, 119, 242, 0.3)',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            <FacebookIcon size={16} color="#fff" /> Share on Facebook
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Google Calendar Button */}
+            <AddToCalendarButton event={event} label="Add to Google Calendar" />
+
+            {/* Facebook Share Button */}
+            <button
+              type="button"
+              onClick={() => shareEventOnFacebook(event.id, event.title)}
+              style={{
+                background: '#1877F2',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 18px',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: '0 4px 14px rgba(24, 119, 242, 0.3)',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <FacebookIcon size={16} color="#fff" /> Share on Facebook
+            </button>
+          </div>
         </div>
       </div>
     </div>

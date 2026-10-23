@@ -6,6 +6,7 @@ import {
   User, Shield, Users, HeartHandshake, Calendar, Edit3,
   CheckCircle, Ticket, Camera, Trash2, Upload, QrCode, X, Download
 } from 'lucide-react'
+import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
 
 // Digital Attendance Pass Modal
 function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClose }) {
@@ -755,7 +756,13 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <AddToCalendarButton
+                    event={ev}
+                    variant="small"
+                    label="Add to Calendar"
+                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                  />
                   {ev.checked_in === 1 ? (
                     <span style={{ background: '#15803d', color: '#fff', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700 }}>
                       ✓ Checked-In

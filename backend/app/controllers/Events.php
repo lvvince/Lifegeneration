@@ -80,7 +80,7 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
-        $event = $this->db->raw("SELECT id, title, capacity FROM events WHERE id = ? LIMIT 1", [$eventId])->fetch();
+        $event = $this->db->raw("SELECT id, title, event_date, event_time, location, capacity FROM events WHERE id = ? LIMIT 1", [$eventId])->fetch(PDO::FETCH_ASSOC);
         if (!$event) {
             api_response(['error' => 'Event not found.'], 404);
         }
@@ -105,6 +105,12 @@ class Events extends Controller
                 [$eventId, $user['id'], $memberId, $memberName]
             );
         }
+
+        // Automated Gmail SMTP Confirmation
+        try {
+            require_once dirname(dirname(__FILE__)) . '/helpers/mailer_helper.php';
+            send_event_rsvp_email($user, $event);
+        } catch (Exception $e) {}
 
         api_response([
             'success' => true,

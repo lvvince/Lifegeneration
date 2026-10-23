@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Plus, UserCheck, FileText } from 'lucide-react'
-import { apiGet } from '../../api.js'
+import { CalendarDays, Plus, UserCheck, FileText, Mail } from 'lucide-react'
+import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate, isUpcoming } from '../../lib/format.js'
-import { PageHeader, Stats, Empty, Loading } from '../../components/portal/ui.jsx'
+import { PageHeader, Stats, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
 
 export default function AdminDashboard() {
+  const toast = useToast()
   const [stats, setStats] = useState(null)
   const [events, setEvents] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [sendingTest, setSendingTest] = useState(false)
 
   useEffect(() => {
     Promise.all([apiGet('/api/admin/stats'), apiGet('/api/events')])
@@ -23,6 +25,28 @@ export default function AdminDashboard() {
 
   const nextEvents = events.filter((e) => isUpcoming(e.event_date)).slice(0, 4)
   const pending = stats?.pending_applications ?? 0
+
+  async function handleTestEmail() {
+    const user = getUser()
+    const targetEmail = prompt('Enter recipient email for Gmail SMTP test:', user?.email || 'admin@lifegeneration.org')
+    if (!targetEmail || !targetEmail.trim()) return
+
+    setSendingTest(true)
+    try {
+      const res = await apiPost('/api/admin/test-email', { email: targetEmail.trim() })
+      if (!res.success) {
+        toast(res.message || 'SMTP delivery failed. Check your Gmail credentials.', 'bad')
+      } else if (res.simulated) {
+        toast('Logged in simulation mode! Check runtime/logs/email.log', 'ok')
+      } else {
+        toast('Test email sent successfully via Gmail SMTP!', 'ok')
+      }
+    } catch (e) {
+      toast(e.message || 'SMTP test failed', 'bad')
+    } finally {
+      setSendingTest(false)
+    }
+  }
 
   return (
     <>
@@ -115,6 +139,20 @@ export default function AdminDashboard() {
             <Link to="/admin/reports" className="p-btn p-btn-secondary p-btn-sm">
               <FileText size={14} /> Open
             </Link>
+          </div>
+          <div className="p-row">
+            <div className="p-row-main">
+              <div className="p-row-title">Gmail SMTP Notifications</div>
+              <div className="p-row-sub">Sends automated Event RSVP & D-Group acceptance emails.</div>
+            </div>
+            <button
+              type="button"
+              className="p-btn p-btn-secondary p-btn-sm"
+              onClick={handleTestEmail}
+              disabled={sendingTest}
+            >
+              <Mail size={14} /> {sendingTest ? 'Sending...' : 'Test SMTP'}
+            </button>
           </div>
         </section>
       </div>

@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, ClipboardList, CalendarDays, UserCheck, FileText,
-  Network, HeartHandshake, MessageSquare, Menu, X, Sun, Moon, LogOut,
+  Network, HeartHandshake, MessageSquare, Megaphone, Menu, X, Sun, Moon, LogOut,
 } from 'lucide-react'
 import { getUser, logout } from '../../api.js'
 import { useTheme } from '../../useTheme.js'
 import { initials, resolveImageUrl } from '../../lib/format.js'
 import { ToastProvider, ConfirmDialog } from './ui.jsx'
+import AnnouncementBanner from '../AnnouncementBanner.jsx'
 import '../../styles/portal.css'
 
 const ADMIN_NAV = [
@@ -25,8 +26,9 @@ const ADMIN_NAV = [
   {
     label: 'Community',
     items: [
-      { to: '/dgroups', label: 'D-Groups', icon: Network },
-      { to: '/ministries', label: 'Ministries', icon: HeartHandshake },
+      { to: '/admin/dgroups', label: 'D-Groups', icon: Network },
+      { to: '/admin/ministries', label: 'Ministries', icon: HeartHandshake },
+      { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/prayer', label: 'Prayer wall', icon: MessageSquare },
     ],
   },
@@ -168,6 +170,7 @@ export default function PortalLayout({ children }) {
         </aside>
 
         <main className="p-main">
+          <AnnouncementBanner />
           <div className="p-wrap">{children}</div>
         </main>
 

@@ -12,7 +12,24 @@ class DGroups extends Controller
     public function index()
     {
         $user = get_auth_user();
-        $userDgroupId = $user['dgroup_id'] ?? null;
+        $userId = $user['id'] ?? 0;
+        $userRole = $user['role'] ?? '';
+        $isAdmin = ($userRole === 'admin');
+
+        $userDgroupId = null;
+        if ($userId > 0) {
+            $mStmt = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId]);
+            $mRow = $mStmt->fetch(PDO::FETCH_ASSOC);
+            $userDgroupId = $mRow['dgroup_id'] ?? null;
+        }
+
+        $userRequests = [];
+        if ($userId > 0) {
+            $rStmt = $this->db->raw("SELECT dgroup_id, status FROM dgroup_requests WHERE user_id = ?", [$userId]);
+            foreach ($rStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $userRequests[$r['dgroup_id']] = $r['status'];
+            }
+        }
 
         $stmt = $this->db->raw(
             "SELECT d.*, COUNT(m.id) AS member_count
@@ -25,7 +42,19 @@ class DGroups extends Controller
 
         foreach ($groups as &$g) {
             $g['member_count'] = (int) $g['member_count'];
-            $g['is_joined'] = ($userDgroupId && (int)$userDgroupId === (int)$g['id']);
+            $isMember = ($userDgroupId && (int)$userDgroupId === (int)$g['id']);
+            $g['is_joined'] = $isMember;
+
+            $reqStatus = $userRequests[$g['id']] ?? ($isMember ? 'approved' : null);
+            $g['request_status'] = $reqStatus;
+
+            $hasGc = !empty($g['gc_link']);
+            $g['has_gc'] = $hasGc;
+
+            // Only reveal the direct GC link if approved member or admin
+            if (!$isMember && !$isAdmin) {
+                $g['gc_link'] = null;
+            }
         }
 
         api_response($groups);
@@ -33,9 +62,21 @@ class DGroups extends Controller
 
     public function join()
     {
+        // Legacy direct join redirected to request_join
+        return $this->request_join();
+    }
+
+    /**
+     * POST /api/dgroups/request
+     * Youth submits request to join a D-Group
+     */
+    public function request_join()
+    {
         $user = require_auth_user();
+        $userId = (int) $user['id'];
         $input = api_input();
         $dgroupId = (int) ($input['dgroup_id'] ?? $input['id'] ?? 0);
+        $note = trim($input['note'] ?? $input['request_note'] ?? '');
 
         if ($dgroupId <= 0) {
             api_response(['error' => 'Valid D-Group ID is required.'], 422);
@@ -47,30 +88,190 @@ class DGroups extends Controller
             api_response(['error' => 'D-Group not found.'], 404);
         }
 
-        // Assign to user's member profile
-        $this->db->raw(
-            "UPDATE members SET dgroup_id = ?, updated_at = NOW() WHERE user_id = ?",
-            [$dgroupId, $user['id']]
-        );
+        // Check if already an approved member of this or another D-Group
+        $mStmt = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId]);
+        $mem = $mStmt->fetch(PDO::FETCH_ASSOC);
+        if ($mem && !empty($mem['dgroup_id'])) {
+            if ((int)$mem['dgroup_id'] === $dgroupId) {
+                api_response(['error' => "You are already an approved member of {$check['name']}!"], 400);
+            }
+        }
+
+        // Upsert join request
+        $existing = $this->db->raw(
+            "SELECT id, status FROM dgroup_requests WHERE dgroup_id = ? AND user_id = ? LIMIT 1",
+            [$dgroupId, $userId]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if ($existing) {
+            $this->db->raw(
+                "UPDATE dgroup_requests SET status = 'pending', request_note = ?, updated_at = NOW() WHERE id = ?",
+                [$note ?: null, $existing['id']]
+            );
+        } else {
+            $this->db->raw(
+                "INSERT INTO dgroup_requests (dgroup_id, user_id, status, request_note, created_at) VALUES (?, ?, 'pending', ?, NOW())",
+                [$dgroupId, $userId, $note ?: null]
+            );
+        }
 
         api_response([
             'success'   => true,
-            'message'   => "Successfully joined {$check['name']}!",
+            'status'    => 'pending',
+            'message'   => "Request submitted to join {$check['name']}! The leader will review your request to grant Group Chat (GC) access.",
             'dgroup_id' => $dgroupId
+        ]);
+    }
+
+    /**
+     * POST /api/dgroups/cancel-request
+     * Youth cancels their pending join request
+     */
+    public function cancel_request()
+    {
+        $user = require_auth_user();
+        $userId = (int) $user['id'];
+        $input = api_input();
+        $dgroupId = (int) ($input['dgroup_id'] ?? $input['id'] ?? 0);
+
+        if ($dgroupId > 0) {
+            $this->db->raw("DELETE FROM dgroup_requests WHERE dgroup_id = ? AND user_id = ? AND status = 'pending'", [$dgroupId, $userId]);
+        } else {
+            $this->db->raw("DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending'", [$userId]);
+        }
+
+        api_response([
+            'success' => true,
+            'message' => 'Join request cancelled.'
         ]);
     }
 
     public function leave()
     {
         $user = require_auth_user();
+        $userId = (int) $user['id'];
+
         $this->db->raw(
             "UPDATE members SET dgroup_id = NULL, updated_at = NOW() WHERE user_id = ?",
-            [$user['id']]
+            [$userId]
+        );
+
+        $this->db->raw(
+            "DELETE FROM dgroup_requests WHERE user_id = ?",
+            [$userId]
         );
 
         api_response([
             'success' => true,
             'message' => 'You have left your D-Group.'
+        ]);
+    }
+
+    /**
+     * GET /api/dgroups/requests
+     * Admin view of all D-Group join requests
+     */
+    public function requests()
+    {
+        require_admin_user();
+
+        $stmt = $this->db->raw(
+            "SELECT dr.*, 
+                    d.name AS dgroup_name, d.leader_name, d.gc_link,
+                    u.username, u.email, u.full_name,
+                    m.member_id, m.avatar, m.age, m.address
+             FROM dgroup_requests dr
+             INNER JOIN dgroups d ON d.id = dr.dgroup_id
+             INNER JOIN users u ON u.id = dr.user_id
+             LEFT JOIN members m ON m.user_id = u.id
+             ORDER BY dr.created_at DESC"
+        );
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($requests as &$r) {
+            $r['id'] = (int) $r['id'];
+            $r['dgroup_id'] = (int) $r['dgroup_id'];
+            $r['user_id'] = (int) $r['user_id'];
+            $r['display_name'] = $r['full_name'] ?: $r['username'];
+        }
+
+        api_response($requests);
+    }
+
+    /**
+     * POST /api/dgroups/accept-request
+     * Admin approves youth request and unlocks GC
+     */
+    public function accept_request()
+    {
+        require_admin_user();
+        $input = api_input();
+        $requestId = (int) ($input['request_id'] ?? $input['id'] ?? 0);
+
+        if ($requestId <= 0) {
+            api_response(['error' => 'Request ID is required.'], 422);
+        }
+
+        $req = $this->db->raw(
+            "SELECT dr.*, d.name AS dgroup_name, d.leader_name, d.schedule, d.location, d.gc_link,
+                    u.email, u.full_name, u.username
+             FROM dgroup_requests dr
+             INNER JOIN dgroups d ON d.id = dr.dgroup_id
+             INNER JOIN users u ON u.id = dr.user_id
+             WHERE dr.id = ? LIMIT 1",
+            [$requestId]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if (!$req) {
+            api_response(['error' => 'Request not found.'], 404);
+        }
+
+        // 1. Mark request approved
+        $this->db->raw(
+            "UPDATE dgroup_requests SET status = 'approved', updated_at = NOW() WHERE id = ?",
+            [$requestId]
+        );
+
+        // 2. Assign to member profile
+        $this->db->raw(
+            "UPDATE members SET dgroup_id = ?, updated_at = NOW() WHERE user_id = ?",
+            [$req['dgroup_id'], $req['user_id']]
+        );
+
+        // Automated Gmail SMTP Acceptance Notification
+        try {
+            require_once dirname(dirname(__FILE__)) . '/helpers/mailer_helper.php';
+            send_dgroup_accepted_email($req);
+        } catch (Exception $e) {}
+
+        api_response([
+            'success' => true,
+            'message' => "Request approved! Member now has official access to {$req['dgroup_name']} and the Group Chat (GC)."
+        ]);
+    }
+
+    /**
+     * POST /api/dgroups/reject-request
+     * Admin rejects youth request
+     */
+    public function reject_request()
+    {
+        require_admin_user();
+        $input = api_input();
+        $requestId = (int) ($input['request_id'] ?? $input['id'] ?? 0);
+
+        if ($requestId <= 0) {
+            api_response(['error' => 'Request ID is required.'], 422);
+        }
+
+        $this->db->raw(
+            "UPDATE dgroup_requests SET status = 'rejected', updated_at = NOW() WHERE id = ?",
+            [$requestId]
+        );
+
+        api_response([
+            'success' => true,
+            'message' => 'Request declined.'
         ]);
     }
 
@@ -83,6 +284,7 @@ class DGroups extends Controller
         $leaderName  = trim($input['leader_name'] ?? '');
         $schedule    = trim($input['schedule'] ?? '');
         $location    = trim($input['location'] ?? '');
+        $gcLink      = trim($input['gc_link'] ?? '');
         $description = trim($input['description'] ?? '');
         $image       = trim($input['image'] ?? '');
 
@@ -91,9 +293,9 @@ class DGroups extends Controller
         }
 
         $this->db->raw(
-            "INSERT INTO dgroups (name, leader_name, schedule, location, description, image, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())",
-            [$name, $leaderName, $schedule, $location, $description, $image]
+            "INSERT INTO dgroups (name, leader_name, schedule, location, gc_link, description, image, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image]
         );
 
         $newId = (int) $this->db->last_id();
@@ -118,14 +320,15 @@ class DGroups extends Controller
         $leaderName  = trim($input['leader_name'] ?? '');
         $schedule    = trim($input['schedule'] ?? '');
         $location    = trim($input['location'] ?? '');
+        $gcLink      = trim($input['gc_link'] ?? '');
         $description = trim($input['description'] ?? '');
         $image       = trim($input['image'] ?? '');
 
         $this->db->raw(
             "UPDATE dgroups
-             SET name = ?, leader_name = ?, schedule = ?, location = ?, description = ?, image = ?, updated_at = NOW()
+             SET name = ?, leader_name = ?, schedule = ?, location = ?, gc_link = ?, description = ?, image = ?, updated_at = NOW()
              WHERE id = ?",
-            [$name, $leaderName, $schedule, $location, $description, $image, $id]
+            [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image, $id]
         );
 
         api_response(['success' => true, 'message' => 'D-Group updated successfully.']);
@@ -142,8 +345,49 @@ class DGroups extends Controller
         }
 
         $this->db->raw("UPDATE members SET dgroup_id = NULL WHERE dgroup_id = ?", [$id]);
+        $this->db->raw("DELETE FROM dgroup_requests WHERE dgroup_id = ?", [$id]);
         $this->db->raw("DELETE FROM dgroups WHERE id = ?", [$id]);
 
         api_response(['success' => true, 'message' => 'D-Group deleted successfully.']);
+    }
+
+    public function upload_image()
+    {
+        require_admin_user();
+
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        }
+
+        $file    = $_FILES['image'];
+        $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowed)) {
+            api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
+        }
+
+        if ($file['size'] > 20 * 1024 * 1024) {
+            api_response(['error' => 'File size exceeds 20 MB limit.'], 422);
+        }
+
+        $filename  = 'dgroup_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
+        $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'dgroups' . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            api_response(['error' => 'Failed to save uploaded image.'], 500);
+        }
+
+        $relativeUrl = 'uploads/dgroups/' . $filename;
+        api_response([
+            'success' => true,
+            'url'     => $relativeUrl,
+            'message' => 'D-Group image uploaded successfully.'
+        ]);
     }
 }

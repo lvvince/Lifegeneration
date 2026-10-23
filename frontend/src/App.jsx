@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
+import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PortalLayout from './components/portal/PortalLayout.jsx'
 import { getUser } from './api.js'
@@ -21,6 +22,7 @@ import AdminEvents from './pages/admin/AdminEvents.jsx'
 import AdminDGroups from './pages/admin/AdminDGroups.jsx'
 import AdminMinistries from './pages/admin/AdminMinistries.jsx'
 import AdminReports from './pages/admin/AdminReports.jsx'
+import AdminAnnouncements from './pages/admin/AdminAnnouncements.jsx'
 
 // Public pages na walang portal layout at may sariling full-width na itsura
 const FULL_BLEED = ['/', '/login', '/register']
@@ -51,6 +53,7 @@ function PageRoutes() {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/dgroups" element={<AdminDGroups />} />
         <Route path="/admin/ministries" element={<AdminMinistries />} />
+        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
@@ -66,6 +69,7 @@ export default function App() {
   if (FULL_BLEED.includes(pathname)) {
     return (
       <>
+        <AnnouncementBanner />
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -88,6 +92,7 @@ export default function App() {
   // Bisita: public pages na may navbar
   return (
     <>
+      <AnnouncementBanner />
       <Navbar />
       <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 60px' }}>
         <PageRoutes />

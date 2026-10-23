@@ -247,12 +247,10 @@ ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
 -- Seed Ministries
 INSERT INTO `ministries` (`id`, `name`, `icon`, `description`, `is_active`) VALUES
-(1, 'Worship Team', '🎵', 'Lead the congregation in musical worship through singing and instruments.', 1),
-(2, 'Media & Tech', '📽️', 'Operate cameras, livestreaming, sound systems, and presentation software.', 1),
-(3, 'Ushers & Greeters', '🤝', 'Welcome guests, guide seating, and maintain order every service.', 1),
-(4, 'Outreach Team', '🌍', 'Community outreach, evangelism, and social impact projects in our city.', 1),
-(5, 'Children\'s Ministry', '👶', 'Nurture the faith of the youngest members through age-appropriate teaching.', 1),
-(6, 'Prayer Warriors', '🙏', 'Intercede for the congregation, city, and nation in dedicated prayer sessions.', 1)
+(1, 'Stage & Sound Production', 'headphones', 'Manage audio systems, stage monitoring, and sound mixing for every event.', 1),
+(2, 'Media & Livestream', 'monitor', 'Operate cameras, graphics, livestreaming, and presentation software at events.', 1),
+(3, 'Event Hospitality', 'usercheck', 'Welcome guests, manage registration, guide seating, and create a warm atmosphere.', 1),
+(4, 'Outreach & Community', 'globe', 'Lead community engagement, evangelism drives, and social impact event projects.', 1)
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
 -- Seed Events
@@ -261,3 +259,26 @@ INSERT INTO `events` (`id`, `title`, `description`, `location`, `event_date`, `e
 (2, 'Youth & Young Adults Ignite Night', 'An energetic night of acoustic worship, real conversations, mentorship, and fellowship for students.', 'Youth Center Hall B', DATE_ADD(CURRENT_DATE(), INTERVAL 6 DAY), '6:30 PM - 9:00 PM', 120, 1),
 (3, 'LifeGen Leadership & Ministry Summit', 'Equipping and alignment session for all ministry volunteers and D-Group leaders.', 'Conference Room 1 & Zoom', DATE_ADD(CURRENT_DATE(), INTERVAL 14 DAY), '1:00 PM - 4:00 PM', 80, 1)
 ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);
+
+-- ----------------------------------------------------------------------------
+-- 11. Announcements Table
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS nnouncements (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  	itle VARCHAR(200) NOT NULL,
+  content TEXT NOT NULL,
+  category ENUM('urgent', 'event', 'ministry', 'general') NOT NULL DEFAULT 'general',
+  adge_text VARCHAR(50) DEFAULT NULL,
+  link_url VARCHAR(255) DEFAULT NULL,
+  link_text VARCHAR(100) DEFAULT NULL,
+  is_pinned TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+  is_active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+  expires_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_active_pinned (is_active, is_pinned, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO nnouncements (id, 	itle, content, category, adge_text, link_url, link_text, is_pinned, is_active) VALUES
+(1, 'Welcome to Life Generation Calapan!', 'Join us this week for youth gatherings, discipleship groups, and fellowship. Check our events tab to register!', 'general', 'WELCOME', '/events', 'View Gatherings', 1, 1)
+ON DUPLICATE KEY UPDATE 	itle=VALUES(	itle);
