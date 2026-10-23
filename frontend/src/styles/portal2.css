@@ -1010,3 +1010,21 @@ html[data-theme='dark'] .portal.px {
   max-width: 1280px;
   margin: 0 auto;
 }
+
+/* rail: kasya na sa screen, hindi na kailangang i-scroll */
+.px-rail { padding: 12px 0; gap: 8px; }
+.px-logo { width: 40px; height: 40px; margin-bottom: 2px; }
+.px-logo img { width: 32px; height: 32px; }
+.px-nav {
+  gap: clamp(4px, 1.1vh, 10px);
+  padding: 4px 10px;
+  overflow: visible;
+}
+.portal.px .px-ico {
+  width: clamp(38px, 5.6vh, 48px);
+  height: clamp(38px, 5.6vh, 48px);
+  border-radius: 14px;
+}
+@media (max-height: 620px) {
+  .px-nav { overflow-y: auto; }
+}

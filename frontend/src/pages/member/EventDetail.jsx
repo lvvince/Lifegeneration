@@ -94,7 +94,7 @@ export default function EventDetail() {
             fontWeight: 700,
             marginBottom: 12
           }}>
-            ✓ Checked-In at Venue
+            <CheckCircle size={14} /> Checked in at venue
           </div>
         )}
 

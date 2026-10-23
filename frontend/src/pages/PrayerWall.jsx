@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Sparkles, CheckCircle2, Lock, Plus, Trash2, Heart } from 'lucide-react'
+import { Sparkles, CheckCircle2, Lock, Plus, Trash2, Heart, Users } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../api.js'
 import { initials } from '../lib/format.js'
-import { Modal, ConfirmDialog, Field, useToast } from '../components/portal/ui.jsx'
+import { Modal, ConfirmDialog, Field, Switch, useToast } from '../components/portal/ui.jsx'
 import '../styles/pages.css'
 
 export default function PrayerWall() {
@@ -154,14 +154,22 @@ export default function PrayerWall() {
                 <textarea id="pr-body" className="p-input" rows={4} value={form.body} onChange={set('body')} placeholder="Share what we can pray about" required />
               </Field>
               <Field label="Who can see this?">
-                <select className="p-input" value={form.visibility} onChange={set('visibility')}>
-                  <option value="public">Everyone in the community</option>
-                  <option value="private">Leaders only</option>
-                </select>
+                <div className="pg-seg" role="radiogroup" aria-label="Who can see this?">
+                  <button type="button" role="radio" aria-checked={form.visibility === 'public'} className={form.visibility === 'public' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'public' }))}>
+                    <Users size={16} /> Everyone
+                  </button>
+                  <button type="button" role="radio" aria-checked={form.visibility === 'private'} className={form.visibility === 'private' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'private' }))}>
+                    <Lock size={16} /> Leaders only
+                  </button>
+                </div>
               </Field>
-              <label className="p-inline" style={{ marginBottom: 14, cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.anonymous} onChange={set('anonymous')} /> Post without my name
-              </label>
+              <div className="pg-switchrow">
+                <div>
+                  <b>Post without my name</b>
+                  <small>Your name will be hidden on the wall.</small>
+                </div>
+                <Switch checked={form.anonymous} label="Post without my name" onChange={() => setForm((f) => ({ ...f, anonymous: !f.anonymous }))} />
+              </div>
             </div>
             <div className="p-modal-foot">
               <button type="button" className="p-btn p-btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>

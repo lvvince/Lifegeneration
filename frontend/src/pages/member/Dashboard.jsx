@@ -2,11 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { apiGet, apiPost, getUser, setUser, API_URL } from '../../api.js'
 import { resolveImageUrl, initials } from '../../lib/format.js'
-import {
-  User, Shield, Users, HeartHandshake, Calendar, Edit3,
-  CheckCircle, Ticket, Camera, Trash2, Upload, QrCode, X, Download
-} from 'lucide-react'
-import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
+import { ArrowRight, Cake, Calendar, CalendarDays, CalendarPlus, Camera, Check, CheckCircle, Clock, Download, Edit3, HeartHandshake, MapPin, QrCode, Shield, Ticket, Trash2, Upload, User, Users, X } from 'lucide-react'
+import { addToGoogleCalendar } from '../../utils/calendar.js'
+import '../../styles/pages.css'
 
 // Digital Attendance Pass Modal
 function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClose }) {
@@ -599,185 +597,93 @@ export default function Dashboard() {
 
       {saveMsg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{saveMsg}</div>}
 
-      {/* Grid of Sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 24 }}>
-        {/* D-Group Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <Users size={22} color="var(--navy)" />
-              <h3 style={{ margin: 0 }}>My Discipleship Group</h3>
+      {/* Group + Ministry */}
+      <div className="pf-grid">
+        {[
+          { icon: Users, label: 'My discipleship group', value: member.dgroup_name, empty: 'Not in a group yet', text: member.dgroup_name ? 'Connected in weekly fellowship and study.' : 'Groups help you grow in faith with friends your age.', to: '/dgroups', cta: member.dgroup_name ? 'View D-Groups' : 'Find a group' },
+          { icon: HeartHandshake, label: 'My ministry service', value: member.ministry_name, empty: 'Not on a team yet', text: member.ministry_name ? 'Serving with your ministry team.' : 'Use your gifts to serve the community.', to: '/ministries', cta: member.ministry_name ? 'View ministries' : 'Apply to serve' },
+        ].map(({ icon: Icon, label, value, empty, text, to, cta }) => (
+          <section className="pf-card" key={label}>
+            <span className="neo-tile"><Icon size={20} strokeWidth={1.7} /></span>
+            <div className="pf-card-body">
+              <small>{label}</small>
+              <h3>{value || empty}</h3>
+              <p>{text}</p>
             </div>
-
-            {member.dgroup_name ? (
-              <div>
-                <p style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '1.1rem', margin: '0 0 4px' }}>
-                  {member.dgroup_name}
-                </p>
-                <p className="muted" style={{ fontSize: '0.9rem' }}>
-                  Connected in active weekly fellowship and study.
-                </p>
-              </div>
-            ) : (
-              <p className="muted" style={{ fontSize: '0.92rem' }}>
-                You haven't joined a D-Group yet. Discipleship groups help you grow deeper in faith with peers.
-              </p>
-            )}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <Link to="/dgroups" className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
-              {member.dgroup_name ? 'View D-Groups' : 'Browse D-Groups to Join'}
-            </Link>
-          </div>
-        </div>
-
-        {/* Ministry Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <HeartHandshake size={22} color="var(--navy)" />
-              <h3 style={{ margin: 0 }}>My Ministry Service</h3>
-            </div>
-
-            {member.ministry_name ? (
-              <div>
-                <p style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '1.1rem', margin: '0 0 4px' }}>
-                  {member.ministry_name}
-                </p>
-                <p className="muted" style={{ fontSize: '0.9rem' }}>
-                  Active volunteer team member serving in worship & events.
-                </p>
-              </div>
-            ) : (
-              <p className="muted" style={{ fontSize: '0.92rem' }}>
-                You are not currently enrolled in a ministry team. Use your talents to serve God's people!
-              </p>
-            )}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <Link to="/ministries" className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
-              {member.ministry_name ? 'View Ministries' : 'Apply for a Ministry'}
-            </Link>
-          </div>
-        </div>
-
-        {/* Profile Details Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <User size={22} color="var(--navy)" />
-                <h3 style={{ margin: 0 }}>Personal Details</h3>
-              </div>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--navy)', cursor: 'pointer', padding: 4 }}
-                title="Edit details"
-              >
-                <Edit3 size={18} />
-              </button>
-            </div>
-
-            {editMode ? (
-              <form onSubmit={handleSaveProfile}>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Full Name</label>
-                  <input
-                    value={editForm.full_name}
-                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                  />
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Age</label>
-                  <input
-                    type="number"
-                    value={editForm.age}
-                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
-                  />
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Address</label>
-                  <input
-                    value={editForm.address}
-                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Save</button>
-                  <button type="button" onClick={() => setEditMode(false)} style={{ background: '#ccc', color: '#333', padding: '6px 12px', fontSize: '0.85rem' }}>Cancel</button>
-                </div>
-              </form>
-            ) : (
-              <div style={{ fontSize: '0.9rem', color: '#334' }}>
-                <p><strong>Age:</strong> {profile?.age || member?.age || 'Not set'}</p>
-                <p><strong>Address:</strong> {profile?.address || member?.address || 'Not set'}</p>
-                <p><strong>Joined:</strong> {new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString()}</p>
-              </div>
-            )}
-          </div>
-        </div>
+            <Link to={to} className="pf-btn">{cta}</Link>
+          </section>
+        ))}
       </div>
 
-      {/* RSVP'd Events Section */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Calendar size={22} color="var(--navy)" />
-            <h3 style={{ margin: 0 }}>My Reserved Events</h3>
-          </div>
-          <Link to="/events" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Browse All Events &rarr;</Link>
-        </div>
-
-        {myEvents.length === 0 ? (
-          <p className="muted" style={{ margin: 0 }}>
-            You haven't RSVP'd for any upcoming events yet. Check out upcoming gatherings and reserve your seat!
-          </p>
+      {/* Personal details (hiwalay, buong lapad) */}
+      <section className="pf-details">
+        <header>
+          <div className="pf-title"><span className="neo-tile"><User size={20} strokeWidth={1.7} /></span><h3>Personal details</h3></div>
+          {!editMode && (
+            <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setEditMode(true)}><Edit3 size={16} /> Edit</button>
+          )}
+        </header>
+        {editMode ? (
+          <form onSubmit={handleSaveProfile} className="pf-form">
+            <label>Full name
+              <input className="pf-input" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+            </label>
+            <label>Age
+              <input className="pf-input" type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
+            </label>
+            <label className="pf-wide">Address
+              <input className="pf-input" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+            </label>
+            <div className="pf-actions pf-wide">
+              <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setEditMode(false)}>Cancel</button>
+              <button type="submit" className="pf-btn">Save changes</button>
+            </div>
+          </form>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-            {myEvents.map((ev) => (
-              <div key={ev.id} style={{
-                background: 'rgba(47,143,91,0.06)',
-                border: '1px solid #c2ebcf',
-                borderRadius: 12,
-                padding: '14px 18px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <h4 style={{ margin: '0 0 4px', color: 'var(--navy)' }}>{ev.title}</h4>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-                    {ev.event_date} &bull; {ev.event_time}
-                  </div>
-                  <div style={{ fontSize: '0.82rem', color: '#4b6354', marginTop: 2 }}>
-                    📍 {ev.location}
-                  </div>
-                </div>
+          <dl className="pf-facts">
+            <div><dt><Cake size={15} /> Age</dt><dd>{profile?.age || member?.age || 'Not set'}</dd></div>
+            <div><dt><MapPin size={15} /> Address</dt><dd>{profile?.address || member?.address || 'Not set'}</dd></div>
+            <div><dt><CalendarDays size={15} /> Joined</dt><dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd></div>
+          </dl>
+        )}
+      </section>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <AddToCalendarButton
-                    event={ev}
-                    variant="small"
-                    label="Add to Calendar"
-                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
-                  />
-                  {ev.checked_in === 1 ? (
-                    <span style={{ background: '#15803d', color: '#fff', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700 }}>
-                      ✓ Checked-In
-                    </span>
-                  ) : (
-                    <span style={{ background: '#e3f5ea', color: '#1e7a46', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600 }}>
-                      Attending
-                    </span>
-                  )}
+      {/* Reserved events */}
+      <section className="pf-events">
+        <header>
+          <div className="pf-title"><span className="neo-tile"><Calendar size={20} strokeWidth={1.7} /></span><h3>My reserved events</h3></div>
+          <Link to="/events" className="pf-link">Browse events <ArrowRight size={15} /></Link>
+        </header>
+        {myEvents.length === 0 ? (
+          <p className="pf-empty">You have not reserved a seat yet. Check the upcoming gatherings and sign up.</p>
+        ) : (
+          <div className="pf-event-list">
+            {myEvents.map((ev) => {
+              const d = new Date(String(ev.event_date).slice(0, 10) + 'T00:00:00')
+              return (
+                <div className="pf-event" key={ev.id}>
+                  <span className="pf-date"><b>{d.getDate()}</b><small>{d.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</small></span>
+                  <div className="pf-event-main">
+                    <Link to={`/events/${ev.id}`}>{ev.title}</Link>
+                    <span>{ev.event_time && <><Clock size={14} /> {ev.event_time}</>}</span>
+                    <span>{ev.location && <><MapPin size={14} /> {ev.location}</>}</span>
+                  </div>
+                  <div className="pf-event-side">
+                    {ev.checked_in === 1 ? (
+                      <span className="pf-status is-in"><Check size={13} /> Checked in</span>
+                    ) : (
+                      <span className="pf-status">Going</span>
+                    )}
+                    <button type="button" className="pf-btn pf-btn-ghost pf-sm" onClick={() => addToGoogleCalendar(ev)}>
+                      <CalendarPlus size={15} /> Add to calendar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Digital Pass Modal */}
       {showQrModal && (

@@ -83,7 +83,7 @@ export function getGoogleCalendarUrl(event) {
 
   const detailsArray = []
   if (event.description) detailsArray.push(event.description.trim())
-  if (eventLink) detailsArray.push(`\n🔗 Event details & check-in: ${eventLink}`)
+  if (eventLink) detailsArray.push(`\nEvent details & check-in: ${eventLink}`)
   detailsArray.push('\nLife Generation Calapan Youth Ministry')
 
   const params = new URLSearchParams({

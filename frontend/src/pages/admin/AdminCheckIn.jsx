@@ -15,8 +15,9 @@ import {
 } from 'lucide-react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { apiGet, apiPost } from '../../api.js'
-import { fmtDate, fmtDateTime } from '../../lib/format.js'
+import { fmtDate, fmtDateTime, initials } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, Tabs, Badge, useToast } from '../../components/portal/ui.jsx'
+import '../../styles/pages.css'
 
 export default function AdminCheckIn() {
   const toast = useToast()
@@ -253,337 +254,163 @@ export default function AdminCheckIn() {
   return (
     <>
       <style>{`
-        #qr-reader {
-          border: none !important;
-          background: #000 !important;
-          border-radius: 14px;
-          overflow: hidden;
-        }
-        #qr-reader video {
-          border-radius: 14px;
-          object-fit: cover;
-          max-height: 320px;
-        }
-        #qr-reader img[alt="Info icon"] {
-          display: none !important;
-        }
-        #qr-reader__scan_region {
-          border: 2px dashed #f97316 !important;
-          border-radius: 12px;
-        }
+        #qr-reader { border: none !important; background: #000 !important; border-radius: 20px; overflow: hidden; width: 100%; }
+        #qr-reader video { border-radius: 20px; object-fit: cover; max-height: 320px; }
+        #qr-reader img[alt="Info icon"] { display: none !important; }
+        #qr-reader__scan_region { border-radius: 16px; }
       `}</style>
+      <PageHeader title="Check-in" desc="Scan a member's QR pass or type their ID. Walk-ins are welcome." />
 
-      <PageHeader
-        title="Check-in & Attendance"
-        desc="Scan member QR codes with your camera or enter Member IDs manually. Fast, automated, and supports walk-ins."
-      />
-
-      <section className="p-panel">
-        <div className="p-panel-body">
-          {/* Event Selection */}
-          <div className="p-field" style={{ marginBottom: 20 }}>
-            <label className="p-label" htmlFor="ci-event">Selected Event</label>
-            <select
-              id="ci-event"
-              className="p-input"
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-              style={{ fontSize: 15, fontWeight: 600 }}
-            >
+      <div className="ck-grid">
+        <div className="ck-side">
+          <section className="p-panel ck-card">
+            <label className="p-label" htmlFor="ci-event">Event</label>
+            <select id="ci-event" className="p-input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
               {events.length === 0 && <option value="">No events yet</option>}
               {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title} — {fmtDate(e.event_date)}
-                </option>
+                <option key={e.id} value={e.id}>{e.title} — {fmtDate(e.event_date)}</option>
               ))}
             </select>
-          </div>
-
-          {/* Action Row: Camera Toggle + Quick Info */}
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            padding: '14px 16px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12,
-            marginBottom: 20
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: isScanning ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                color: isScanning ? '#ef4444' : '#3b82f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {isScanning ? <CameraOff size={20} /> : <QrCode size={20} />}
+            <div className="ck-ring-row">
+              <div className="ck-ring" aria-hidden="true">
+                <svg viewBox="0 0 36 36">
+                  <circle className="bg" cx="18" cy="18" r="15.9" />
+                  <circle className="fg" cx="18" cy="18" r="15.9" pathLength="100" strokeDasharray={`${pct} 100`} />
+                </svg>
+                <b>{pct}%</b>
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>
-                  {isScanning ? 'Live QR Scanner Active' : 'Camera QR Scanner'}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                  {isScanning
-                    ? 'Point your phone or webcam at the member’s pass'
-                    : 'Use device camera for touchless instant check-in'}
-                </div>
+              <div className="ck-ring-text">
+                <strong>{checked} of {attendees.length}</strong>
+                <span>checked in</span>
+                {current && <small>{fmtDate(current.event_date)}{current.location ? ` · ${current.location}` : ''}</small>}
               </div>
             </div>
+          </section>
 
-            <button
-              type="button"
-              onClick={toggleScanner}
-              disabled={!eventId}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 18px',
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: '0.88rem',
-                border: 'none',
-                cursor: eventId ? 'pointer' : 'not-allowed',
-                background: isScanning
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                color: isScanning ? '#ef4444' : '#ffffff',
-                boxShadow: isScanning ? 'none' : '0 4px 12px rgba(234, 88, 12, 0.3)',
-                transition: 'all 0.2s ease',
-              }}
-            >
+          <section className="p-panel ck-card">
+            <div className={`ck-scan${isScanning ? ' is-live' : ''}`}>
               {isScanning ? (
                 <>
-                  <CameraOff size={16} /> Stop Camera
+                  <div id="qr-reader" />
+                  {lastScanned && <div className="ck-last">Last detected <b className="p-mono">{lastScanned}</b></div>}
                 </>
               ) : (
-                <>
-                  <Camera size={16} /> Open QR Scanner
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Camera Scanner Viewfinder */}
-          {isScanning && (
-            <div style={{
-              background: '#090d16',
-              border: '2px solid rgba(34, 197, 94, 0.35)',
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 20,
-              textAlign: 'center',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.5)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 12,
-                padding: '0 4px'
-              }}>
-                <span style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-                  Camera Live — Scanning for LifeGen QR Pass
-                </span>
-                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                  Audio feedback on scan
-                </span>
-              </div>
-
-              <div id="qr-reader" style={{ width: '100%', maxWidth: 420, margin: '0 auto' }} />
-
-              {lastScanned && (
-                <div style={{ marginTop: 12, fontSize: '0.82rem', color: '#e5e7eb' }}>
-                  Last detected: <strong className="p-mono" style={{ color: '#4ade80' }}>{lastScanned}</strong>
+                <div className="ck-idle">
+                  <span className="neo-tile"><QrCode size={22} strokeWidth={1.7} /></span>
+                  <b>Camera scanner</b>
+                  <small>Start the camera and point it at a member's QR pass.</small>
                 </div>
               )}
             </div>
-          )}
-
-          {cameraError && (
-            <div className="p-banner bad" style={{ marginBottom: 16 }}>
-              <AlertCircle size={18} style={{ flex: 'none', marginTop: 1 }} />
-              <div>
-                <strong>Camera Error:</strong> {cameraError}
-                <div style={{ fontSize: '0.78rem', marginTop: 4, color: '#fca5a5' }}>
-                  Make sure camera permissions are allowed in your browser address bar. You can still check in members manually below!
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Manual Member ID Input (Always available!) */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              checkIn(memberId)
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label className="p-label" htmlFor="ci-member" style={{ margin: 0 }}>
-                Manual Check-In (Member ID, Username, or Email)
-              </label>
-              <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>Format: LG-YYYY-XXXXX</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                id="ci-member"
-                ref={inputRef}
-                className="p-input p-mono"
-                style={{ fontSize: 16, letterSpacing: 0.5 }}
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
-                placeholder="e.g. LG-2026-00001 or john_doe"
-                autoComplete="off"
-                autoCapitalize="characters"
-                disabled={!eventId}
-              />
-              <button
-                type="submit"
-                className="p-btn p-btn-primary"
-                disabled={submitting || !memberId.trim() || !eventId}
-                style={{ whiteSpace: 'nowrap', padding: '0 20px' }}
-              >
-                {submitting ? 'Checking…' : 'Check In'}
-              </button>
-            </div>
-          </form>
-
-          {/* Result Banner */}
-          {result && (
-            <div
-              className={`p-banner ${result.tone}`}
-              role="status"
-              style={{
-                marginTop: 16,
-                padding: '12px 16px',
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                animation: 'fadeIn 0.25s ease'
-              }}
+            <button
+              type="button"
+              className={`p-btn ck-wide ${isScanning ? 'p-btn-secondary' : 'p-btn-primary'}`}
+              onClick={toggleScanner}
+              disabled={!eventId}
             >
-              {result.tone === 'ok' ? (
-                <CheckCircle2 size={22} style={{ color: '#22c55e', flex: 'none' }} />
-              ) : result.tone === 'warn' ? (
-                <AlertCircle size={22} style={{ color: '#f59e0b', flex: 'none' }} />
-              ) : (
-                <AlertCircle size={22} style={{ color: '#ef4444', flex: 'none' }} />
-              )}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.94rem' }}>
-                  {result.text}
+              {isScanning ? <><CameraOff size={17} /> Stop camera</> : <><Camera size={17} /> Start scanner</>}
+            </button>
+
+            {cameraError && (
+              <div className="p-banner bad">
+                <AlertCircle size={18} style={{ flex: 'none', marginTop: 1 }} />
+                <div>
+                  <strong>Camera error:</strong> {cameraError}
+                  <div style={{ fontSize: 12.5, marginTop: 4 }}>Allow the camera in your browser, or check in manually below.</div>
                 </div>
-                {result.member && (
-                  <div style={{ fontSize: '0.8rem', opacity: 0.85, marginTop: 2 }}>
-                    ID: <span className="p-mono">{result.member.member_id}</span> &bull; {result.member.email}
-                  </div>
-                )}
               </div>
+            )}
+
+            <div className="ck-or"><span>or type an ID</span></div>
+            <form onSubmit={(e) => { e.preventDefault(); checkIn(memberId) }}>
+              <div className="ck-manual">
+                <input
+                  id="ci-member"
+                  ref={inputRef}
+                  className="p-input p-mono"
+                  value={memberId}
+                  onChange={(e) => setMemberId(e.target.value)}
+                  placeholder="LG-2026-00001"
+                  aria-label="Member ID, username or email"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  disabled={!eventId}
+                />
+                <button type="submit" className="p-btn p-btn-primary" disabled={submitting || !memberId.trim() || !eventId}>
+                  {submitting ? 'Checking…' : 'Check in'}
+                </button>
+              </div>
+              <span className="p-hint">Member ID, username or email.</span>
+            </form>
+
+            {result && (
+              <div className={`p-banner ${result.tone}`} role="status">
+                {result.tone === 'ok' ? <CheckCircle2 size={20} style={{ flex: 'none' }} /> : <AlertCircle size={20} style={{ flex: 'none' }} />}
+                <div>
+                  <b>{result.text}</b>
+                  {result.member && (
+                    <div style={{ fontSize: 12.5, marginTop: 2 }}>
+                      <span className="p-mono">{result.member.member_id}</span>{result.member.email ? ` · ${result.member.email}` : ''}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <section className="p-panel ck-list">
+          <div className="p-panel-head">
+            <div>
+              <h2 className="p-h2">{current ? current.title : 'Attendance'}</h2>
+              <div className="p-row-sub">{checked} of {attendees.length} present</div>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* Attendance Stats & Attendees List */}
-      <section className="p-panel">
-        <div className="p-panel-head">
-          <div>
-            <h2 className="p-h2">{current ? current.title : 'Attendance'}</h2>
-            <div style={{ fontSize: '0.82rem', color: '#9ca3af', marginTop: 2 }}>
-              {current ? `${fmtDate(current.event_date)} at ${current.location || 'Life Generation Church'}` : ''}
-            </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <span className="p-num" style={{ fontSize: 15, fontWeight: 700, color: '#4ade80' }}>
-              {checked} / {attendees.length}
-            </span>
-            <span className="p-muted" style={{ fontSize: 12, marginLeft: 4 }}>
-              ({pct}% present)
-            </span>
-          </div>
-        </div>
-
-        <div style={{ padding: '0 16px' }}>
-          <div className="p-bar" style={{ marginTop: 12 }} aria-hidden="true">
-            <i style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #10b981, #22c55e)' }} />
-          </div>
-        </div>
-
-        <div className="p-panel-body" style={{ paddingBottom: 0 }}>
-          <Tabs
-            value={tab}
-            onChange={setTab}
-            tabs={[
-              { value: 'all', label: 'All Attendees', count: attendees.length },
-              { value: 'in', label: 'Checked In', count: checked },
-              { value: 'out', label: 'Pending', count: attendees.length - checked },
-            ]}
-          />
-          <div className="p-search" style={{ marginBottom: 12 }}>
-            <Search size={16} />
-            <input
-              className="p-input"
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter by name, email, or Member ID…"
-              aria-label="Search attendees"
+          <div className="p-panel-body" style={{ paddingBottom: 4 }}>
+            <Tabs
+              value={tab}
+              onChange={setTab}
+              tabs={[
+                { value: 'all', label: 'All', count: attendees.length },
+                { value: 'in', label: 'Checked in', count: checked },
+                { value: 'out', label: 'Pending', count: attendees.length - checked },
+              ]}
             />
+            <div className="p-search" style={{ marginBottom: 6 }}>
+              <Search size={16} />
+              <input className="p-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or ID" aria-label="Search attendees" />
+            </div>
           </div>
-        </div>
-
-        {loadingList ? (
-          <Loading rows={4} />
-        ) : shown.length === 0 ? (
-          <Empty icon={Users} title="No attendees found" desc="Members who sign up or are checked in will appear here." />
-        ) : (
-          shown.map((a) => {
-            const done = Number(a.checked_in) === 1
-            return (
-              <div className="p-row" key={a.id}>
-                <div className="p-row-main">
-                  <div className="p-row-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>{a.member_name}</span>
-                    {done && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#22c55e' }}>
-                        <Check size={14} />
-                      </span>
-                    )}
+          {loadingList ? (
+            <Loading rows={4} />
+          ) : shown.length === 0 ? (
+            <Empty icon={Users} title="No attendees found" desc="Members who sign up or check in will appear here." />
+          ) : (
+            shown.map((a) => {
+              const done = Number(a.checked_in) === 1
+              return (
+                <div className="p-row ck-row" key={a.id}>
+                  <span className={`ck-av${done ? ' is-in' : ''}`}>{done ? <Check size={17} /> : initials(a.member_name)}</span>
+                  <div className="p-row-main">
+                    <div className="p-row-title">{a.member_name}</div>
+                    <div className="p-row-sub">
+                      <span className="p-mono">{a.member_id}</span>
+                      {done && a.checked_in_at ? ` · ${fmtDateTime(a.checked_in_at)}` : ''}
+                    </div>
                   </div>
-                  <div className="p-row-sub">
-                    <span className="p-mono" style={{ color: '#4ade80', fontWeight: 600 }}>{a.member_id}</span>
-                    {a.email ? ` · ${a.email}` : ''}
-                    {done && a.checked_in_at ? ` · Checked in ${fmtDateTime(a.checked_in_at)}` : ''}
-                  </div>
+                  {done ? (
+                    <Badge tone="ok">Checked in</Badge>
+                  ) : (
+                    <button type="button" className="p-btn p-btn-secondary p-btn-sm" disabled={submitting} onClick={() => checkIn(a.member_id)}>
+                      Check in
+                    </button>
+                  )}
                 </div>
-                {done ? (
-                  <Badge tone="ok">Checked in</Badge>
-                ) : (
-                  <button
-                    type="button"
-                    className="p-btn p-btn-secondary p-btn-sm"
-                    disabled={submitting}
-                    onClick={() => checkIn(a.member_id)}
-                  >
-                    Check in
-                  </button>
-                )}
-              </div>
-            )
-          })
-        )}
-      </section>
+              )
+            })
+          )}
+        </section>
+      </div>
     </>
   )
 }

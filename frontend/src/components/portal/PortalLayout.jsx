@@ -12,6 +12,7 @@ import { useAnnouncements, AnnouncementList } from './announcements.jsx'
 import AnnouncementBanner from '../AnnouncementBanner.jsx'
 import '../../styles/portal.css'
 import '../../styles/portal2.css'
+import '../../styles/pages.css'
 
 const ADMIN_NAV = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
