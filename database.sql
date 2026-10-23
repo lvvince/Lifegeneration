@@ -263,22 +263,22 @@ ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);
 -- ----------------------------------------------------------------------------
 -- 11. Announcements Table
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS nnouncements (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  	itle VARCHAR(200) NOT NULL,
-  content TEXT NOT NULL,
-  category ENUM('urgent', 'event', 'ministry', 'general') NOT NULL DEFAULT 'general',
-  adge_text VARCHAR(50) DEFAULT NULL,
-  link_url VARCHAR(255) DEFAULT NULL,
-  link_text VARCHAR(100) DEFAULT NULL,
-  is_pinned TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
-  is_active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-  expires_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  KEY idx_active_pinned (is_active, is_pinned, created_at)
+CREATE TABLE IF NOT EXISTS `announcements` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(200) NOT NULL,
+  `content` TEXT NOT NULL,
+  `category` ENUM('urgent', 'event', 'ministry', 'general') NOT NULL DEFAULT 'general',
+  `badge_text` VARCHAR(50) DEFAULT NULL,
+  `link_url` VARCHAR(255) DEFAULT NULL,
+  `link_text` VARCHAR(100) DEFAULT NULL,
+  `is_pinned` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+  `expires_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_active_pinned` (`is_active`, `is_pinned`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO nnouncements (id, 	itle, content, category, adge_text, link_url, link_text, is_pinned, is_active) VALUES
+INSERT INTO `announcements` (`id`, `title`, `content`, `category`, `badge_text`, `link_url`, `link_text`, `is_pinned`, `is_active`) VALUES
 (1, 'Welcome to Life Generation Calapan!', 'Join us this week for youth gatherings, discipleship groups, and fellowship. Check our events tab to register!', 'general', 'WELCOME', '/events', 'View Gatherings', 1, 1)
-ON DUPLICATE KEY UPDATE 	itle=VALUES(	itle);
+ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);
