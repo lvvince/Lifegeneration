@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS `events`;
 DROP TABLE IF EXISTS `refresh_tokens`;
 DROP TABLE IF EXISTS `members`;
 DROP TABLE IF EXISTS `ministries`;
+DROP TABLE IF EXISTS `dgroup_requests`;
 DROP TABLE IF EXISTS `dgroups`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `admins`;
@@ -84,6 +85,7 @@ CREATE TABLE `dgroups` (
   `leader_name` VARCHAR(150) NOT NULL,
   `schedule` VARCHAR(100) NOT NULL,
   `location` VARCHAR(255) NOT NULL,
+  `gc_link` VARCHAR(255) DEFAULT NULL,
   `description` TEXT DEFAULT NULL,
   `image` VARCHAR(255) DEFAULT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -92,6 +94,24 @@ CREATE TABLE `dgroups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
+-- 4.1 Discipleship Group Join Requests
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dgroup_requests` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `dgroup_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `request_note` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `unique_dgroup_user` (`dgroup_id`,`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_dgroup` (`dgroup_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 5. Ministries Table
 -- ----------------------------------------------------------------------------
 CREATE TABLE `ministries` (
@@ -279,6 +299,5 @@ CREATE TABLE IF NOT EXISTS `announcements` (
   KEY `idx_active_pinned` (`is_active`, `is_pinned`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `announcements` (`id`, `title`, `content`, `category`, `badge_text`, `link_url`, `link_text`, `is_pinned`, `is_active`) VALUES
-(1, 'Welcome to Life Generation Calapan!', 'Join us this week for youth gatherings, discipleship groups, and fellowship. Check our events tab to register!', 'general', 'WELCOME', '/events', 'View Gatherings', 1, 1)
-ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);
+INSERT IGNORE INTO `announcements` (`id`, `title`, `content`, `category`, `badge_text`, `link_url`, `link_text`, `is_pinned`, `is_active`) VALUES
+(1, 'Welcome to Life Generation Calapan!', 'Join us this week for youth gatherings, discipleship groups, and fellowship. Check our events tab to register!', 'general', 'WELCOME', '/events', 'View Gatherings', 1, 1);

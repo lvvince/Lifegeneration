@@ -25,9 +25,14 @@ class DGroups extends Controller
 
         $userRequests = [];
         if ($userId > 0) {
-            $rStmt = $this->db->raw("SELECT dgroup_id, status FROM dgroup_requests WHERE user_id = ?", [$userId]);
-            foreach ($rStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-                $userRequests[$r['dgroup_id']] = $r['status'];
+            try {
+                $rStmt = $this->db->raw("SELECT dgroup_id, status FROM dgroup_requests WHERE user_id = ?", [$userId]);
+                foreach ($rStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $userRequests[$r['dgroup_id']] = $r['status'];
+                }
+            } catch (Exception $e) {
+                // Table might not exist yet if migration pending
+                $userRequests = [];
             }
         }
 
