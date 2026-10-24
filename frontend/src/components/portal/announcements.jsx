@@ -1,9 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
-import { Megaphone, ArrowRight } from 'lucide-react'
+import { Megaphone, ArrowRight, AlertCircle, CalendarDays, HeartHandshake } from 'lucide-react'
 import { apiGet } from '../../api.js'
 import { emit, on } from '../../lib/bus.js'
 
+export const CATS = {
+  urgent: { label: 'Urgent', icon: AlertCircle },
+  event: { label: 'Event', icon: CalendarDays },
+  ministry: { label: 'Ministry', icon: HeartHandshake },
+  general: { label: 'General', icon: Megaphone },
+}
+export const catOf = (c) => CATS[c] || CATS.general
+
+/* ---------------------------------------------------------------
+   Shared store: iisang fetch para sa buong portal.
+   Events na ginagamit (lib/bus.js):
+     announcements:changed  -> (galing admin) mag-refresh agad
+     announcements:new      -> may bagong announcement na dumating
+     announcements:seen     -> may na-mark as read
+   --------------------------------------------------------------- */
 const KEY = 'lg-ann-seen'
 const readSeen = () => {
   try {
@@ -13,41 +28,82 @@ const readSeen = () => {
   }
 }
 
-// Kumukuha ng announcements, nagbibilang ng hindi pa nababasa, at nakikinig sa ibang component
-export function useAnnouncements() {
-  const [items, setItems] = useState([])
-  const [seen, setSeen] = useState(readSeen)
-  const [loading, setLoading] = useState(true)
+let state = { items: [], seen: readSeen(), loading: true }
+const subs = new Set()
+const setState = (patch) => {
+  state = { ...state, ...patch }
+  subs.forEach((f) => f())
+}
+let inflight = null
+const weight = (a) => Number(a.is_pinned) * 2 + (a.category === 'urgent' ? 1 : 0)
 
-  const load = useCallback(
-    () =>
-      apiGet('/api/announcements')
-        .then((d) => Array.isArray(d) && setItems([...d].sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned))))
-        .catch(() => {})
-        .finally(() => setLoading(false)),
-    []
-  )
+export function refreshAnnouncements() {
+  if (inflight) return inflight
+  inflight = apiGet('/api/announcements')
+    .then((d) => {
+      if (!Array.isArray(d)) return setState({ loading: false })
+      const items = [...d].sort((a, b) => weight(b) - weight(a))
+      const known = new Set(state.items.map((a) => a.id))
+      const fresh = state.items.length ? items.filter((a) => !known.has(a.id)) : []
+      setState({ items, loading: false })
+      if (fresh.length) emit('announcements:new', fresh)
+    })
+    .catch(() => setState({ loading: false }))
+    .finally(() => {
+      inflight = null
+    })
+  return inflight
+}
 
-  useEffect(() => {
-    load()
-    const off = on('announcements:seen', setSeen)
-    const onVisible = () => document.visibilityState === 'visible' && load()
-    document.addEventListener('visibilitychange', onVisible)
-    return () => {
-      off()
-      document.removeEventListener('visibilitychange', onVisible)
-    }
-  }, [load])
+export function markSeen(ids) {
+  const seen = [...new Set([...state.seen, ...ids])]
+  try {
+    localStorage.setItem(KEY, JSON.stringify(seen))
+  } catch {}
+  setState({ seen })
+  emit('announcements:seen', seen)
+}
 
-  const markAllSeen = () => {
-    const ids = items.map((a) => a.id)
-    try {
-      localStorage.setItem(KEY, JSON.stringify(ids))
-    } catch {}
-    emit('announcements:seen', ids)
+function start() {
+  refreshAnnouncements()
+  const visible = () => document.visibilityState === 'visible' && refreshAnnouncements()
+  const timer = setInterval(visible, 60000)
+  const onStorage = (e) => e.key === KEY && setState({ seen: readSeen() }) // sync sa ibang tab
+  document.addEventListener('visibilitychange', visible)
+  window.addEventListener('online', visible)
+  window.addEventListener('storage', onStorage)
+  const off = on('announcements:changed', () => refreshAnnouncements())
+  return () => {
+    clearInterval(timer)
+    document.removeEventListener('visibilitychange', visible)
+    window.removeEventListener('online', visible)
+    window.removeEventListener('storage', onStorage)
+    off()
   }
+}
 
-  return { items, seen, loading, unread: items.filter((a) => !seen.includes(a.id)).length, markAllSeen }
+let stop = null
+function subscribe(fn) {
+  subs.add(fn)
+  if (subs.size === 1) stop = start()
+  return () => {
+    subs.delete(fn)
+    if (!subs.size) {
+      stop?.()
+      stop = null
+    }
+  }
+}
+
+export function useAnnouncements() {
+  const s = useSyncExternalStore(subscribe, () => state, () => state)
+  return {
+    ...s,
+    unread: s.items.filter((a) => !s.seen.includes(a.id)).length,
+    markAllSeen: () => markSeen(s.items.map((a) => a.id)),
+    markSeen,
+    refresh: refreshAnnouncements,
+  }
 }
 
 export function AnnouncementList({ items, seen = [], limit }) {
@@ -55,10 +111,11 @@ export function AnnouncementList({ items, seen = [], limit }) {
   return list.map((a) => {
     const isNew = !seen.includes(a.id)
     const external = a.link_url?.startsWith('http')
+    const Icon = catOf(a.category).icon
     return (
       <div className={`an-item${isNew ? ' is-new' : ''}`} key={a.id}>
         <span className="neo-tile">
-          <Megaphone size={18} strokeWidth={1.8} />
+          <Icon size={18} strokeWidth={1.8} />
         </span>
         <div className="an-body">
           <div className="an-meta">

@@ -107,7 +107,7 @@ export default function Ministries() {
           <Star size={13} />
           <span>Volunteer Opportunities</span>
         </div>
-        <h1 className="min-vol-hero-title">Join Our Event Teams</h1>
+        <h1 className="min-vol-hero-title">join our <em className="hl">event teams</em></h1>
         <p className="min-vol-hero-sub">
           Bring your talents, energy, and passion to the events that shape our community.
           Choose a team, apply in seconds, and make every event unforgettable.

@@ -40,9 +40,9 @@ function PageRoutes() {
 
       {/* Member */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/profile" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Overview />} />
         <Route path="/dashboard/overview" element={<Overview />} />
+        <Route path="/dashboard/profile" element={<Dashboard />} />
       </Route>
 
       {/* Admin */}

@@ -80,7 +80,7 @@ export default function PrayerWall() {
         <div className="pg-hero-row">
           <div>
             <span className="pg-chip"><Heart size={13} /> Prayer wall</span>
-            <h1>We pray with you</h1>
+            <h1>we pray <em className="hl">with you</em></h1>
             <p>“Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.” Philippians 4:6</p>
           </div>
           {user ? (

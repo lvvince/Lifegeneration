@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { apiGet, apiPost, getUser, setUser, API_URL } from '../../api.js'
 import { resolveImageUrl, initials } from '../../lib/format.js'
 import { ArrowRight, Cake, Calendar, CalendarDays, CalendarPlus, Camera, Check, CheckCircle, Clock, Download, Edit3, HeartHandshake, MapPin, QrCode, Shield, Ticket, Trash2, Upload, User, Users, X } from 'lucide-react'
@@ -350,332 +350,147 @@ export default function Dashboard() {
   const name = profile?.full_name || profile?.username || 'LifeGen Member'
   const avatarUrl = resolveImageUrl(profile?.avatar || member?.avatar)
 
+  const { pathname } = useLocation()
+  const first = String(name).split(' ')[0]
+
+  // /dashboard/profile -> dumiretso sa personal details pagkatapos mag-load
+  useEffect(() => {
+    if (!loading && pathname.endsWith('/profile')) {
+      document.getElementById('details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [pathname, loading])
+
+  const groups = [
+    { label: 'my discipleship group', value: member.dgroup_name, empty: 'Not in a group yet', text: member.dgroup_name ? 'Connected in weekly fellowship and study.' : 'Groups help you grow in faith with friends your age.', to: '/dgroups', cta: member.dgroup_name ? 'View D-Groups' : 'Find a group' },
+    { label: 'my ministry service', value: member.ministry_name, empty: 'Not on a team yet', text: member.ministry_name ? 'Serving with your ministry team.' : 'Use your gifts to serve the community.', to: '/ministries', cta: member.ministry_name ? 'View ministries' : 'Apply to serve' },
+  ]
+  const quick = [
+    ['/events', 'events'],
+    ['/dgroups', 'd-groups'],
+    ['/ministries', 'ministries'],
+    ['/prayer', 'prayer wall'],
+  ]
+
   return (
-    <div>
-      {/* Top Banner & Official ID Card — Orange & Blue Brand Palette */}
-      <div style={{
-        background: "linear-gradient(rgba(12,12,16,.52), rgba(12,12,16,.8)), url('/hero-bg.jpg') center 40% / cover",
-        color: '#fff',
-        borderRadius: 28,
-        padding: '34px 30px',
-        boxShadow: '0 24px 50px -26px rgba(20, 30, 70, 0.55)',
-        border: 'none',
-        marginBottom: 24,
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 24
-      }}>
-        {/* User Avatar + Profile Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
-          {/* Avatar Container with Camera Button */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <div style={{
-              width: 96,
-              height: 96,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              background: 'rgba(255,255,255,0.2)',
-              border: '4px solid rgba(255,255,255,0.45)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: '2rem',
-              fontWeight: 800,
-              userSelect: 'none'
-            }}>
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                initials(name)
-              )}
-            </div>
-
-            {/* Quick Camera Upload Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              title="Change profile picture"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                background: '#f97316',
-                border: '2px solid #fff',
-                borderRadius: '50%',
-                width: 32,
-                height: 32,
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                transition: 'transform 0.15s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              <Camera size={15} />
-            </button>
-          </div>
-
+    <>
+      {/* ===== 1. hero (blue) ===== */}
+      <section className="fb fb-blue">
+        <div className="fb-in fb-split">
           <div>
-            <div style={{
-              fontSize: '0.78rem',
-              background: 'rgba(249, 115, 22, 0.2)',
-              border: '1px solid rgba(249, 115, 22, 0.4)',
-              color: '#ffedd5',
-              display: 'inline-block',
-              padding: '4px 12px',
-              borderRadius: 20,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              marginBottom: 8
-            }}>
-              Official Member Profile
+            <div className="fb-who">
+              <div className="fb-av">
+                <span>{avatarUrl ? <img src={avatarUrl} alt="" draggable="false" /> : initials(name)}</span>
+                <button type="button" className="fb-cam" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label="Change profile picture">
+                  <Camera size={18} />
+                </button>
+              </div>
+              <div>
+                <div className="fb-pills">
+                  <span className="fb-pill">{profile?.role === 'admin' ? 'Administrator' : profile?.membership_tier || 'Standard Member'}</span>
+                  {profile?.email && <span className="fb-pill">{profile.email}</span>}
+                </div>
+              </div>
             </div>
-            <h1 style={{ color: '#fff', fontSize: '2.1rem', margin: '0 0 6px', fontWeight: 800 }}>{name}</h1>
-            <p style={{ color: 'rgba(255,255,255,.82)', margin: 0, fontSize: '0.95rem' }}>
-              {profile?.email} &bull; <span style={{ color: '#fed7aa', fontWeight: 600 }}>{profile?.membership_tier || 'Standard Member'}</span>
-            </p>
-
-            {/* Avatar management buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '1px solid rgba(255,255,255,0.35)',
-                  color: '#fff',
-                  padding: '5px 12px',
-                  borderRadius: 14,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-              >
-                <Upload size={13} /> {uploading ? 'Uploading...' : 'Change Photo'}
+            <h1 style={{ marginTop: 22 }}>
+              hey, <em className="hl">{first}</em>!
+            </h1>
+            <p style={{ fontSize: '1.15rem', maxWidth: '34ch' }}>Welcome to your Life Generation space.</p>
+            <div className="fb-row">
+              <button type="button" className="fb-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                <Upload size={17} /> {uploading ? 'Uploading…' : 'Change photo'}
               </button>
-
               {avatarUrl && (
-                <button
-                  type="button"
-                  onClick={handleDeleteAvatar}
-                  disabled={uploading}
-                  style={{
-                    background: 'rgba(239,68,68,0.2)',
-                    border: '1px solid rgba(239,68,68,0.4)',
-                    color: '#fecaca',
-                    padding: '5px 12px',
-                    borderRadius: 14,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.35)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-                >
-                  <Trash2 size={13} /> Remove Photo
+                <button type="button" className="fb-btn is-danger" onClick={handleDeleteAvatar} disabled={uploading}>
+                  <Trash2 size={17} /> Remove photo
                 </button>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleAvatarUpload}
-        />
-
-        {/* Member ID Badge & QR Code */}
-        <div style={{
-          background: 'rgba(255,255,255,0.98)',
-          color: '#0f172a',
-          borderRadius: 18,
-          padding: '18px 22px',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-          textAlign: 'center',
-          minWidth: 220,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10
-        }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-              Life Generation ID
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--p-text, #1c1917)', fontFamily: 'monospace', margin: '3px 0' }}>
-              {memberId}
-            </div>
-            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-              {profile?.role === 'admin' ? 'Administrator' : 'Active Member'}
-            </div>
+          <div className="fb-id">
+            <small>Life Generation ID</small>
+            <code>{memberId}</code>
+            <button type="button" className="fb-qr" onClick={() => setShowQrModal(true)} aria-label="Open digital pass">
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(memberId)}&margin=2`} alt="" draggable="false" />
+            </button>
+            <em>scan for attendance</em>
+            <button type="button" className="fb-btn" onClick={() => setShowQrModal(true)}>
+              <QrCode size={17} /> View digital pass
+            </button>
           </div>
-
-          {/* Quick QR Code Thumbnail (Click to view full pass) */}
-          <div
-            onClick={() => setShowQrModal(true)}
-            style={{
-              cursor: 'pointer',
-              background: '#fff',
-              padding: 6,
-              borderRadius: 10,
-              border: '1px solid var(--p-border-strong, #d6dbe8)',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-              display: 'inline-flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 3,
-              transition: 'transform 0.2s'
-            }}
-            title="Click to view full attendance pass"
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(memberId)}&margin=2`}
-              alt="QR Attendance Code"
-              style={{ width: 80, height: 80, display: 'block' }}
-            />
-            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ea580c', textTransform: 'uppercase' }}>
-              Scan for Attendance
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowQrModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              padding: '8px 16px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
-              transition: 'transform 0.15s ease'
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <QrCode size={14} /> View Digital Pass
-          </button>
         </div>
-      </div>
-
-      {saveMsg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{saveMsg}</div>}
-
-      {/* Group + Ministry */}
-      <div className="pf-grid">
-        {[
-          { icon: Users, label: 'My discipleship group', value: member.dgroup_name, empty: 'Not in a group yet', text: member.dgroup_name ? 'Connected in weekly fellowship and study.' : 'Groups help you grow in faith with friends your age.', to: '/dgroups', cta: member.dgroup_name ? 'View D-Groups' : 'Find a group' },
-          { icon: HeartHandshake, label: 'My ministry service', value: member.ministry_name, empty: 'Not on a team yet', text: member.ministry_name ? 'Serving with your ministry team.' : 'Use your gifts to serve the community.', to: '/ministries', cta: member.ministry_name ? 'View ministries' : 'Apply to serve' },
-        ].map(({ icon: Icon, label, value, empty, text, to, cta }) => (
-          <section className="pf-card" key={label}>
-            <span className="neo-tile"><Icon size={20} strokeWidth={1.7} /></span>
-            <div className="pf-card-body">
-              <small>{label}</small>
-              <h3>{value || empty}</h3>
-              <p>{text}</p>
-            </div>
-            <Link to={to} className="pf-btn">{cta}</Link>
-          </section>
-        ))}
-      </div>
-
-      {/* Personal details (hiwalay, buong lapad) */}
-      <section className="pf-details">
-        <header>
-          <div className="pf-title"><span className="neo-tile"><User size={20} strokeWidth={1.7} /></span><h3>Personal details</h3></div>
-          {!editMode && (
-            <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setEditMode(true)}><Edit3 size={16} /> Edit</button>
-          )}
-        </header>
-        {editMode ? (
-          <form onSubmit={handleSaveProfile} className="pf-form">
-            <label>Full name
-              <input className="pf-input" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
-            </label>
-            <label>Age
-              <input className="pf-input" type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
-            </label>
-            <label className="pf-wide">Address
-              <input className="pf-input" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
-            </label>
-            <div className="pf-actions pf-wide">
-              <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setEditMode(false)}>Cancel</button>
-              <button type="submit" className="pf-btn">Save changes</button>
-            </div>
-          </form>
-        ) : (
-          <dl className="pf-facts">
-            <div><dt><Cake size={15} /> Age</dt><dd>{profile?.age || member?.age || 'Not set'}</dd></div>
-            <div><dt><MapPin size={15} /> Address</dt><dd>{profile?.address || member?.address || 'Not set'}</dd></div>
-            <div><dt><CalendarDays size={15} /> Joined</dt><dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd></div>
-          </dl>
-        )}
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
       </section>
 
-      {/* Reserved events */}
-      <section className="pf-events">
-        <header>
-          <div className="pf-title"><span className="neo-tile"><Calendar size={20} strokeWidth={1.7} /></span><h3>My reserved events</h3></div>
-          <Link to="/events" className="pf-link">Browse events <ArrowRight size={15} /></Link>
-        </header>
+      {saveMsg && (
+        <div className="fb fb-white" style={{ paddingBlock: 16 }}>
+          <div className="alert alert-success">{saveMsg}</div>
+        </div>
+      )}
+
+      {/* ===== 2. group + ministry (tint) ===== */}
+      <section className="fb fb-tint">
+        <h2>
+          where you <em className="hl hl-blue">belong</em>
+        </h2>
+        <div className="fb-pair">
+          {groups.map(({ label, value, empty, text, to, cta }) => (
+            <div className="fb-block" key={label}>
+              <div>
+                <small>{label}</small>
+                <h3>{value || empty}</h3>
+                <p>{text}</p>
+              </div>
+              <div>
+                <Link to={to} className="fb-btn">
+                  {cta} <ArrowRight size={17} />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== 3. reserved events (white) ===== */}
+      <section className="fb fb-white">
+        <h2>
+          my <em className="hl">events</em>
+        </h2>
         {myEvents.length === 0 ? (
-          <p className="pf-empty">You have not reserved a seat yet. Check the upcoming gatherings and sign up.</p>
+          <div className="fb-empty">You have not reserved a seat yet. Check the upcoming gatherings and sign up.</div>
         ) : (
-          <div className="pf-event-list">
+          <div className="fb-evs">
             {myEvents.map((ev) => {
               const d = new Date(String(ev.event_date).slice(0, 10) + 'T00:00:00')
               return (
-                <div className="pf-event" key={ev.id}>
-                  <span className="pf-date"><b>{d.getDate()}</b><small>{d.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</small></span>
-                  <div className="pf-event-main">
+                <div className="fb-ev" key={ev.id}>
+                  <span className="fb-date">
+                    <b>{d.getDate()}</b>
+                    <small>{d.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</small>
+                  </span>
+                  <div className="fb-ev-main">
                     <Link to={`/events/${ev.id}`}>{ev.title}</Link>
-                    <span>{ev.event_time && <><Clock size={14} /> {ev.event_time}</>}</span>
-                    <span>{ev.location && <><MapPin size={14} /> {ev.location}</>}</span>
-                  </div>
-                  <div className="pf-event-side">
-                    {ev.checked_in === 1 ? (
-                      <span className="pf-status is-in"><Check size={13} /> Checked in</span>
-                    ) : (
-                      <span className="pf-status">Going</span>
+                    {ev.event_time && (
+                      <span>
+                        <Clock size={14} /> {ev.event_time}
+                      </span>
                     )}
-                    <button type="button" className="pf-btn pf-btn-ghost pf-sm" onClick={() => addToGoogleCalendar(ev)}>
-                      <CalendarPlus size={15} /> Add to calendar
+                    {ev.location && (
+                      <span>
+                        <MapPin size={14} /> {ev.location}
+                      </span>
+                    )}
+                  </div>
+                  <div className="fb-ev-side">
+                    {ev.checked_in === 1 ? (
+                      <span className="fb-status is-in">
+                        <Check size={14} /> Checked in
+                      </span>
+                    ) : (
+                      <span className="fb-status">Going</span>
+                    )}
+                    <button type="button" className="fb-btn is-line" style={{ color: 'var(--mp-royal)', minHeight: 42 }} onClick={() => addToGoogleCalendar(ev)}>
+                      <CalendarPlus size={16} /> Add to calendar
                     </button>
                   </div>
                 </div>
@@ -683,9 +498,107 @@ export default function Dashboard() {
             })}
           </div>
         )}
+        <div className="fb-row">
+          <Link to="/events" className="fb-btn is-blue">
+            Browse events <ArrowRight size={17} />
+          </Link>
+        </div>
       </section>
 
-      {/* Digital Pass Modal */}
+      {/* ===== 4. prayer (navy) ===== */}
+      <section className="fb fb-ink">
+        <div className="fb-in">
+          <h2 style={{ fontSize: 'clamp(3rem, 13vw, 7rem)', marginBottom: 0 }}>
+            need
+            <br />
+            <em className="hl hl-blue">prayer</em>
+          </h2>
+          <p>
+            send your prayer requests{' '}
+            <Link to="/prayer" className="fb-link">
+              here
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ===== 5. personal details (tint) ===== */}
+      <section className="fb fb-tint" id="details">
+        <h2>
+          personal <em className="hl hl-blue">details</em>
+        </h2>
+        {editMode ? (
+          <form onSubmit={handleSaveProfile} className="fb-form">
+            <label>
+              Full name
+              <input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+            </label>
+            <label>
+              Age
+              <input type="number" inputMode="numeric" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
+            </label>
+            <label className="is-wide">
+              Address
+              <input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+            </label>
+            <div className="fb-row is-wide" style={{ marginTop: 4 }}>
+              <button type="submit" className="fb-btn">
+                Save changes
+              </button>
+              <button type="button" className="fb-btn is-line" style={{ color: 'var(--mp-royal)' }} onClick={() => setEditMode(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <dl className="fb-facts">
+              <div>
+                <dt>
+                  <Cake size={15} /> Age
+                </dt>
+                <dd>{profile?.age || member?.age || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <MapPin size={15} /> Address
+                </dt>
+                <dd>{profile?.address || member?.address || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <CalendarDays size={15} /> Joined
+                </dt>
+                <dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd>
+              </div>
+            </dl>
+            <div className="fb-row">
+              <button type="button" className="fb-btn" onClick={() => setEditMode(true)}>
+                <Edit3 size={17} /> Edit details
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* ===== 6. quick links (white) ===== */}
+      <section className="fb fb-white">
+        <h2>
+          stay <em className="hl hl-blue">connected</em>
+          <br />
+          to life gen
+        </h2>
+        <ul className="fb-links">
+          {quick.map(([to, label]) => (
+            <li key={to}>
+              <Link to={to}>
+                {label} <ArrowRight size={26} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {showQrModal && (
         <DigitalPassModal
           memberId={memberId}
@@ -697,6 +610,6 @@ export default function Dashboard() {
           onClose={() => setShowQrModal(false)}
         />
       )}
-    </div>
+    </>
   )
 }

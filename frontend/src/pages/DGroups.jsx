@@ -91,7 +91,7 @@ export default function DGroups() {
           <Network size={13} />
           <span>Small Groups</span>
         </div>
-        <h1 className="dg-hero-title">Find Your D-Group</h1>
+        <h1 className="dg-hero-title">find your <em className="hl">d-group</em></h1>
         <p className="dg-hero-sub">
           Do life together. Join a close-knit cell group where you can grow,
           be mentored, and build genuine friendships with exclusive Group Chat (GC) access.

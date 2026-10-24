@@ -57,7 +57,7 @@ export default function Events() {
     <div className="pg-root">
       <section className="pg-hero">
         <span className="pg-chip"><Calendar size={13} /> Gatherings</span>
-        <h1>Events and gatherings</h1>
+        <h1>events and <em className="hl">gatherings</em></h1>
         <p>Youth nights, worship, and special days. Sign up so we can save you a spot.</p>
       </section>
 
