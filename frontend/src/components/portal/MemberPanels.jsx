@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, X, BellOff, CalendarDays, Megaphone, Moon, Sun, User, LogOut, ArrowRight, Clock, QrCode, Hash, MessageCircle, ChevronRight, Camera } from 'lucide-react'
+import { Search, X, BellOff, Bell, CalendarDays, Megaphone, Moon, Sun, User, LogOut, ArrowRight, Clock, QrCode, Hash, MessageCircle, ChevronRight, Camera } from 'lucide-react'
 import { catOf, useAnnouncements } from './announcements.jsx'
 import { getEvents, peekEvents } from '../../lib/events-cache.js'
 import { on } from '../../lib/bus.js'
@@ -116,7 +116,7 @@ export function NotificationsPanel({ feed, onClose }) {
 }
 
 /* ---------- Search ---------- */
-const RKEY = 'lg-recent-search'
+const RKEY = 'sk-recent-search'
 const readRecent = () => {
   try {
     return JSON.parse(localStorage.getItem(RKEY) || '[]')
@@ -322,7 +322,7 @@ export function ProfilePanel({ avatar, name, role, email, memberId, tier, theme,
 }
 
 /* ---------- Page icons (Overview, Events, D-Groups, Ministries, Prayer wall) ---------- */
-export function SectionPanel({ item, user, onClose, onOpenFaq }) {
+export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
   const navigate = useNavigate()
   const [events, setEvents] = useState(peekEvents)
   const member = user?.member || {}
@@ -367,6 +367,24 @@ export function SectionPanel({ item, user, onClose, onOpenFaq }) {
             <small>{mine.label}</small>
             <b>{mine.value || mine.empty}</b>
           </div>
+        )}
+
+        {item.admin && (
+          <>
+            <span className="sk-grp">All admin pages</span>
+            {nav.map((n) => (
+              <Link to={n.to} className={`sk-row${n.id === item.id ? ' is-on' : ''}`} key={n.id} onClick={onClose}>
+                <span className="sk-tile">
+                  <n.icon size={18} strokeWidth={1.8} />
+                </span>
+                <span className="sk-note-body">
+                  <b>{n.label}</b>
+                  <small>{n.blurb}</small>
+                </span>
+                <ChevronRight size={16} className="sk-res-go" />
+              </Link>
+            ))}
+          </>
         )}
 
         {item.id === 'events' && (
@@ -457,6 +475,77 @@ export function SectionPanel({ item, user, onClose, onOpenFaq }) {
           {mine?.cta || `Open ${item.label}`} <ArrowRight size={17} />
         </button>
       </footer>
+    </>
+  )
+}
+
+/* ---------- Menu (phone): lahat ng nasa rail, nasa isang listahan ---------- */
+export function MenuPanel({ nav, activeIdx, avatar, name, role, memberId, unread, theme, onToggleTheme, onGo, onSignOut, onClose }) {
+  return (
+    <>
+      <Head title="Menu" sub="Life Generation Calapan" onClose={onClose} />
+      <div className="sk-dscroll">
+        <button type="button" className="sk-me-card" onClick={() => onGo('user')}>
+          <span className="sk-me-av">{avatar}</span>
+          <span className="sk-note-body">
+            <b>{name}</b>
+            <small>{[role, memberId].filter(Boolean).join(' · ')}</small>
+          </span>
+          <ChevronRight size={18} className="sk-res-go" />
+        </button>
+
+        <span className="sk-grp">Pages</span>
+        <div className="sk-list">
+          {nav.map((n, i) => (
+            <Link to={n.to} key={n.id} className={`sk-row${i === activeIdx ? ' is-on' : ''}`} onClick={onClose}>
+              <span className="sk-tile">
+                <n.icon size={19} strokeWidth={1.8} />
+              </span>
+              <span className="sk-note-body">
+                <b>{n.label}</b>
+              </span>
+              <ChevronRight size={16} className="sk-res-go" />
+            </Link>
+          ))}
+        </div>
+
+        <span className="sk-grp">Tools</span>
+        <div className="sk-list">
+          <button type="button" className="sk-row" onClick={() => onGo('search')}>
+            <span className="sk-tile">
+              <Search size={19} strokeWidth={1.8} />
+            </span>
+            <span className="sk-note-body">
+              <b>Search</b>
+            </span>
+            <ChevronRight size={16} className="sk-res-go" />
+          </button>
+          <button type="button" className="sk-row" onClick={() => onGo('bell')}>
+            <span className="sk-tile">
+              <Bell size={19} strokeWidth={1.8} />
+            </span>
+            <span className="sk-note-body">
+              <b>Notifications</b>
+            </span>
+            {unread > 0 && <span className="sk-count">{unread}</span>}
+            <ChevronRight size={16} className="sk-res-go" />
+          </button>
+          <button type="button" className="sk-row" onClick={onToggleTheme}>
+            <span className="sk-tile">{theme === 'dark' ? <Sun size={19} strokeWidth={1.8} /> : <Moon size={19} strokeWidth={1.8} />}</span>
+            <span className="sk-note-body">
+              <b>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</b>
+            </span>
+          </button>
+          <button type="button" className="sk-row is-danger" onClick={onSignOut}>
+            <span className="sk-tile">
+              <LogOut size={19} strokeWidth={1.8} />
+            </span>
+            <span className="sk-note-body">
+              <b>Sign out</b>
+            </span>
+          </button>
+        </div>
+      </div>
     </>
   )
 }

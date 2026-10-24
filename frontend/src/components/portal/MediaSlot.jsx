@@ -7,7 +7,7 @@ import { MEDIA } from '../../lib/mediaSlots.js'
    <MediaSlot src="/uploads/x.webp" />       -> sariling path (hal. banner ng event)
    Kapag walang file o hindi nag-load, placeholder ang ipinapakita (hindi nabibitak ang layout).
    Video: may poster + play button. Awtomatikong humihinto kapag wala na sa screen o nakatago ang tab. */
-export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint, alt = '', className = '', rounded = true, children }) {
+export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint, alt = '', className = '', children }) {
   const cfg = (slot && MEDIA[slot]) || {}
   const type = kind || cfg.kind || 'image'
   const file = src || cfg.src
@@ -52,7 +52,7 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
   return (
     <div
       ref={box}
-      className={`sk-media is-${type}${rounded ? '' : ' is-flat'}${ok ? ' is-ready' : ''}${bad ? ' is-empty' : ''}${playing ? ' is-playing' : ''} ${className}`}
+      className={`sk-media is-${type}${ok ? ' is-ready' : ''}${bad ? ' is-empty' : ''}${playing ? ' is-playing' : ''} ${className}`}
       style={{ '--ratio': ratio || cfg.ratio || '16 / 10' }}
     >
       {showPlaceholder && (

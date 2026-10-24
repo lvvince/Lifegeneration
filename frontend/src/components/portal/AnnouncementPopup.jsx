@@ -25,12 +25,12 @@ export function AnnouncementCard({ a, more = 0, preview = false, paused = false,
   const external = a.link_url?.startsWith('http')
   const linkText = a.link_text || 'Learn more'
   return (
-    <div className={`mp-pop is-${a.category || 'general'}${preview ? ' is-preview' : ''}`} role={preview ? undefined : 'alert'}>
-      <span className="mp-pop-ico">
+    <div className={`sk-pop is-${a.category || 'general'}${preview ? ' is-preview' : ''}`} role={preview ? undefined : 'alert'}>
+      <span className="sk-pop-ico">
         <Icon size={20} strokeWidth={1.9} />
       </span>
-      <div className="mp-pop-body">
-        <div className="mp-pop-meta">
+      <div className="sk-pop-body">
+        <div className="sk-pop-meta">
           <b>{a.badge_text || cat.label}</b>
           {more > 0 && <small>+{more} more</small>}
         </div>
@@ -38,26 +38,26 @@ export function AnnouncementCard({ a, more = 0, preview = false, paused = false,
         <p>{a.content || 'Your message will show up here.'}</p>
         {a.link_url &&
           (preview ? (
-            <span className="mp-pop-link">
+            <span className="sk-pop-link">
               {linkText} <ArrowRight size={15} />
             </span>
           ) : external ? (
-            <a className="mp-pop-link" href={a.link_url} target="_blank" rel="noopener noreferrer" onClick={onNavigate}>
+            <a className="sk-pop-link" href={a.link_url} target="_blank" rel="noopener noreferrer" onClick={onNavigate}>
               {linkText} <ArrowRight size={15} />
             </a>
           ) : (
-            <Link className="mp-pop-link" to={a.link_url} onClick={onNavigate}>
+            <Link className="sk-pop-link" to={a.link_url} onClick={onNavigate}>
               {linkText} <ArrowRight size={15} />
             </Link>
           ))}
       </div>
       {onClose && (
-        <button type="button" className="mp-pop-x" onClick={onClose} aria-label="Dismiss announcement">
+        <button type="button" className="sk-pop-x" onClick={onClose} aria-label="Dismiss announcement">
           <X size={18} />
         </button>
       )}
       {!preview && a.category !== 'urgent' && (
-        <i className="mp-pop-bar" style={{ animationPlayState: paused ? 'paused' : 'running' }} onAnimationEnd={onBarEnd} />
+        <i className="sk-pop-bar" style={{ animationPlayState: paused ? 'paused' : 'running' }} onAnimationEnd={onBarEnd} />
       )}
     </div>
   )
@@ -128,7 +128,7 @@ export default function AnnouncementPopup() {
   return (
     <div
       key={cur.id}
-      className={`mp-pop-wrap${leaving ? ' is-leaving' : ''}${dragY ? ' is-dragging' : ''}`}
+      className={`sk-pop-wrap${leaving ? ' is-leaving' : ''}${dragY ? ' is-dragging' : ''}`}
       style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
       onPointerDown={(e) => {
         drag.current = { y: e.clientY }

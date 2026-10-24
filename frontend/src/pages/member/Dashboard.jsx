@@ -27,8 +27,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(17,17,17,0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -38,13 +37,13 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#0f172a',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
+          background: '#ffffff',
+          border: '2px solid #111',
           borderRadius: 24,
           maxWidth: 390,
           width: '100%',
           overflow: 'hidden',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.7), 0 0 30px rgba(30, 58, 138, 0.25)',
+          boxShadow: '8px 8px 0 #111',
           animation: 'modalFadeIn 0.2s ease-out'
         }}
       >
@@ -57,9 +56,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
 
         {/* Pass Top Card Header — Orange & Blue Brand Palette */}
         <div style={{
-          background: 'linear-gradient(135deg, #1c1917 0%, #44281a 55%, #ea580c 100%)',
+          background: 'linear-gradient(160deg, #ff7430 0%, #ff5a0a 60%, #ee4b00 100%)',
+          borderBottom: '2px solid #111',
           padding: '24px 20px',
-          color: '#fff',
+          color: '#111',
           textAlign: 'center',
           position: 'relative'
         }}>
@@ -71,7 +71,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               position: 'absolute',
               top: 14,
               right: 14,
-              background: 'rgba(0,0,0,0.3)',
+              background: '#111',
               border: 'none',
               borderRadius: '50%',
               width: 30,
@@ -92,10 +92,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             alt="LifeGen"
             style={{ width: 44, height: 44, objectFit: 'contain', margin: '0 auto 8px' }}
           />
-          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: -0.3, color: '#fff' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, letterSpacing: -0.3, color: '#111', textTransform: 'uppercase' }}>
             Life Generation Calapan
           </h3>
-          <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#fed7aa', textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 700 }}>
+          <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#111', textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 700 }}>
             Official Event Attendance Pass
           </p>
         </div>
@@ -109,15 +109,15 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             borderRadius: '50%',
             overflow: 'hidden',
             margin: '-48px auto 12px',
-            border: '4px solid #0f172a',
-            background: '#1e293b',
+            border: '3px solid #111',
+            background: '#111',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
             fontWeight: 800,
             fontSize: '1.3rem',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.4)'
+            boxShadow: 'none'
           }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -126,20 +126,21 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             )}
           </div>
 
-          <h4 style={{ margin: '0 0 2px', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
+          <h4 style={{ margin: '0 0 2px', fontSize: '1.2rem', fontWeight: 900, color: '#111' }}>
             {name}
           </h4>
-          <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: '#94a3b8' }}>
-            {email} &bull; <span style={{ color: '#fb923c', fontWeight: 600 }}>{tier || 'Standard Member'}</span>
+          <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: '#55524e' }}>
+            {email} &bull; <span style={{ color: '#c2410c', fontWeight: 800 }}>{tier || 'Standard Member'}</span>
           </p>
 
           {/* QR Code Container */}
           <div style={{
             background: '#fff',
-            borderRadius: 16,
-            padding: 16,
+            border: '2px solid #111',
+            borderRadius: 18,
+            padding: 12,
             display: 'inline-block',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            boxShadow: 'none',
             marginBottom: 14
           }}>
             <img
@@ -151,21 +152,21 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
 
           {/* Member ID Code */}
           <div style={{
-            background: 'rgba(30, 58, 138, 0.25)',
-            border: '1px solid rgba(249, 115, 22, 0.4)',
-            borderRadius: 12,
+            background: '#f4f1ed',
+            border: '2px solid #111',
+            borderRadius: 14,
             padding: '9px 14px',
             marginBottom: 16
           }}>
-            <div style={{ fontSize: '0.7rem', color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.3, fontWeight: 700 }}>
+            <div style={{ fontSize: '0.7rem', color: '#c2410c', textTransform: 'uppercase', letterSpacing: 1.3, fontWeight: 700 }}>
               Member Check-In ID
             </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#ffffff', fontFamily: 'monospace', letterSpacing: 1.5, marginTop: 2 }}>
+            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#111', fontFamily: 'monospace', letterSpacing: 1.5, marginTop: 2 }}>
               {memberId}
             </div>
           </div>
 
-          <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 20px' }}>
+          <p style={{ fontSize: '0.82rem', color: '#55524e', lineHeight: 1.5, margin: '0 0 20px' }}>
             Present this QR code to the usher or registration desk at the church entrance for instant check-in.
           </p>
 
@@ -175,10 +176,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               onClick={handleDownload}
               style={{
                 flex: 1.3,
-                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 12,
+                background: 'linear-gradient(180deg, #ff6d22 0%, #f24e00 100%)',
+                color: '#111',
+                border: '2px solid #111',
+                borderRadius: 99,
                 padding: '11px 16px',
                 fontSize: '0.85rem',
                 fontWeight: 700,
@@ -188,8 +189,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
                 justifyContent: 'center',
                 gap: 7,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
-                transition: 'transform 0.15s ease'
+                                transition: 'transform 0.15s ease'
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
@@ -201,10 +201,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               onClick={onClose}
               style={{
                 flex: 1,
-                background: 'rgba(59, 130, 246, 0.12)',
-                color: '#93c5fd',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                borderRadius: 12,
+                background: '#fff',
+                color: '#111',
+                border: '2px solid #111',
+                borderRadius: 99,
                 padding: '11px 16px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
@@ -212,8 +212,8 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
                 whiteSpace: 'nowrap',
                 transition: 'background 0.15s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.12)'}
+              onMouseEnter={e => e.currentTarget.style.background = '#f4f1ed'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
               Close
             </button>
