@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost/lavalust',
+        target: 'http://localhost/Lifegeneration/backend/public',
         changeOrigin: true,
       },
     },

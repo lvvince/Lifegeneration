@@ -1,6 +1,6 @@
 // API Client for Life Generation
 export const API_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost/LIFEGEN/backend/public'
+  import.meta.env.VITE_API_URL || 'http://localhost/Lifegeneration/backend/public'
 
 function extractPhpError(html) {
   const clean = (s) =>

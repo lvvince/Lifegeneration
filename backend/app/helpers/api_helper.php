@@ -51,14 +51,14 @@ function jwt_create($payload, $secret, $expiry_seconds = 3600) {
     $now = time();
     $payload['iat'] = $now;
     $payload['exp'] = $now + $expiry_seconds;
-    
+
     $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
     $b64Header = base64url_encode($header);
     $b64Payload = base64url_encode(json_encode($payload));
-    
+
     $signature = hash_hmac('sha256', "{$b64Header}.{$b64Payload}", $secret, true);
     $b64Signature = base64url_encode($signature);
-    
+
     return "{$b64Header}.{$b64Payload}.{$b64Signature}";
 }
 
@@ -71,22 +71,23 @@ function jwt_verify($token, $secret) {
         return false;
     }
     list($b64Header, $b64Payload, $b64Signature) = $parts;
-    
+
     $expectedSig = base64url_encode(hash_hmac('sha256', "{$b64Header}.{$b64Payload}", $secret, true));
     if (!hash_equals($expectedSig, $b64Signature)) {
         return false;
     }
-    
+
     $payload = json_decode(base64url_decode($b64Payload), true);
     if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
         return false;
     }
-    
+
     return $payload;
 }
 
 /**
  * Get JWT Secret from environment or fallback
+ * TODO: palitan ang fallback ng sarili mong random string bago i-deploy
  */
 function get_jwt_secret() {
     return getenv('JWT_SECRET') ?: 'b734e59586efb98d7f37bcfd88d194675ae1b74466cce8f324b2b5ac446a6581';
@@ -101,7 +102,7 @@ function get_bearer_token() {
         $headers = apache_request_headers();
         $header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     }
-    
+
     if (preg_match('/Bearer\s(\S+)/i', $header, $matches)) {
         return $matches[1];
     }
@@ -109,51 +110,40 @@ function get_bearer_token() {
 }
 
 /**
- * Get authenticated user from Bearer token
+ * Get authenticated user from Bearer token (lgy_db schema)
+ * Walang hiwalay na admins table: ang admin ay user na role = 'admin'.
  */
 function get_auth_user() {
     $token = get_bearer_token();
     if (!$token) {
         return null;
     }
-    
+
     $payload = jwt_verify($token, get_jwt_secret());
     if (!$payload || empty($payload['sub'])) {
         return null;
     }
-    
+
     $lava = lava_instance();
-    
-    if (!empty($payload['role']) && $payload['role'] === 'admin') {
-        $aStmt = $lava->db->raw(
-            "SELECT id, 'LG-ADMIN' AS member_id, username, full_name, email, role, is_active,
-                    NULL AS member_record_id, NULL AS dgroup_id, NULL AS ministry_id, NULL AS age, NULL AS address, avatar
-             FROM admins
-             WHERE id = ? AND is_active = 1
-             LIMIT 1",
-            [$payload['sub']]
-        );
-        $admin = $aStmt->fetch(PDO::FETCH_ASSOC);
-        if ($admin) {
-            return $admin;
-        }
-    }
+
     $stmt = $lava->db->raw(
-        "SELECT u.id, u.member_id, u.username, u.full_name, u.email, u.role, u.is_active, u.membership_tier,
-                m.id AS member_record_id, m.dgroup_id, m.ministry_id, m.age, m.address, m.avatar
+        "SELECT u.id, m.member_code AS member_id, u.username,
+                COALESCE(m.full_name, u.username) AS full_name,
+                u.email, u.role, u.is_active,
+                m.id AS member_record_id, m.age, m.address, m.avatar,
+                (SELECT dm.dgroup_id FROM dgroup_members dm
+                 WHERE dm.member_id = m.id AND dm.status = 'active' LIMIT 1) AS dgroup_id,
+                (SELECT ma.ministry_id FROM ministry_applications ma
+                 WHERE ma.member_id = m.id AND ma.status = 'approved' LIMIT 1) AS ministry_id
          FROM users u
          LEFT JOIN members m ON m.user_id = u.id
          WHERE u.id = ? AND u.is_active = 1
          LIMIT 1",
         [$payload['sub']]
     );
-    
+
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$user) {
-        return null;
-    }
-    
-    return $user;
+    return $user ?: null;
 }
 
 /**
@@ -168,12 +158,25 @@ function require_auth_user() {
 }
 
 /**
- * Require admin/moderator user, else respond 403
+ * Require admin user, else respond 403 (admin lang; officers ay gumagamit ng require_staff_user)
  */
 function require_admin_user() {
     $user = require_auth_user();
-    if ($user['role'] !== 'admin' && $user['role'] !== 'moderator') {
+    if ($user['role'] !== 'admin') {
         api_response(['error' => 'Forbidden. Administrator privileges required.'], 403);
+    }
+    return $user;
+}
+
+
+/**
+ * Require staff (officer o admin), else respond 403
+ * Para sa approve/reject at QR check-in na pwede sa officers.
+ */
+function require_staff_user() {
+    $user = require_auth_user();
+    if (!in_array($user['role'], ['admin', 'officer'], true)) {
+        api_response(['error' => 'Forbidden. Officer or administrator privileges required.'], 403);
     }
     return $user;
 }
@@ -186,9 +189,9 @@ function generate_member_code($lava) {
         $year = date('Y');
         $rand = strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
         $code = "LG-{$year}-{$rand}";
-        
-        $check = $lava->db->raw("SELECT id FROM members WHERE member_id = ? LIMIT 1", [$code]);
+
+        $check = $lava->db->raw("SELECT id FROM members WHERE member_code = ? LIMIT 1", [$code]);
     } while ($check->fetch());
-    
+
     return $code;
 }

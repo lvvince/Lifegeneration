@@ -15,13 +15,18 @@ class Members extends Controller
         require_admin_user();
 
         $stmt = $this->db->raw(
-            "SELECT m.*, u.username, u.role, u.is_active AS user_active,
-                    d.name AS dgroup_name, min.name AS ministry_name
+            "SELECT m.id, m.user_id, m.member_code AS member_id, m.full_name, m.age,
+                    m.address, m.avatar, m.status, m.is_active AS user_active,
+                    m.created_at AS joined_at, u.username, u.email, u.role,
+                    (SELECT d.name FROM dgroup_members dm
+                     JOIN dgroups d ON d.id = dm.dgroup_id
+                     WHERE dm.member_id = m.id AND dm.status = 'active' LIMIT 1) AS dgroup_name,
+                    (SELECT mi.name FROM ministry_applications ma
+                     JOIN ministries mi ON mi.id = ma.ministry_id
+                     WHERE ma.member_id = m.id AND ma.status = 'approved' LIMIT 1) AS ministry_name
              FROM members m
              JOIN users u ON u.id = m.user_id
-             LEFT JOIN dgroups d ON d.id = m.dgroup_id
-             LEFT JOIN ministries min ON min.id = m.ministry_id
-             ORDER BY m.joined_at DESC"
+             ORDER BY m.created_at DESC"
         );
         api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
@@ -32,15 +37,15 @@ class Members extends Controller
         $input = api_input();
         $targetUserId = (int) ($input['user_id'] ?? $input['id'] ?? $user['id']);
 
-        $isStaff = in_array($user['role'], ['admin', 'moderator']);
         $isAdmin = $user['role'] === 'admin';
+        $isStaff = $isAdmin;
         $isSelf  = (int) $user['id'] === $targetUserId;
 
         if (!$isStaff && !$isSelf) {
             api_response(['error' => 'Permission denied.'], 403);
         }
 
-        // Profile: ina-update lang ang mga field na ipinadala (dati nabubura ang name/age/address)
+        // Profile: ina-update lang ang mga field na ipinadala
         $sets = [];
         $params = [];
 
@@ -62,12 +67,12 @@ class Members extends Controller
         }
 
         if ($sets) {
-            $sets[] = 'updated_at = NOW()';
+            // Walang updated_at column sa members ng lgy_db
             $params[] = $targetUserId;
             $this->db->raw("UPDATE members SET " . implode(', ', $sets) . " WHERE user_id = ?", $params);
         }
 
-        // Role: admin lang, at hindi sariling role
+        // Role: admin lang, at hindi sariling role (enum: user, admin)
         if (isset($input['role'])) {
             if (!$isAdmin) {
                 api_response(['error' => 'Only an admin can change roles.'], 403);
@@ -75,7 +80,7 @@ class Members extends Controller
             if ($isSelf) {
                 api_response(['error' => 'You cannot change your own role.'], 422);
             }
-            if (in_array($input['role'], ['user', 'moderator', 'admin'])) {
+            if (in_array($input['role'], ['user', 'admin'], true)) {
                 $this->db->raw("UPDATE users SET role = ? WHERE id = ?", [$input['role'], $targetUserId]);
             }
         }
@@ -95,6 +100,7 @@ class Members extends Controller
 
         api_response(['success' => true, 'message' => 'Member updated successfully.']);
     }
+
     public function upload_avatar()
     {
         $user = require_auth_user();
@@ -130,11 +136,7 @@ class Members extends Controller
 
         $relativeUrl = 'uploads/avatars/' . $filename;
 
-        if (!empty($user['role']) && $user['role'] === 'admin') {
-            $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]);
-        } else {
-            $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
-        }
+        $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
 
         api_response([
             'success' => true,
@@ -147,11 +149,7 @@ class Members extends Controller
     {
         $user = require_auth_user();
 
-        if (!empty($user['role']) && $user['role'] === 'admin') {
-            $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ?", [$user['id']]);
-        } else {
-            $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]);
-        }
+        $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]);
 
         api_response([
             'success' => true,

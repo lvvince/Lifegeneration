@@ -10,6 +10,12 @@ import { initials, resolveImageUrl } from '../../lib/format.js'
 import { ToastProvider, ConfirmDialog } from './ui.jsx'
 import '../../styles/portal.css'
 
+const COMMUNITY_ITEMS = [
+  { to: '/dgroups', label: 'D-Groups', icon: Network },
+  { to: '/ministries', label: 'Ministries', icon: HeartHandshake },
+  { to: '/prayer', label: 'Prayer wall', icon: MessageSquare },
+]
+
 const ADMIN_NAV = [
   {
     label: 'Manage',
@@ -22,12 +28,24 @@ const ADMIN_NAV = [
       { to: '/admin/reports', label: 'Reports', icon: FileText },
     ],
   },
+  { label: 'Community', items: COMMUNITY_ITEMS },
+]
+
+const OFFICER_NAV = [
   {
-    label: 'Community',
+    label: 'Officer',
     items: [
-      { to: '/dgroups', label: 'D-Groups', icon: Network },
-      { to: '/ministries', label: 'Ministries', icon: HeartHandshake },
-      { to: '/prayer', label: 'Prayer wall', icon: MessageSquare },
+      { to: '/officer', label: 'Overview', icon: LayoutDashboard, end: true },
+      { to: '/officer/applications', label: 'Applications', icon: ClipboardList },
+      { to: '/officer/attendance', label: 'Attendance', icon: UserCheck },
+    ],
+  },
+  {
+    label: 'Member',
+    items: [
+      { to: '/dashboard', label: 'My profile', icon: Users },
+      { to: '/events', label: 'Events', icon: CalendarDays },
+      ...COMMUNITY_ITEMS,
     ],
   },
 ]
@@ -37,12 +55,23 @@ const MEMBER_NAV = [
     items: [
       { to: '/dashboard', label: 'My profile', icon: LayoutDashboard, end: true },
       { to: '/events', label: 'Events', icon: CalendarDays },
-      { to: '/dgroups', label: 'D-Groups', icon: Network },
-      { to: '/ministries', label: 'Ministries', icon: HeartHandshake },
-      { to: '/prayer', label: 'Prayer wall', icon: MessageSquare },
+      ...COMMUNITY_ITEMS,
     ],
   },
 ]
+
+const NAV_BY_ROLE = {
+  admin: ADMIN_NAV,
+  officer: OFFICER_NAV,
+  secretary: OFFICER_NAV,
+}
+
+const ROLE_LABEL = {
+  admin: 'Admin',
+  officer: 'Officer',
+  secretary: 'Secretary',
+  moderator: 'Moderator',
+}
 
 function Brand() {
   return (
@@ -64,9 +93,9 @@ export default function PortalLayout({ children }) {
   const [open, setOpen] = useState(false)
   const [confirmOut, setConfirmOut] = useState(false)
 
-  const nav = user?.role === 'admin' ? ADMIN_NAV : MEMBER_NAV
+  const nav = NAV_BY_ROLE[user?.role] || MEMBER_NAV
   const displayName = user?.full_name || user?.username || 'Member'
-  const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'moderator' ? 'Moderator' : 'Member'
+  const roleLabel = ROLE_LABEL[user?.role] || 'Member'
 
   useEffect(() => setOpen(false), [pathname])
   useEffect(() => {

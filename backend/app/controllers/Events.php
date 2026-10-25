@@ -3,71 +3,95 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 class Events extends Controller
 {
+    // Mga field na ibinabalik sa React (may aliases para tumugma sa frontend)
+    private const EVENT_FIELDS = "e.id, e.title, e.description, e.venue, e.venue AS location,
+        e.start_at, DATE(e.start_at) AS event_date,
+        TIME_FORMAT(e.start_at, '%h:%i %p') AS event_time,
+        e.capacity, e.banner, e.banner AS banner_image, e.created_by, e.created_at";
+
     public function __construct()
     {
         parent::__construct();
         $this->call->database();
     }
 
+    private function member_of($user)
+    {
+        if (!$user) return null;
+        $row = $this->db->raw(
+            "SELECT id, member_code, full_name FROM members WHERE user_id = ? LIMIT 1",
+            [(int) $user['id']]
+        )->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    private function to_start_at($date, $time)
+    {
+        $date = $date !== '' ? $date : date('Y-m-d');
+        $ts = strtotime(trim($date . ' ' . $time));
+        return $ts ? date('Y-m-d H:i:s', $ts) : $date . ' 10:00:00';
+    }
+
+    private function attach_user_state(array &$events, $member)
+    {
+        $rsvps = [];
+        $checked = [];
+        if ($member) {
+            $r = $this->db->raw(
+                "SELECT event_id, status FROM event_rsvps WHERE member_id = ?",
+                [(int) $member['id']]
+            )->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($r as $x) $rsvps[$x['event_id']] = $x['status'];
+
+            $a = $this->db->raw(
+                "SELECT event_id, checked_in_at FROM attendance WHERE member_id = ?",
+                [(int) $member['id']]
+            )->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($a as $x) $checked[$x['event_id']] = $x['checked_in_at'];
+        }
+        foreach ($events as &$ev) {
+            $ev['attendee_count'] = (int) ($ev['attendee_count'] ?? 0);
+            $ev['user_rsvp'] = $rsvps[$ev['id']] ?? null;
+            $ev['checked_in'] = isset($checked[$ev['id']]) ? 1 : 0;
+            $ev['checked_in_at'] = $checked[$ev['id']] ?? null;
+        }
+        unset($ev);
+    }
+
     public function index()
     {
         $user = get_auth_user();
-        $userId = $user['id'] ?? 0;
 
-        $stmt = $this->db->raw(
-            "SELECT e.*, COUNT(ea.id) AS attendee_count
+        $events = $this->db->raw(
+            "SELECT " . self::EVENT_FIELDS . ",
+                    (SELECT COUNT(*) FROM event_rsvps r
+                     WHERE r.event_id = e.id AND r.status = 'confirmed') AS attendee_count
              FROM events e
-             LEFT JOIN event_attendances ea ON ea.event_id = e.id AND ea.rsvp_status = 'attending'
-             WHERE e.is_active = 1
-             GROUP BY e.id
-             ORDER BY e.event_date ASC"
-        );
-        $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+             ORDER BY e.start_at ASC"
+        )->fetchAll(PDO::FETCH_ASSOC);
 
-        $userRsvps = [];
-        if ($userId > 0) {
-            $rStmt = $this->db->raw(
-                "SELECT event_id, rsvp_status, checked_in, checked_in_at FROM event_attendances WHERE user_id = ?",
-                [$userId]
-            );
-            foreach ($rStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-                $userRsvps[$r['event_id']] = $r;
-            }
-        }
-
-        foreach ($events as &$ev) {
-            $ev['attendee_count'] = (int) $ev['attendee_count'];
-            $ev['user_rsvp'] = $userRsvps[$ev['id']]['rsvp_status'] ?? null;
-            $ev['checked_in'] = (int) ($userRsvps[$ev['id']]['checked_in'] ?? 0);
-            $ev['checked_in_at'] = $userRsvps[$ev['id']]['checked_in_at'] ?? null;
-        }
-
+        $this->attach_user_state($events, $this->member_of($user));
         api_response($events);
     }
 
     public function show($id)
     {
         $id = (int) $id;
-        $stmt = $this->db->raw("SELECT * FROM events WHERE id = ? LIMIT 1", [$id]);
-        $event = $stmt->fetch(PDO::FETCH_ASSOC);
+        $event = $this->db->raw(
+            "SELECT " . self::EVENT_FIELDS . ",
+                    (SELECT COUNT(*) FROM event_rsvps r
+                     WHERE r.event_id = e.id AND r.status = 'confirmed') AS attendee_count
+             FROM events e WHERE e.id = ? LIMIT 1",
+            [$id]
+        )->fetch(PDO::FETCH_ASSOC);
 
         if (!$event) {
             api_response(['error' => 'Event not found.'], 404);
         }
 
-        $user = get_auth_user();
-        if ($user) {
-            $rStmt = $this->db->raw(
-                "SELECT rsvp_status, checked_in, checked_in_at FROM event_attendances WHERE event_id = ? AND user_id = ? LIMIT 1",
-                [$id, $user['id']]
-            );
-            $r = $rStmt->fetch(PDO::FETCH_ASSOC);
-            $event['user_rsvp'] = $r['rsvp_status'] ?? null;
-            $event['checked_in'] = (int) ($r['checked_in'] ?? 0);
-            $event['checked_in_at'] = $r['checked_in_at'] ?? null;
-        }
-
-        api_response($event);
+        $list = [$event];
+        $this->attach_user_state($list, $this->member_of(get_auth_user()));
+        api_response($list[0]);
     }
 
     public function rsvp()
@@ -80,29 +104,40 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
-        $event = $this->db->raw("SELECT id, title, capacity FROM events WHERE id = ? LIMIT 1", [$eventId])->fetch();
+        $event = $this->db->raw(
+            "SELECT id, title, capacity FROM events WHERE id = ? LIMIT 1", [$eventId]
+        )->fetch(PDO::FETCH_ASSOC);
         if (!$event) {
             api_response(['error' => 'Event not found.'], 404);
         }
 
-        $memberId = $user['member_id'] ?: 'LG-USER';
-        $memberName = $user['full_name'] ?: $user['username'];
+        $member = $this->member_of($user);
+        if (!$member) {
+            api_response(['error' => 'No member profile is linked to this account.'], 404);
+        }
 
         $existing = $this->db->raw(
-            "SELECT id FROM event_attendances WHERE event_id = ? AND user_id = ? LIMIT 1",
-            [$eventId, $user['id']]
-        )->fetch();
+            "SELECT id, status FROM event_rsvps WHERE event_id = ? AND member_id = ? LIMIT 1",
+            [$eventId, $member['id']]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if (!empty($event['capacity']) && (!$existing || $existing['status'] !== 'confirmed')) {
+            $count = (int) $this->db->raw(
+                "SELECT COUNT(*) FROM event_rsvps WHERE event_id = ? AND status = 'confirmed'",
+                [$eventId]
+            )->fetchColumn();
+            if ($count >= (int) $event['capacity']) {
+                api_response(['error' => 'Sorry, this event is already full.'], 409);
+            }
+        }
 
         if ($existing) {
-            $this->db->raw(
-                "UPDATE event_attendances SET rsvp_status = 'attending', member_name = ? WHERE id = ?",
-                [$memberName, $existing['id']]
-            );
+            $this->db->raw("UPDATE event_rsvps SET status = 'confirmed' WHERE id = ?", [$existing['id']]);
         } else {
             $this->db->raw(
-                "INSERT INTO event_attendances (event_id, user_id, member_id, member_name, rsvp_status, checked_in, created_at)
-                 VALUES (?, ?, ?, ?, 'attending', 0, NOW())",
-                [$eventId, $user['id'], $memberId, $memberName]
+                "INSERT INTO event_rsvps (event_id, member_id, status, created_at)
+                 VALUES (?, ?, 'confirmed', NOW())",
+                [$eventId, $member['id']]
             );
         }
 
@@ -122,47 +157,48 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
-        $this->db->raw(
-            "UPDATE event_attendances SET rsvp_status = 'cancelled' WHERE event_id = ? AND user_id = ?",
-            [$eventId, $user['id']]
-        );
+        $member = $this->member_of($user);
+        if ($member) {
+            $this->db->raw(
+                "UPDATE event_rsvps SET status = 'cancelled' WHERE event_id = ? AND member_id = ?",
+                [$eventId, $member['id']]
+            );
+        }
 
         api_response(['success' => true, 'message' => 'RSVP cancelled.']);
     }
 
     public function check_in()
     {
-        require_admin_user();
+        require_staff_user();
         $input = api_input();
-        $eventId  = (int) ($input['event_id'] ?? 0);
-        $memberId = trim($input['member_id'] ?? '');
+        $eventId = (int) ($input['event_id'] ?? 0);
+        $code = trim($input['member_id'] ?? '');
 
-        if ($eventId <= 0 || empty($memberId)) {
+        if ($eventId <= 0 || $code === '') {
             api_response(['error' => 'Event ID and Member ID are required for check-in.'], 422);
         }
 
-        // Look up member
-        $memStmt = $this->db->raw(
-            "SELECT m.*, u.id AS uid, u.username, u.email
+        $member = $this->db->raw(
+            "SELECT m.id, m.user_id, m.member_code, m.member_code AS member_id, m.full_name,
+                    u.username, u.email
              FROM members m
              JOIN users u ON u.id = m.user_id
-             WHERE m.member_id = ? OR u.member_id = ? OR u.username = ? OR u.email = ?
+             WHERE m.member_code = ? OR u.username = ? OR u.email = ?
              LIMIT 1",
-            [$memberId, $memberId, $memberId, $memberId]
-        );
-        $member = $memStmt->fetch(PDO::FETCH_ASSOC);
+            [$code, $code, $code]
+        )->fetch(PDO::FETCH_ASSOC);
 
         if (!$member) {
-            api_response(['error' => "No member found matching identifier: {$memberId}."], 404);
+            api_response(['error' => "No member found matching identifier: {$code}."], 404);
         }
 
-        $attStmt = $this->db->raw(
-            "SELECT id, checked_in FROM event_attendances WHERE event_id = ? AND user_id = ? LIMIT 1",
-            [$eventId, $member['user_id']]
-        );
-        $attendance = $attStmt->fetch(PDO::FETCH_ASSOC);
+        $attendance = $this->db->raw(
+            "SELECT id FROM attendance WHERE event_id = ? AND member_id = ? LIMIT 1",
+            [$eventId, $member['id']]
+        )->fetch(PDO::FETCH_ASSOC);
 
-        if ($attendance && $attendance['checked_in'] == 1) {
+        if ($attendance) {
             api_response([
                 'success'    => true,
                 'already_in' => true,
@@ -171,63 +207,78 @@ class Events extends Controller
             ]);
         }
 
-        if ($attendance) {
+        $this->db->raw(
+            "INSERT INTO attendance (event_id, member_id, checked_in_at) VALUES (?, ?, NOW())",
+            [$eventId, $member['id']]
+        );
+
+        // Walk-in: siguraduhing may RSVP row din
+        $rsvp = $this->db->raw(
+            "SELECT id FROM event_rsvps WHERE event_id = ? AND member_id = ? LIMIT 1",
+            [$eventId, $member['id']]
+        )->fetch(PDO::FETCH_ASSOC);
+        if (!$rsvp) {
             $this->db->raw(
-                "UPDATE event_attendances SET checked_in = 1, checked_in_at = NOW(), rsvp_status = 'attending' WHERE id = ?",
-                [$attendance['id']]
-            );
-        } else {
-            // Walk-in check in
-            $this->db->raw(
-                "INSERT INTO event_attendances (event_id, user_id, member_id, member_name, rsvp_status, checked_in, checked_in_at, created_at)
-                 VALUES (?, ?, ?, ?, 'attending', 1, NOW(), NOW())",
-                [$eventId, $member['user_id'], $member['member_id'], $member['full_name']]
+                "INSERT INTO event_rsvps (event_id, member_id, status, created_at)
+                 VALUES (?, ?, 'confirmed', NOW())",
+                [$eventId, $member['id']]
             );
         }
 
         api_response([
             'success' => true,
-            'message' => "Check-in successful! Welcome, {$member['full_name']} ({$member['member_id']}).",
+            'message' => "Check-in successful! Welcome, {$member['full_name']} ({$member['member_code']}).",
             'member'  => $member
         ]);
     }
 
     public function attendees($eventId)
     {
-        require_admin_user();
+        require_staff_user();
         $eventId = (int) $eventId;
-        $stmt = $this->db->raw(
-            "SELECT ea.*, u.email, u.role
-             FROM event_attendances ea
-             JOIN users u ON u.id = ea.user_id
-             WHERE ea.event_id = ? AND ea.rsvp_status = 'attending'
-             ORDER BY ea.checked_in DESC, ea.created_at ASC",
+
+        $rows = $this->db->raw(
+            "SELECT r.id, r.event_id, r.member_id AS member_pk, m.member_code AS member_id,
+                    m.full_name AS member_name, m.user_id, u.email, u.role,
+                    r.status AS rsvp_status, r.created_at,
+                    (a.id IS NOT NULL) AS checked_in, a.checked_in_at
+             FROM event_rsvps r
+             JOIN members m ON m.id = r.member_id
+             LEFT JOIN users u ON u.id = m.user_id
+             LEFT JOIN attendance a ON a.event_id = r.event_id AND a.member_id = r.member_id
+             WHERE r.event_id = ? AND r.status = 'confirmed'
+             ORDER BY checked_in DESC, r.created_at ASC",
             [$eventId]
-        );
-        api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            $row['checked_in'] = (int) $row['checked_in'];
+        }
+        unset($row);
+
+        api_response($rows);
     }
 
     public function create()
     {
-        require_admin_user();
+        $user = require_admin_user();
         $input = api_input();
 
         $title       = trim($input['title'] ?? '');
         $description = trim($input['description'] ?? '');
-        $bannerImage = trim($input['banner_image'] ?? $input['image'] ?? '');
-        $location    = trim($input['location'] ?? $input['venue'] ?? '');
-        $eventDate   = trim($input['event_date'] ?? date('Y-m-d'));
-        $eventTime   = trim($input['event_time'] ?? '10:00 AM');
+        $banner      = trim($input['banner_image'] ?? $input['image'] ?? '');
+        $venue       = trim($input['location'] ?? $input['venue'] ?? '');
+        $startAt     = $this->to_start_at(trim($input['event_date'] ?? ''), trim($input['event_time'] ?? '10:00 AM'));
         $capacity    = !empty($input['capacity']) ? (int) $input['capacity'] : null;
 
-        if (empty($title)) {
+        if ($title === '') {
             api_response(['error' => 'Event title is required.'], 422);
         }
 
         $this->db->raw(
-            "INSERT INTO events (title, description, banner_image, location, event_date, event_time, capacity, is_active, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())",
-            [$title, $description, $bannerImage ?: null, $location, $eventDate, $eventTime, $capacity]
+            "INSERT INTO events (title, description, venue, start_at, capacity, banner, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$title, $description, $venue, $startAt, $capacity, $banner ?: null, (int) $user['id']]
         );
 
         api_response([
@@ -249,17 +300,20 @@ class Events extends Controller
 
         $title       = trim($input['title'] ?? '');
         $description = trim($input['description'] ?? '');
-        $bannerImage = trim($input['banner_image'] ?? $input['image'] ?? '');
-        $location    = trim($input['location'] ?? $input['venue'] ?? '');
-        $eventDate   = trim($input['event_date'] ?? date('Y-m-d'));
-        $eventTime   = trim($input['event_time'] ?? '');
+        $banner      = trim($input['banner_image'] ?? $input['image'] ?? '');
+        $venue       = trim($input['location'] ?? $input['venue'] ?? '');
+        $startAt     = $this->to_start_at(trim($input['event_date'] ?? ''), trim($input['event_time'] ?? '10:00 AM'));
         $capacity    = !empty($input['capacity']) ? (int) $input['capacity'] : null;
+
+        if ($title === '') {
+            api_response(['error' => 'Event title is required.'], 422);
+        }
 
         $this->db->raw(
             "UPDATE events
-             SET title = ?, description = ?, banner_image = ?, location = ?, event_date = ?, event_time = ?, capacity = ?, updated_at = NOW()
+             SET title = ?, description = ?, venue = ?, start_at = ?, capacity = ?, banner = ?
              WHERE id = ?",
-            [$title, $description, $bannerImage ?: null, $location, $eventDate, $eventTime, $capacity, $id]
+            [$title, $description, $venue, $startAt, $capacity, $banner ?: null, $id]
         );
 
         api_response(['success' => true, 'message' => 'Event updated successfully.']);
@@ -275,6 +329,8 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
+        $this->db->raw("DELETE FROM attendance WHERE event_id = ?", [$id]);
+        $this->db->raw("DELETE FROM event_rsvps WHERE event_id = ?", [$id]);
         $this->db->raw("DELETE FROM events WHERE id = ?", [$id]);
         api_response(['success' => true, 'message' => 'Event deleted.']);
     }
@@ -300,8 +356,7 @@ class Events extends Controller
         }
 
         $filename = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-        
-        // Base public path
+
         $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
         $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR;
 
@@ -313,11 +368,9 @@ class Events extends Controller
             api_response(['error' => 'Failed to save uploaded image.'], 500);
         }
 
-        // Return relative path
-        $relativeUrl = 'uploads/events/' . $filename;
         api_response([
             'success' => true,
-            'url'     => $relativeUrl,
+            'url'     => 'uploads/events/' . $filename,
             'message' => 'Event banner uploaded successfully.'
         ]);
     }

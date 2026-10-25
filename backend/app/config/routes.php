@@ -67,3 +67,7 @@ $router->post('/api/members/remove-avatar', 'Members::remove_avatar');
 $router->get('/api/admin/stats',    'Admin::stats');
 $router->get('/api/stats',          'Admin::stats');
 $router->get('/api/reports/summary', 'Reports::summary');
+
+// 7. Officer portal
+$router->get('/api/officer/dashboard',               'Officer::dashboard');
+$router->post('/api/officer/registrations/review',   'Officer::review_registration');
