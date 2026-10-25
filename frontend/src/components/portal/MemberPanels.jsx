@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search, X, BellOff, Bell, CalendarDays, Megaphone, Moon, Sun, User, LogOut, ArrowRight, Clock, QrCode, Hash, MessageCircle, ChevronRight, Camera } from 'lucide-react'
 import { catOf, useAnnouncements } from './announcements.jsx'
 import { getEvents, peekEvents } from '../../lib/events-cache.js'
@@ -324,6 +324,7 @@ export function ProfilePanel({ avatar, name, role, email, memberId, tier, theme,
 /* ---------- Page icons (Overview, Events, D-Groups, Ministries, Prayer wall) ---------- */
 export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [events, setEvents] = useState(peekEvents)
   const member = user?.member || {}
   const Icon = item.icon
@@ -371,18 +372,25 @@ export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
 
         {item.admin && (
           <>
-            <span className="sk-grp">All admin pages</span>
-            {nav.map((n) => (
-              <Link to={n.to} className={`sk-row${n.id === item.id ? ' is-on' : ''}`} key={n.id} onClick={onClose}>
-                <span className="sk-tile">
-                  <n.icon size={18} strokeWidth={1.8} />
-                </span>
-                <span className="sk-note-body">
-                  <b>{n.label}</b>
-                  <small>{n.blurb}</small>
-                </span>
-                <ChevronRight size={16} className="sk-res-go" />
-              </Link>
+            {(item.items ? [{ label: item.label, list: item.items }] : nav.map((g) => ({ label: g.items ? g.label : 'Dashboard', list: g.items || [g] }))).map((g) => (
+              <div key={g.label}>
+                <span className="sk-grp">{item.items ? 'Pages' : g.label}</span>
+                {g.list.map((n) => {
+                  const on = pathname === n.to || pathname.startsWith(`${n.to}/`)
+                  return (
+                    <Link to={n.to} className={`sk-row${on ? ' is-on' : ''}`} key={n.id} onClick={onClose}>
+                      <span className="sk-tile">
+                        <n.icon size={18} strokeWidth={1.8} />
+                      </span>
+                      <span className="sk-note-body">
+                        <b>{n.label}</b>
+                        <small>{n.blurb}</small>
+                      </span>
+                      <ChevronRight size={16} className="sk-res-go" />
+                    </Link>
+                  )
+                })}
+              </div>
             ))}
           </>
         )}
@@ -480,7 +488,8 @@ export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
 }
 
 /* ---------- Menu (phone): lahat ng nasa rail, nasa isang listahan ---------- */
-export function MenuPanel({ nav, activeIdx, avatar, name, role, memberId, unread, theme, onToggleTheme, onGo, onSignOut, onClose }) {
+export function MenuPanel({ nav, activeIdx: _a, avatar, name, role, memberId, unread, theme, onToggleTheme, onGo, onSignOut, onClose }) {
+  const { pathname } = useLocation()
   return (
     <>
       <Head title="Menu" sub="Life Generation Calapan" onClose={onClose} />
@@ -494,20 +503,27 @@ export function MenuPanel({ nav, activeIdx, avatar, name, role, memberId, unread
           <ChevronRight size={18} className="sk-res-go" />
         </button>
 
-        <span className="sk-grp">Pages</span>
-        <div className="sk-list">
-          {nav.map((n, i) => (
-            <Link to={n.to} key={n.id} className={`sk-row${i === activeIdx ? ' is-on' : ''}`} onClick={onClose}>
-              <span className="sk-tile">
-                <n.icon size={19} strokeWidth={1.8} />
-              </span>
-              <span className="sk-note-body">
-                <b>{n.label}</b>
-              </span>
-              <ChevronRight size={16} className="sk-res-go" />
-            </Link>
-          ))}
-        </div>
+        {(nav.some((n) => n.items) ? nav.map((g) => ({ label: g.items ? g.label : 'Dashboard', list: g.items || [g] })) : [{ label: 'Pages', list: nav }]).map((g) => (
+          <div key={g.label}>
+            <span className="sk-grp">{g.label}</span>
+            <div className="sk-list">
+              {g.list.map((n) => {
+                const on = n.end ? pathname === n.to || pathname === `${n.to}/overview` : pathname === n.to || pathname.startsWith(`${n.to}/`)
+                return (
+                  <Link to={n.to} key={n.id} className={`sk-row${on ? ' is-on' : ''}`} onClick={onClose}>
+                    <span className="sk-tile">
+                      <n.icon size={19} strokeWidth={1.8} />
+                    </span>
+                    <span className="sk-note-body">
+                      <b>{n.label}</b>
+                    </span>
+                    <ChevronRight size={16} className="sk-res-go" />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
 
         <span className="sk-grp">Tools</span>
         <div className="sk-list">

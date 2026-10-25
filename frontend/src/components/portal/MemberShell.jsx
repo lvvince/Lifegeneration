@@ -66,9 +66,13 @@ function Shell({ children }) {
   const role = isAdmin ? 'Admin' : user?.role === 'moderator' ? 'Moderator' : 'Member'
   const memberId = user?.member_id || user?.member?.member_id
   const home = isAdmin ? '/admin' : '/dashboard'
-  const activeIdx = NAV.findIndex((n) =>
-    n.end ? pathname === n.to || pathname === `${n.to}/overview` : pathname === n.to || pathname.startsWith(`${n.to}/`)
-  )
+  const isOn = (n) =>
+    n.match
+      ? n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`))
+      : n.end
+        ? pathname === n.to || pathname === `${n.to}/overview`
+        : pathname === n.to || pathname.startsWith(`${n.to}/`)
+  const activeIdx = NAV.findIndex(isOn)
   const onProfile = pathname.startsWith('/dashboard/profile')
   const navItem = NAV.find((n) => n.id === content)
   const current = NAV[activeIdx]

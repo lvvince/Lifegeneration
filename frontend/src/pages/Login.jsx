@@ -1,162 +1,88 @@
-﻿import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import { apiPost, setUser, saveTokens } from "../api.js"
-import { User, Lock, LogIn, AlertCircle } from "lucide-react"
-import AuthField from "../components/AuthField.jsx"
-import { useAuthModal } from "../context/AuthModal.jsx"
-import "../styles/auth.css"
+import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { apiPost, setUser, saveTokens } from '../api.js'
+import { useGoogleButton } from '../lib/useGoogleButton.js'
+import AuthShell from '../components/auth/AuthShell.jsx'
+import AuthInput from '../components/auth/AuthInput.jsx'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { openRegister } = useAuthModal()
-  const [form, setForm] = useState({ identity: "", password: "" })
-  const [error, setError] = useState("")
+  const [form, setForm] = useState({ identity: '', password: '' })
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const googleBtnRef = useRef(null)
+  const [caps, setCaps] = useState(false)
+  const gRef = useRef(null)
 
-  const handleChange = (e) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
-    setError("")
+  const finish = (data) => {
+    const user = data.user || data.data || data
+    setUser(user)
+    if (data.tokens) saveTokens(data.tokens)
+    navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true })
   }
 
-  const handleGoogleSuccess = async (response) => {
-    if (!response.credential) {
-      setError("No Google credential received.")
-      return
-    }
-    setLoading(true)
-    setError("")
-    try {
-      const data = await apiPost("/api/auth/google", { credential: response.credential })
-      const user = data.user || data.data || data
-      setUser(user)
-      if (data.tokens) saveTokens(data.tokens)
-      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true })
-    } catch (err) {
-      setError(err.message || "Google sign-in failed. Please try again.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "464887399568-1fpv2kl0l9r37gb5mtpg2553k8dg0j9j.apps.googleusercontent.com"
-
-    const renderGoogle = () => {
-      if (window.google?.accounts?.id && googleBtnRef.current) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: handleGoogleSuccess,
-          })
-          window.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: "filled_blue",
-            size: "large",
-            shape: "pill",
-            text: "continue_with",
-            locale: "en",
-            width: 280,
-          })
-        } catch (e) {
-          console.error("Google init error:", e)
-        }
+  useGoogleButton(gRef, {
+    text: 'continue_with',
+    onCredential: async (credential) => {
+      setLoading(true)
+      setError('')
+      try {
+        finish(await apiPost('/api/auth/google', { credential }))
+      } catch (err) {
+        setError(err.message || 'Google sign-in failed. Please try again.')
+        setLoading(false)
       }
-    }
+    },
+  })
 
-    if (window.google?.accounts?.id) {
-      renderGoogle()
-    } else {
-      const interval = setInterval(() => {
-        if (window.google?.accounts?.id) {
-          clearInterval(interval)
-          renderGoogle()
-        }
-      }, 250)
-      return () => clearInterval(interval)
-    }
-  }, [])
+  const change = (e) => {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+    setError('')
+  }
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     if (!form.identity.trim() || !form.password) {
-      setError("Enter your username or email and password.")
+      setError('Enter your username or email and password.')
       return
     }
     setLoading(true)
     try {
-      const data = await apiPost("/api/auth/login", {
-        identity: form.identity.trim(),
-        password: form.password,
-      })
-      const user = data.user || data.data || data
-      setUser(user)
-      if (data.tokens) saveTokens(data.tokens)
-      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true })
+      finish(await apiPost('/api/auth/login', { identity: form.identity.trim(), password: form.password }))
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.")
-    } finally {
+      setError(err.message || 'Login failed. Please check your credentials.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="auth-stage auth-scope">
-      <div className="auth-card">
-        {/* Photo + wavy edge */}
-        <div className="auth-photo" aria-hidden="true">
-          <div className="auth-photo-brand">
-            <img src="/logo.png" alt="" />
-            <span>Life Generation</span>
-          </div>
-          <svg className="auth-wave" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M62,0 C4,20 4,46 46,62 C88,78 92,92 76,100 L100,100 L100,0 Z" />
-          </svg>
+    <AuthShell title="Welcome back" sub="New here?" switchLead="Create an account" switchLabel="Join" switchTo="/register">
+      {error && (
+        <div className="au-alert" role="alert" key={error}>
+          <AlertCircle size={17} /> <span>{error}</span>
         </div>
+      )}
+      <form onSubmit={submit} noValidate className="au-form">
+        <AuthInput icon={User} label="Username or email" name="identity" value={form.identity} onChange={change} autoComplete="username" autoFocus />
+        <AuthInput
+          icon={Lock}
+          label="Password"
+          name="password"
+          type="password"
+          value={form.password}
+          onChange={change}
+          autoComplete="current-password"
+          onKeyUp={(e) => setCaps(e.getModifierState?.('CapsLock') || false)}
+          hint={caps ? 'Caps Lock is on' : undefined}
+        />
+        <button type="submit" className="au-btn" disabled={loading}>
+          {loading ? <span className="au-spin" /> : <>Log in <ArrowRight size={18} /></>}
+        </button>
+      </form>
 
-        {/* Form */}
-        <div className="auth-panel">
-          <div className="auth-mobile-brand">
-            <img src="/logo.png" alt="" />
-            <span>Life Generation</span>
-          </div>
+      <div className="au-or"><span>or</span></div>
+      <div className="au-google"><div ref={gRef} /></div>
 
-          <h1 className="auth-title">Welcome</h1>
-          <p className="auth-sub">Log in to your account to continue</p>
-
-          {error && (
-            <div className="auth-error" role="alert">
-              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate>
-            <AuthField icon={User} tint="#f97316" name="identity" placeholder="Username or email"
-              value={form.identity} onChange={handleChange} autoComplete="username" autoFocus />
-            <AuthField icon={Lock} tint="#3b82f6" name="password" type="password" placeholder="Password"
-              value={form.password} onChange={handleChange} autoComplete="current-password" />
-
-            <button type="submit" className="auth-submit" disabled={loading}>
-              {loading ? <><span className="auth-spin" /> Logging in...</> : <><LogIn size={17} /> Log in</>}
-            </button>
-          </form>
-
-          {/* Google Sign-in Divider */}
-          <div className="auth-divider">
-            <span>or continue with</span>
-          </div>
-
-          {/* Google Sign-in Official Button */}
-          <div className="auth-google-wrapper">
-            <div ref={googleBtnRef} id="googleBtnContainer" />
-          </div>
-
-          <p className="auth-switch">
-            Don't have an account?{" "}
-            <button type="button" className="auth-link" onClick={openRegister}>Sign up!</button>
-          </p>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   )
 }

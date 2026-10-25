@@ -1,20 +1,16 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react"
-import RegisterModal from "../components/RegisterModal.jsx"
+import { createContext, useCallback, useContext, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
 
+/* Dating popup ang sign-up. Ngayon ay may sarili na itong page (/register),
+   pero ang openRegister() ay gumagana pa rin kahit saan galing. */
 const AuthModalContext = createContext({ openRegister: () => {}, closeRegister: () => {} })
 
 export function AuthModalProvider({ children }) {
-  const [registerOpen, setRegisterOpen] = useState(false)
-  const openRegister = useCallback(() => setRegisterOpen(true), [])
-  const closeRegister = useCallback(() => setRegisterOpen(false), [])
+  const navigate = useNavigate()
+  const openRegister = useCallback(() => navigate("/register"), [navigate])
+  const closeRegister = useCallback(() => navigate("/login"), [navigate])
   const value = useMemo(() => ({ openRegister, closeRegister }), [openRegister, closeRegister])
-
-  return (
-    <AuthModalContext.Provider value={value}>
-      {children}
-      {registerOpen && <RegisterModal onClose={closeRegister} />}
-    </AuthModalContext.Provider>
-  )
+  return <AuthModalContext.Provider value={value}>{children}</AuthModalContext.Provider>
 }
 
 export const useAuthModal = () => useContext(AuthModalContext)

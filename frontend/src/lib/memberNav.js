@@ -12,15 +12,23 @@ export const MEMBER_NAV = [
   { id: 'prayer', to: '/prayer', label: 'Prayer wall', icon: MessageCircleHeart, blurb: 'Share a request and pray for one another.' },
 ]
 
+/* Admin: 4 grupo lang sa rail (hindi 10 icon). Bawat grupo ay may mga page sa loob ng sidebar. */
+const A = (id, to, label, icon, blurb, extra = {}) => ({ id, to, label, icon, blurb, admin: true, ...extra })
+const MEMBERS = A('a-members', '/admin/members', 'Members', Users, 'Manage the member list.')
+const APPS = A('a-apps', '/admin/applications', 'Applications', ClipboardList, 'Review new sign-ups.')
+const DG = A('a-dgroups', '/admin/dgroups', 'D-Groups', Network, 'Groups, leaders and requests.')
+const MIN = A('a-min', '/admin/ministries', 'Ministries', HeartHandshake, 'Teams and volunteer applications.')
+const EV = A('a-events', '/admin/events', 'Events', CalendarDays, 'Create and manage events.')
+const CHK = A('a-check', '/admin/check-in', 'Check-in', UserCheck, 'Scan passes and record attendance.')
+const ANN = A('a-ann', '/admin/announcements', 'Announcements', Megaphone, 'Post news that pops up for members.')
+const REP = A('a-reports', '/admin/reports', 'Reports', FileText, 'Attendance and growth reports.')
+const PRY = A('a-prayer', '/prayer', 'Prayer wall', MessageCircleHeart, 'See and moderate prayer requests.')
+
+const group = (id, label, icon, blurb, items) => ({ id, label, icon, blurb, admin: true, to: items[0].to, items, match: items.map((i) => i.to) })
+
 export const ADMIN_NAV = [
-  { id: 'a-home', to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true, admin: true, blurb: 'Numbers and activity at a glance.' },
-  { id: 'a-members', to: '/admin/members', label: 'Members', icon: Users, admin: true, blurb: 'Manage the member list.' },
-  { id: 'a-apps', to: '/admin/applications', label: 'Applications', icon: ClipboardList, admin: true, blurb: 'Review new sign-ups.' },
-  { id: 'a-events', to: '/admin/events', label: 'Events', icon: CalendarDays, admin: true, blurb: 'Create and manage events.' },
-  { id: 'a-check', to: '/admin/check-in', label: 'Check-in', icon: UserCheck, admin: true, blurb: 'Scan passes and record attendance.' },
-  { id: 'a-reports', to: '/admin/reports', label: 'Reports', icon: FileText, admin: true, blurb: 'Attendance and growth reports.' },
-  { id: 'a-dgroups', to: '/admin/dgroups', label: 'D-Groups', icon: Network, admin: true, blurb: 'Groups, leaders and requests.' },
-  { id: 'a-min', to: '/admin/ministries', label: 'Ministries', icon: HeartHandshake, admin: true, blurb: 'Teams and volunteer applications.' },
-  { id: 'a-ann', to: '/admin/announcements', label: 'Announcements', icon: Megaphone, admin: true, blurb: 'Post news that pops up for members.' },
-  { id: 'a-prayer', to: '/prayer', label: 'Prayer wall', icon: MessageCircleHeart, admin: true, blurb: 'See and moderate prayer requests.' },
+  A('a-home', '/admin', 'Overview', LayoutDashboard, 'Numbers and activity at a glance.', { end: true }),
+  group('g-people', 'People', Users, 'Members, sign-ups, groups and teams.', [MEMBERS, APPS, DG, MIN]),
+  group('g-events', 'Events', CalendarDays, 'Plan events and take attendance.', [EV, CHK]),
+  group('g-content', 'Content', Megaphone, 'News, reports and the prayer wall.', [ANN, REP, PRY]),
 ]

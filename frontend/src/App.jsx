@@ -68,6 +68,15 @@ export default function App() {
   const user = getUser()
 
   // Home, Login, Register
+  if (pathname === '/login' || pathname === '/register') {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    )
+  }
+
   if (FULL_BLEED.includes(pathname)) {
     return (
       <>

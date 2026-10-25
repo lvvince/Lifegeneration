@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Plus, UserCheck, FileText, Mail } from 'lucide-react'
+import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate, isUpcoming } from '../../lib/format.js'
-import { PageHeader, Stats, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
+import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
 
 export default function AdminDashboard() {
   const toast = useToast()
@@ -48,8 +48,19 @@ export default function AdminDashboard() {
     }
   }
 
+  const tiles = [
+    { label: 'Active members', value: stats?.members, to: '/admin/members', Icon: Users },
+    { label: 'Upcoming events', value: stats?.events, to: '/admin/events', Icon: CalendarDays },
+    { label: 'D-Groups', value: stats?.dgroups, to: '/admin/dgroups', Icon: Network },
+    { label: 'Ministries', value: stats?.ministries, to: '/admin/ministries', Icon: HeartHandshake },
+    { label: 'Active prayers', value: stats?.active_prayers, to: '/prayer', Icon: MessageCircleHeart },
+    { label: 'Check-ins', value: stats?.checked_in_attendees, to: '/admin/check-in', Icon: UserCheck },
+  ]
+  const day = (d) => fmtDate(d, { day: 'numeric' })
+  const mon = (d) => fmtDate(d, { month: 'short' })
+
   return (
-    <>
+    <div className="ao">
       <PageHeader
         title="Overview"
         desc="What is happening in Life Generation Calapan right now."
@@ -62,100 +73,77 @@ export default function AdminDashboard() {
 
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
-      <Stats
-        loading={loading}
-        items={[
-          { label: 'Active members', value: stats?.members },
-          { label: 'Upcoming events', value: stats?.events },
-          { label: 'D-Groups', value: stats?.dgroups },
-          { label: 'Ministries', value: stats?.ministries },
-          { label: 'Active prayers', value: stats?.active_prayers },
-          { label: 'Total check-ins', value: stats?.checked_in_attendees },
-        ]}
-      />
+      <div className="ao-tiles">
+        {tiles.map(({ label, value, to, Icon }, i) => (
+          <Link to={to} className="ao-tile" key={label} style={{ '--i': i }}>
+            <span className="ao-ico"><Icon size={18} /></span>
+            <b>{loading ? '–' : value ?? 0}</b>
+            <small>{label}</small>
+            <ArrowUpRight size={16} className="ao-go" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
 
-      <div className="p-grid-2">
-        <section className="p-panel">
-          <div className="p-panel-head">
-            <h2 className="p-h2">Next events</h2>
-            <Link to="/admin/events" style={{ fontSize: 13 }}>View all</Link>
+      <div className="ao-cols">
+        <section className="ao-card">
+          <div className="ao-head">
+            <h2>Next events</h2>
+            <Link to="/admin/events">View all</Link>
           </div>
           {loading ? (
             <Loading rows={3} />
           ) : nextEvents.length === 0 ? (
-            <Empty
-              icon={CalendarDays}
-              title="No upcoming events"
-              desc="Create an event so members can sign up."
-            />
+            <Empty icon={CalendarDays} title="No upcoming events" desc="Create an event so members can sign up." />
           ) : (
-            nextEvents.map((e) => (
-              <div className="p-row" key={e.id}>
-                <div className="p-row-main">
-                  <div className="p-row-title">{e.title}</div>
-                  <div className="p-row-sub">
-                    {fmtDate(e.event_date)}
-                    {e.event_time ? ` · ${e.event_time}` : ''}
-                  </div>
-                </div>
-                <div className="p-num p-muted" style={{ fontSize: 13 }}>
-                  {e.attendee_count}
-                  {e.capacity ? ` / ${e.capacity}` : ''} signed up
-                </div>
-              </div>
-            ))
+            <ul className="ao-events">
+              {nextEvents.map((e) => {
+                const n = Number(e.attendee_count) || 0
+                const cap = Number(e.capacity) || 0
+                const pct = cap ? Math.min(100, Math.round((n / cap) * 100)) : 0
+                return (
+                  <li key={e.id}>
+                    <Link to={`/admin/events`} className="ao-ev">
+                      <span className="ao-date"><b>{day(e.event_date)}</b><small>{mon(e.event_date)}</small></span>
+                      <span className="ao-ev-main">
+                        <strong>{e.title}</strong>
+                        <em>{e.event_time || 'Time to be set'}</em>
+                        {cap > 0 && <i className="ao-bar" aria-hidden="true"><u style={{ width: `${pct}%` }} /></i>}
+                      </span>
+                      <span className="ao-count">
+                        <b>{n}</b>
+                        <small>{cap ? `of ${cap}` : 'signed up'}</small>
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </section>
 
-        <section className="p-panel">
-          <div className="p-panel-head">
-            <h2 className="p-h2">Needs your attention</h2>
+        <section className="ao-card">
+          <div className="ao-head">
+            <h2>Needs your attention</h2>
           </div>
-          <div className="p-row">
-            <div className="p-row-main">
-              <div className="p-row-title">Ministry applications</div>
-              <div className="p-row-sub">
-                {pending === 0 ? 'Nothing waiting for review.' : `${pending} waiting for review.`}
-              </div>
-            </div>
-            <Link to="/admin/applications" className="p-btn p-btn-secondary p-btn-sm">
-              Review
-            </Link>
-          </div>
-          <div className="p-row">
-            <div className="p-row-main">
-              <div className="p-row-title">Check-in</div>
-              <div className="p-row-sub">Log attendance on the day of an event.</div>
-            </div>
-            <Link to="/admin/check-in" className="p-btn p-btn-secondary p-btn-sm">
-              <UserCheck size={14} /> Open
-            </Link>
-          </div>
-          <div className="p-row">
-            <div className="p-row-main">
-              <div className="p-row-title">Reports</div>
-              <div className="p-row-sub">Attendance and member numbers, with CSV export.</div>
-            </div>
-            <Link to="/admin/reports" className="p-btn p-btn-secondary p-btn-sm">
-              <FileText size={14} /> Open
-            </Link>
-          </div>
-          <div className="p-row">
-            <div className="p-row-main">
-              <div className="p-row-title">Gmail SMTP Notifications</div>
-              <div className="p-row-sub">Sends automated Event RSVP & D-Group acceptance emails.</div>
-            </div>
-            <button
-              type="button"
-              className="p-btn p-btn-secondary p-btn-sm"
-              onClick={handleTestEmail}
-              disabled={sendingTest}
-            >
-              <Mail size={14} /> {sendingTest ? 'Sending...' : 'Test SMTP'}
+          <Link to="/admin/applications" className={`ao-todo${pending ? ' is-hot' : ''}`}>
+            <span className="ao-ico"><ClipboardList size={18} /></span>
+            <span className="ao-todo-main">
+              <strong>Ministry applications</strong>
+              <em>{pending === 0 ? 'All caught up.' : `${pending} waiting for review`}</em>
+            </span>
+            {pending > 0 ? <span className="ao-pill">{pending}</span> : <ArrowUpRight size={16} className="ao-go" />}
+          </Link>
+          <div className="ao-quick">
+            <Link to="/admin/check-in"><UserCheck size={18} /><span>Check-in</span></Link>
+            <Link to="/admin/reports"><FileText size={18} /><span>Reports</span></Link>
+            <Link to="/admin/announcements"><Megaphone size={18} /><span>Announce</span></Link>
+            <button type="button" onClick={handleTestEmail} disabled={sendingTest}>
+              <Mail size={18} /><span>{sendingTest ? 'Sending…' : 'Test email'}</span>
             </button>
           </div>
+          <p className="ao-note">Test email sends a sample RSVP / D-Group acceptance message through Gmail SMTP.</p>
         </section>
       </div>
-    </>
+    </div>
   )
 }
