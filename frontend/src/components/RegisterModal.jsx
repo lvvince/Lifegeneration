@@ -1,13 +1,13 @@
-﻿import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useNavigate } from "react-router-dom"
 import { apiPost, setUser, saveTokens } from "../api.js"
-import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, X, UserPlus, AlertCircle, CheckCircle, ArrowRight } from "lucide-react"
+import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, X, UserPlus, AlertCircle, CheckCircle, ArrowRight, Users } from "lucide-react"
 import AuthField from "./AuthField.jsx"
 import GlassIcon from "./GlassIcon.jsx"
 import "../styles/auth.css"
 
-const EMPTY = { full_name: "", email: "", age: "", address: "", password: "", confirm: "" }
+const EMPTY = { full_name: "", email: "", age: "", gender: "", address: "", password: "", confirm: "" }
 
 export default function RegisterModal({ onClose }) {
   const navigate = useNavigate()
@@ -173,9 +173,26 @@ export default function RegisterModal({ onClose }) {
               <div className="auth-grid">
                 <AuthField icon={CalendarDays} tint="#a855f7" name="age" type="number" inputMode="numeric"
                   placeholder="Age (optional)" value={form.age} onChange={handleChange} error={errors.age} />
-                <AuthField icon={MapPin} tint="#22c55e" name="address" placeholder="Location (optional)"
-                  value={form.address} onChange={handleChange} error={errors.address} autoComplete="address-level2" />
+                <div className="auth-field-wrap">
+                  <label className="auth-field" style={{ margin: 0, padding: "0 8px" }}>
+                    <GlassIcon icon={Users} tint="#ec4899" size={36} />
+                    <select
+                      name="gender"
+                      value={form.gender}
+                      onChange={handleChange}
+                      aria-label="Gender"
+                      style={{ flex: 1, minWidth: 0, height: '100%', margin: 0, padding: '0 4px', border: 0, borderRadius: 0, background: 'transparent', boxShadow: 'none', fontSize: '0.95rem', color: 'var(--input-color)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                    >
+                      <option value="">Gender (optional)</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </label>
+                  {errors.gender && <span className="auth-field-err">{errors.gender}</span>}
+                </div>
               </div>
+              <AuthField icon={MapPin} tint="#22c55e" name="address" placeholder="Location (optional)"
+                value={form.address} onChange={handleChange} error={errors.address} autoComplete="address-level2" />
 
               <AuthField icon={Lock} tint="#f97316" name="password" type="password" placeholder="Password (min. 6)"
                 value={form.password} onChange={handleChange} error={errors.password} autoComplete="new-password" />

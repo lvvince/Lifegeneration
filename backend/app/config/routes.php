@@ -20,12 +20,18 @@ $router->post('/api/auth/logout',   'Auth::logout');
 $router->post('/api/logout',        'Auth::logout');
 
 // 2. Discipleship Groups (D-Groups)
-$router->get('/api/dgroups',        'DGroups::index');
-$router->post('/api/dgroups/join',   'DGroups::join');
-$router->post('/api/dgroups/leave',  'DGroups::leave');
-$router->post('/api/dgroups/create', 'DGroups::create');
-$router->post('/api/dgroups/update', 'DGroups::update');
-$router->post('/api/dgroups/delete', 'DGroups::delete');
+$router->get('/api/dgroups',                 'DGroups::index');
+$router->post('/api/dgroups/join',           'DGroups::join');
+$router->post('/api/dgroups/leave',          'DGroups::leave');
+$router->post('/api/dgroups/request',        'DGroups::request_join');
+$router->post('/api/dgroups/cancel-request', 'DGroups::cancel_request');
+$router->get('/api/dgroups/requests',        'DGroups::requests');
+$router->post('/api/dgroups/accept-request', 'DGroups::accept_request');
+$router->post('/api/dgroups/reject-request', 'DGroups::reject_request');
+$router->post('/api/dgroups/create',         'DGroups::create');
+$router->post('/api/dgroups/update',         'DGroups::update');
+$router->post('/api/dgroups/delete',         'DGroups::delete');
+$router->post('/api/dgroups/upload-image',   'DGroups::upload_image');
 
 // 3. Ministries & Volunteer Pipeline
 $router->get('/api/ministries',                     'Ministries::index');
@@ -37,6 +43,7 @@ $router->post('/api/ministries/delete-application', 'Ministries::delete_applicat
 $router->post('/api/ministries/create',             'Ministries::create');
 $router->post('/api/ministries/update',             'Ministries::update');
 $router->post('/api/ministries/delete',             'Ministries::delete');
+$router->post('/api/ministries/upload-image',       'Ministries::upload_image');
 
 // 4. Events & QR Check-In
 $router->get('/api/events',                 'Events::index');
@@ -68,6 +75,14 @@ $router->get('/api/admin/stats',    'Admin::stats');
 $router->get('/api/stats',          'Admin::stats');
 $router->get('/api/reports/summary', 'Reports::summary');
 
-// 7. Officer portal
-$router->get('/api/officer/dashboard',               'Officer::dashboard');
-$router->post('/api/officer/registrations/review',   'Officer::review_registration');
+// 7. Announcements Bulletin
+$router->get('/api/announcements',               'Announcements::index');
+$router->get('/api/admin/announcements',         'Announcements::admin_index');
+$router->post('/api/admin/announcements/create', 'Announcements::create');
+$router->post('/api/admin/announcements/update', 'Announcements::update');
+$router->post('/api/admin/announcements/delete', 'Announcements::delete');
+$router->post('/api/admin/test-email', 'Admin::test_email');
+
+// 8. Officer portal
+$router->get('/api/officer/dashboard',             'Officer::dashboard');
+$router->post('/api/officer/registrations/review', 'Officer::review_registration');

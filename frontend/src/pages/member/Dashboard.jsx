@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { apiGet, apiPost, getUser, setUser, API_URL } from '../../api.js'
 import { resolveImageUrl, initials } from '../../lib/format.js'
-import {
-  User, Shield, Users, HeartHandshake, Calendar, Edit3,
-  CheckCircle, Ticket, Camera, Trash2, Upload, QrCode, X, Download
-} from 'lucide-react'
+import { ArrowRight, Cake, Calendar, CalendarDays, CalendarPlus, Camera, Check, CheckCircle, Clock, Download, Edit3, HeartHandshake, MapPin, QrCode, Shield, Ticket, Trash2, Upload, User, Users, X } from 'lucide-react'
+import { addToGoogleCalendar } from '../../utils/calendar.js'
+import '../../styles/pages.css'
 
 // Digital Attendance Pass Modal
 function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClose }) {
@@ -28,8 +27,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(17,17,17,0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -39,13 +37,13 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#0f172a',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
+          background: '#ffffff',
+          border: '2px solid #111',
           borderRadius: 24,
           maxWidth: 390,
           width: '100%',
           overflow: 'hidden',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.7), 0 0 30px rgba(30, 58, 138, 0.25)',
+          boxShadow: '8px 8px 0 #111',
           animation: 'modalFadeIn 0.2s ease-out'
         }}
       >
@@ -58,9 +56,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
 
         {/* Pass Top Card Header — Orange & Blue Brand Palette */}
         <div style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #ea580c 100%)',
+          background: 'linear-gradient(160deg, #ff7430 0%, #ff5a0a 60%, #ee4b00 100%)',
+          borderBottom: '2px solid #111',
           padding: '24px 20px',
-          color: '#fff',
+          color: '#111',
           textAlign: 'center',
           position: 'relative'
         }}>
@@ -72,7 +71,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               position: 'absolute',
               top: 14,
               right: 14,
-              background: 'rgba(0,0,0,0.3)',
+              background: '#111',
               border: 'none',
               borderRadius: '50%',
               width: 30,
@@ -93,10 +92,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             alt="LifeGen"
             style={{ width: 44, height: 44, objectFit: 'contain', margin: '0 auto 8px' }}
           />
-          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: -0.3, color: '#fff' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, letterSpacing: -0.3, color: '#111', textTransform: 'uppercase' }}>
             Life Generation Calapan
           </h3>
-          <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#fed7aa', textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 700 }}>
+          <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#111', textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 700 }}>
             Official Event Attendance Pass
           </p>
         </div>
@@ -110,15 +109,15 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             borderRadius: '50%',
             overflow: 'hidden',
             margin: '-48px auto 12px',
-            border: '4px solid #0f172a',
-            background: '#1e293b',
+            border: '3px solid #111',
+            background: '#111',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
             fontWeight: 800,
             fontSize: '1.3rem',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.4)'
+            boxShadow: 'none'
           }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -127,20 +126,21 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
             )}
           </div>
 
-          <h4 style={{ margin: '0 0 2px', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
+          <h4 style={{ margin: '0 0 2px', fontSize: '1.2rem', fontWeight: 900, color: '#111' }}>
             {name}
           </h4>
-          <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: '#94a3b8' }}>
-            {email} &bull; <span style={{ color: '#fb923c', fontWeight: 600 }}>{tier || 'Standard Member'}</span>
+          <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: '#55524e' }}>
+            {email} &bull; <span style={{ color: '#c2410c', fontWeight: 800 }}>{tier || 'Standard Member'}</span>
           </p>
 
           {/* QR Code Container */}
           <div style={{
             background: '#fff',
-            borderRadius: 16,
-            padding: 16,
+            border: '2px solid #111',
+            borderRadius: 18,
+            padding: 12,
             display: 'inline-block',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            boxShadow: 'none',
             marginBottom: 14
           }}>
             <img
@@ -152,21 +152,21 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
 
           {/* Member ID Code */}
           <div style={{
-            background: 'rgba(30, 58, 138, 0.25)',
-            border: '1px solid rgba(249, 115, 22, 0.4)',
-            borderRadius: 12,
+            background: '#f4f1ed',
+            border: '2px solid #111',
+            borderRadius: 14,
             padding: '9px 14px',
             marginBottom: 16
           }}>
-            <div style={{ fontSize: '0.7rem', color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.3, fontWeight: 700 }}>
+            <div style={{ fontSize: '0.7rem', color: '#c2410c', textTransform: 'uppercase', letterSpacing: 1.3, fontWeight: 700 }}>
               Member Check-In ID
             </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#ffffff', fontFamily: 'monospace', letterSpacing: 1.5, marginTop: 2 }}>
+            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#111', fontFamily: 'monospace', letterSpacing: 1.5, marginTop: 2 }}>
               {memberId}
             </div>
           </div>
 
-          <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 20px' }}>
+          <p style={{ fontSize: '0.82rem', color: '#55524e', lineHeight: 1.5, margin: '0 0 20px' }}>
             Present this QR code to the usher or registration desk at the church entrance for instant check-in.
           </p>
 
@@ -176,10 +176,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               onClick={handleDownload}
               style={{
                 flex: 1.3,
-                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 12,
+                background: 'linear-gradient(180deg, #ff6d22 0%, #f24e00 100%)',
+                color: '#111',
+                border: '2px solid #111',
+                borderRadius: 99,
                 padding: '11px 16px',
                 fontSize: '0.85rem',
                 fontWeight: 700,
@@ -189,8 +189,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
                 justifyContent: 'center',
                 gap: 7,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
-                transition: 'transform 0.15s ease'
+                                transition: 'transform 0.15s ease'
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
@@ -202,10 +201,10 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
               onClick={onClose}
               style={{
                 flex: 1,
-                background: 'rgba(59, 130, 246, 0.12)',
-                color: '#93c5fd',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                borderRadius: 12,
+                background: '#fff',
+                color: '#111',
+                border: '2px solid #111',
+                borderRadius: 99,
                 padding: '11px 16px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
@@ -213,8 +212,8 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
                 whiteSpace: 'nowrap',
                 transition: 'background 0.15s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.12)'}
+              onMouseEnter={e => e.currentTarget.style.background = '#f4f1ed'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
               Close
             </button>
@@ -245,6 +244,7 @@ export default function Dashboard() {
         setUser(res.user)
         setEditForm({
           full_name: res.user.full_name || '',
+          gender: res.user.gender || res.user.member?.gender || '',
           age: res.user.age || res.user.member?.age || '',
           address: res.user.address || res.user.member?.address || ''
         })
@@ -335,6 +335,7 @@ export default function Dashboard() {
       await apiPost('/api/members/update', {
         user_id: profile.id,
         full_name: editForm.full_name,
+        gender: editForm.gender,
         age: editForm.age,
         address: editForm.address
       })
@@ -351,428 +352,269 @@ export default function Dashboard() {
   const name = profile?.full_name || profile?.username || 'LifeGen Member'
   const avatarUrl = resolveImageUrl(profile?.avatar || member?.avatar)
 
+  const { pathname } = useLocation()
+  const first = String(name).split(' ')[0]
+
+  // /dashboard/profile -> dumiretso sa personal details pagkatapos mag-load
+  useEffect(() => {
+    if (!loading && pathname.endsWith('/profile')) {
+      document.getElementById('details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [pathname, loading])
+
+  const groups = [
+    { label: 'my discipleship group', value: member.dgroup_name, empty: 'Not in a group yet', text: member.dgroup_name ? 'Connected in weekly fellowship and study.' : 'Groups help you grow in faith with friends your age.', to: '/dgroups', cta: member.dgroup_name ? 'View D-Groups' : 'Find a group' },
+    { label: 'my ministry service', value: member.ministry_name, empty: 'Not on a team yet', text: member.ministry_name ? 'Serving with your ministry team.' : 'Use your gifts to serve the community.', to: '/ministries', cta: member.ministry_name ? 'View ministries' : 'Apply to serve' },
+  ]
+  const quick = [
+    ['/events', 'events'],
+    ['/dgroups', 'd-groups'],
+    ['/ministries', 'ministries'],
+    ['/prayer', 'prayer wall'],
+  ]
+
   return (
-    <div>
-      {/* Top Banner & Official ID Card — Orange & Blue Brand Palette */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #ea580c 100%)',
-        color: '#fff',
-        borderRadius: 20,
-        padding: '32px 28px',
-        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.4), 0 0 20px rgba(234, 88, 12, 0.15)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        marginBottom: 24,
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 24
-      }}>
-        {/* User Avatar + Profile Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
-          {/* Avatar Container with Camera Button */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <div style={{
-              width: 96,
-              height: 96,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              background: 'rgba(255,255,255,0.2)',
-              border: '4px solid rgba(255,255,255,0.45)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: '2rem',
-              fontWeight: 800,
-              userSelect: 'none'
-            }}>
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                initials(name)
-              )}
-            </div>
-
-            {/* Quick Camera Upload Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              title="Change profile picture"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                background: '#f97316',
-                border: '2px solid #fff',
-                borderRadius: '50%',
-                width: 32,
-                height: 32,
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                transition: 'transform 0.15s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              <Camera size={15} />
-            </button>
-          </div>
-
+    <>
+      {/* ===== 1. hero (blue) ===== */}
+      <section className="fb fb-blue">
+        <div className="fb-in fb-split">
           <div>
-            <div style={{
-              fontSize: '0.78rem',
-              background: 'rgba(249, 115, 22, 0.2)',
-              border: '1px solid rgba(249, 115, 22, 0.4)',
-              color: '#ffedd5',
-              display: 'inline-block',
-              padding: '4px 12px',
-              borderRadius: 20,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              marginBottom: 8
-            }}>
-              Official Member Profile
+            <div className="fb-who">
+              <div className="fb-av">
+                <span>{avatarUrl ? <img src={avatarUrl} alt="" draggable="false" /> : initials(name)}</span>
+                <button type="button" className="fb-cam" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label="Change profile picture">
+                  <Camera size={18} />
+                </button>
+              </div>
+              <div>
+                <div className="fb-pills">
+                  <span className="fb-pill">{profile?.role === 'admin' ? 'Administrator' : profile?.membership_tier || 'Standard Member'}</span>
+                  {profile?.email && <span className="fb-pill">{profile.email}</span>}
+                </div>
+              </div>
             </div>
-            <h1 style={{ color: '#fff', fontSize: '2.1rem', margin: '0 0 6px', fontWeight: 800 }}>{name}</h1>
-            <p style={{ color: '#bfdbfe', margin: 0, fontSize: '0.95rem' }}>
-              {profile?.email} &bull; <span style={{ color: '#fed7aa', fontWeight: 600 }}>{profile?.membership_tier || 'Standard Member'}</span>
-            </p>
-
-            {/* Avatar management buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '1px solid rgba(255,255,255,0.35)',
-                  color: '#fff',
-                  padding: '5px 12px',
-                  borderRadius: 14,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-              >
-                <Upload size={13} /> {uploading ? 'Uploading...' : 'Change Photo'}
+            <h1 style={{ marginTop: 22 }}>
+              hey, <em className="hl">{first}</em>!
+            </h1>
+            <p style={{ fontSize: '1.15rem', maxWidth: '34ch' }}>Welcome to your Life Generation space.</p>
+            <div className="fb-row">
+              <button type="button" className="fb-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                <Upload size={17} /> {uploading ? 'Uploading…' : 'Change photo'}
               </button>
-
               {avatarUrl && (
-                <button
-                  type="button"
-                  onClick={handleDeleteAvatar}
-                  disabled={uploading}
-                  style={{
-                    background: 'rgba(239,68,68,0.2)',
-                    border: '1px solid rgba(239,68,68,0.4)',
-                    color: '#fecaca',
-                    padding: '5px 12px',
-                    borderRadius: 14,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.35)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-                >
-                  <Trash2 size={13} /> Remove Photo
+                <button type="button" className="fb-btn is-danger" onClick={handleDeleteAvatar} disabled={uploading}>
+                  <Trash2 size={17} /> Remove photo
                 </button>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleAvatarUpload}
-        />
-
-        {/* Member ID Badge & QR Code */}
-        <div style={{
-          background: 'rgba(255,255,255,0.98)',
-          color: '#0f172a',
-          borderRadius: 18,
-          padding: '18px 22px',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-          textAlign: 'center',
-          minWidth: 220,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10
-        }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-              Life Generation ID
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'monospace', margin: '3px 0' }}>
-              {memberId}
-            </div>
-            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-              {profile?.role === 'admin' ? 'Administrator' : 'Active Member'}
-            </div>
+          <div className="fb-id">
+            <small>Life Generation ID</small>
+            <code>{memberId}</code>
+            <button type="button" className="fb-qr" onClick={() => setShowQrModal(true)} aria-label="Open digital pass">
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(memberId)}&margin=2`} alt="" draggable="false" />
+            </button>
+            <em>scan for attendance</em>
+            <button type="button" className="fb-btn" onClick={() => setShowQrModal(true)}>
+              <QrCode size={17} /> View digital pass
+            </button>
           </div>
-
-          {/* Quick QR Code Thumbnail (Click to view full pass) */}
-          <div
-            onClick={() => setShowQrModal(true)}
-            style={{
-              cursor: 'pointer',
-              background: '#fff',
-              padding: 6,
-              borderRadius: 10,
-              border: '1px solid #bfdbfe',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-              display: 'inline-flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 3,
-              transition: 'transform 0.2s'
-            }}
-            title="Click to view full attendance pass"
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(memberId)}&margin=2`}
-              alt="QR Attendance Code"
-              style={{ width: 80, height: 80, display: 'block' }}
-            />
-            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ea580c', textTransform: 'uppercase' }}>
-              Scan for Attendance
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowQrModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              padding: '8px 16px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
-              transition: 'transform 0.15s ease'
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <QrCode size={14} /> View Digital Pass
-          </button>
         </div>
-      </div>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+      </section>
 
-      {saveMsg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{saveMsg}</div>}
+      {saveMsg && (
+        <div className="fb fb-white" style={{ paddingBlock: 16 }}>
+          <div className="alert alert-success">{saveMsg}</div>
+        </div>
+      )}
 
-      {/* Grid of Sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 24 }}>
-        {/* D-Group Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <Users size={22} color="var(--navy)" />
-              <h3 style={{ margin: 0 }}>My Discipleship Group</h3>
-            </div>
-
-            {member.dgroup_name ? (
+      {/* ===== 2. group + ministry (tint) ===== */}
+      <section className="fb fb-tint">
+        <h2>
+          where you <em className="hl hl-blue">belong</em>
+        </h2>
+        <div className="fb-pair">
+          {groups.map(({ label, value, empty, text, to, cta }) => (
+            <div className="fb-block" key={label}>
               <div>
-                <p style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '1.1rem', margin: '0 0 4px' }}>
-                  {member.dgroup_name}
-                </p>
-                <p className="muted" style={{ fontSize: '0.9rem' }}>
-                  Connected in active weekly fellowship and study.
-                </p>
+                <small>{label}</small>
+                <h3>{value || empty}</h3>
+                <p>{text}</p>
               </div>
-            ) : (
-              <p className="muted" style={{ fontSize: '0.92rem' }}>
-                You haven't joined a D-Group yet. Discipleship groups help you grow deeper in faith with peers.
-              </p>
-            )}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <Link to="/dgroups" className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
-              {member.dgroup_name ? 'View D-Groups' : 'Browse D-Groups to Join'}
-            </Link>
-          </div>
-        </div>
-
-        {/* Ministry Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <HeartHandshake size={22} color="var(--navy)" />
-              <h3 style={{ margin: 0 }}>My Ministry Service</h3>
-            </div>
-
-            {member.ministry_name ? (
               <div>
-                <p style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '1.1rem', margin: '0 0 4px' }}>
-                  {member.ministry_name}
-                </p>
-                <p className="muted" style={{ fontSize: '0.9rem' }}>
-                  Active volunteer team member serving in worship & events.
-                </p>
+                <Link to={to} className="fb-btn">
+                  {cta} <ArrowRight size={17} />
+                </Link>
               </div>
-            ) : (
-              <p className="muted" style={{ fontSize: '0.92rem' }}>
-                You are not currently enrolled in a ministry team. Use your talents to serve God's people!
-              </p>
-            )}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <Link to="/ministries" className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
-              {member.ministry_name ? 'View Ministries' : 'Apply for a Ministry'}
-            </Link>
-          </div>
-        </div>
-
-        {/* Profile Details Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <User size={22} color="var(--navy)" />
-                <h3 style={{ margin: 0 }}>Personal Details</h3>
-              </div>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--navy)', cursor: 'pointer', padding: 4 }}
-                title="Edit details"
-              >
-                <Edit3 size={18} />
-              </button>
             </div>
-
-            {editMode ? (
-              <form onSubmit={handleSaveProfile}>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Full Name</label>
-                  <input
-                    value={editForm.full_name}
-                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                  />
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Age</label>
-                  <input
-                    type="number"
-                    value={editForm.age}
-                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
-                  />
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: '0.8rem' }}>Address</label>
-                  <input
-                    value={editForm.address}
-                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Save</button>
-                  <button type="button" onClick={() => setEditMode(false)} style={{ background: '#ccc', color: '#333', padding: '6px 12px', fontSize: '0.85rem' }}>Cancel</button>
-                </div>
-              </form>
-            ) : (
-              <div style={{ fontSize: '0.9rem', color: '#334' }}>
-                <p><strong>Age:</strong> {profile?.age || member?.age || 'Not set'}</p>
-                <p><strong>Address:</strong> {profile?.address || member?.address || 'Not set'}</p>
-                <p><strong>Joined:</strong> {new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString()}</p>
-              </div>
-            )}
-          </div>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* RSVP'd Events Section */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Calendar size={22} color="var(--navy)" />
-            <h3 style={{ margin: 0 }}>My Reserved Events</h3>
-          </div>
-          <Link to="/events" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Browse All Events &rarr;</Link>
-        </div>
-
+      {/* ===== 3. reserved events (white) ===== */}
+      <section className="fb fb-white">
+        <h2>
+          my <em className="hl">events</em>
+        </h2>
         {myEvents.length === 0 ? (
-          <p className="muted" style={{ margin: 0 }}>
-            You haven't RSVP'd for any upcoming events yet. Check out upcoming gatherings and reserve your seat!
-          </p>
+          <div className="fb-empty">You have not reserved a seat yet. Check the upcoming gatherings and sign up.</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-            {myEvents.map((ev) => (
-              <div key={ev.id} style={{
-                background: 'rgba(47,143,91,0.06)',
-                border: '1px solid #c2ebcf',
-                borderRadius: 12,
-                padding: '14px 18px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <h4 style={{ margin: '0 0 4px', color: 'var(--navy)' }}>{ev.title}</h4>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-                    {ev.event_date} &bull; {ev.event_time}
+          <div className="fb-evs">
+            {myEvents.map((ev) => {
+              const d = new Date(String(ev.event_date).slice(0, 10) + 'T00:00:00')
+              return (
+                <div className="fb-ev" key={ev.id}>
+                  <span className="fb-date">
+                    <b>{d.getDate()}</b>
+                    <small>{d.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</small>
+                  </span>
+                  <div className="fb-ev-main">
+                    <Link to={`/events/${ev.id}`}>{ev.title}</Link>
+                    {ev.event_time && (
+                      <span>
+                        <Clock size={14} /> {ev.event_time}
+                      </span>
+                    )}
+                    {ev.location && (
+                      <span>
+                        <MapPin size={14} /> {ev.location}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: '#4b6354', marginTop: 2 }}>
-                    📍 {ev.location}
+                  <div className="fb-ev-side">
+                    {ev.checked_in === 1 ? (
+                      <span className="fb-status is-in">
+                        <Check size={14} /> Checked in
+                      </span>
+                    ) : (
+                      <span className="fb-status">Going</span>
+                    )}
+                    <button type="button" className="fb-btn is-line" style={{ color: 'var(--mp-royal)', minHeight: 42 }} onClick={() => addToGoogleCalendar(ev)}>
+                      <CalendarPlus size={16} /> Add to calendar
+                    </button>
                   </div>
                 </div>
-
-                <div>
-                  {ev.checked_in === 1 ? (
-                    <span style={{ background: '#15803d', color: '#fff', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700 }}>
-                      ✓ Checked-In
-                    </span>
-                  ) : (
-                    <span style={{ background: '#e3f5ea', color: '#1e7a46', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600 }}>
-                      Attending
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
-      </div>
+        <div className="fb-row">
+          <Link to="/events" className="fb-btn is-blue">
+            Browse events <ArrowRight size={17} />
+          </Link>
+        </div>
+      </section>
 
-      {/* Digital Pass Modal */}
+      {/* ===== 4. prayer (navy) ===== */}
+      <section className="fb fb-ink">
+        <div className="fb-in">
+          <h2 style={{ fontSize: 'clamp(3rem, 13vw, 7rem)', marginBottom: 0 }}>
+            need
+            <br />
+            <em className="hl hl-blue">prayer</em>
+          </h2>
+          <p>
+            send your prayer requests{' '}
+            <Link to="/prayer" className="fb-link">
+              here
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ===== 5. personal details (tint) ===== */}
+      <section className="fb fb-tint" id="details">
+        <h2>
+          personal <em className="hl hl-blue">details</em>
+        </h2>
+        {editMode ? (
+          <form onSubmit={handleSaveProfile} className="fb-form">
+            <label>
+              Full name
+              <input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+            </label>
+            <label>
+              Gender
+              <select value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </label>
+            <label>
+              Age
+              <input type="number" inputMode="numeric" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
+            </label>
+            <label className="is-wide">
+              Address
+              <input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+            </label>
+            <div className="fb-row is-wide" style={{ marginTop: 4 }}>
+              <button type="submit" className="fb-btn">
+                Save changes
+              </button>
+              <button type="button" className="fb-btn is-line" style={{ color: 'var(--mp-royal)' }} onClick={() => setEditMode(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <dl className="fb-facts">
+              <div>
+                <dt>
+                  <Cake size={15} /> Age
+                </dt>
+                <dd>{profile?.age || member?.age || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Users size={15} /> Gender
+                </dt>
+                <dd>{profile?.gender || member?.gender || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <MapPin size={15} /> Address
+                </dt>
+                <dd>{profile?.address || member?.address || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <CalendarDays size={15} /> Joined
+                </dt>
+                <dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd>
+              </div>
+            </dl>
+            <div className="fb-row">
+              <button type="button" className="fb-btn" onClick={() => setEditMode(true)}>
+                <Edit3 size={17} /> Edit details
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* ===== 6. quick links (white) ===== */}
+      <section className="fb fb-white">
+        <h2>
+          stay <em className="hl hl-blue">connected</em>
+          <br />
+          to life gen
+        </h2>
+        <ul className="fb-links">
+          {quick.map(([to, label]) => (
+            <li key={to}>
+              <Link to={to}>
+                {label} <ArrowRight size={26} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {showQrModal && (
         <DigitalPassModal
           memberId={memberId}
@@ -784,6 +626,6 @@ export default function Dashboard() {
           onClose={() => setShowQrModal(false)}
         />
       )}
-    </div>
+    </>
   )
 }

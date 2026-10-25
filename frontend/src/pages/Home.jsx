@@ -7,6 +7,7 @@ import {
 import { apiGet, getUser } from '../api.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
 import { shareEventOnFacebook } from '../utils/share.js'
+import AddToCalendarButton from '../components/AddToCalendarButton.jsx'
 import { resolveImageUrl } from '../lib/media.js'
 import { useHomeMotion } from '../components/home/motion.js'
 import HomeFooter from '../components/home/HomeFooter.jsx'
@@ -247,15 +248,23 @@ export default function Home() {
                           </span>
                         </span>
                       </Link>
-                      <button
-                        type="button"
-                        className="lg-share"
-                        onClick={() => shareEventOnFacebook(ev.id, ev.title)}
-                        aria-label={`Share ${ev.title} on Facebook`}
-                        title="Share on Facebook"
-                      >
-                        <Share2 size={18} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AddToCalendarButton
+                          event={ev}
+                          variant="icon"
+                          className="lg-share"
+                          style={{ width: 44, height: 44, borderRadius: '50%', border: 0, background: 'transparent', boxShadow: 'none' }}
+                        />
+                        <button
+                          type="button"
+                          className="lg-share"
+                          onClick={() => shareEventOnFacebook(ev.id, ev.title)}
+                          aria-label={`Share ${ev.title} on Facebook`}
+                          title="Share on Facebook"
+                        >
+                          <Share2 size={18} />
+                        </button>
+                      </div>
                     </div>
                   )
                 })

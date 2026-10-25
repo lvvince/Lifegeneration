@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../api.js'
-import { Users, Calendar, MapPin, CheckCircle, LogOut, PlusCircle } from 'lucide-react'
+import { resolveImageUrl } from '../lib/format.js'
+import {
+  Users, Calendar, MapPin, CheckCircle,
+  Network, UserPlus, ChevronRight, MessageCircle,
+  Lock, Clock, ExternalLink, AlertCircle
+} from 'lucide-react'
+import '../styles/pages.css'
 
 export default function DGroups() {
-  const [groups, setGroups] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [actionMsg, setActionMsg] = useState('')
+  const [groups, setGroups]             = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState('')
+  const [actionMsg, setActionMsg]       = useState('')
   const [processingId, setProcessingId] = useState(null)
 
   const user = getUser()
@@ -24,20 +30,35 @@ export default function DGroups() {
     }
   }
 
-  useEffect(() => {
-    fetchGroups()
-  }, [])
+  useEffect(() => { fetchGroups() }, [])
 
-  const handleJoin = async (id) => {
+  const handleRequestJoin = async (id) => {
     if (!user) return
     setProcessingId(id)
     setActionMsg('')
+    setError('')
     try {
-      const res = await apiPost('/api/dgroups/join', { dgroup_id: id })
-      setActionMsg(res.message || 'Joined successfully!')
+      const res = await apiPost('/api/dgroups/request', { dgroup_id: id })
+      setActionMsg(res.message || 'Join request submitted! Awaiting leader approval.')
       fetchGroups()
     } catch (err) {
-      setError(err.message || 'Failed to join group.')
+      setError(err.message || 'Failed to submit join request.')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleCancelRequest = async (id) => {
+    if (!user) return
+    setProcessingId(id)
+    setActionMsg('')
+    setError('')
+    try {
+      const res = await apiPost('/api/dgroups/cancel-request', { dgroup_id: id })
+      setActionMsg(res.message || 'Join request cancelled.')
+      fetchGroups()
+    } catch (err) {
+      setError(err.message || 'Failed to cancel request.')
     } finally {
       setProcessingId(null)
     }
@@ -45,11 +66,15 @@ export default function DGroups() {
 
   const handleLeave = async () => {
     if (!user) return
+    if (!window.confirm('Are you sure you want to leave your D-Group? You will lose access to the official Group Chat (GC).')) {
+      return
+    }
     setProcessingId('leave')
     setActionMsg('')
+    setError('')
     try {
       const res = await apiPost('/api/dgroups/leave')
-      setActionMsg(res.message || 'Left group.')
+      setActionMsg(res.message || 'You have left your D-Group.')
       fetchGroups()
     } catch (err) {
       setError(err.message || 'Failed to leave group.')
@@ -59,119 +84,201 @@ export default function DGroups() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.2rem', marginBottom: 8 }}>Discipleship Groups (D-Groups)</h1>
-        <p className="muted" style={{ maxWidth: 640, margin: '0 auto', fontSize: '1.05rem' }}>
-          Do life together! Find a Christ-centered small group where you can grow spiritually, receive mentorship, and find genuine community.
+    <div className="dg-page pg-root">
+      {/* ── Hero ── */}
+      <div className="dg-hero">
+        <div className="dg-hero-badge">
+          <Network size={13} />
+          <span>Small Groups</span>
+        </div>
+        <h1 className="dg-hero-title">find your <em className="hl">d-group</em></h1>
+        <p className="dg-hero-sub">
+          Do life together. Join a close-knit cell group where you can grow,
+          be mentored, and build genuine friendships with exclusive Group Chat (GC) access.
         </p>
+        <div className="dg-hero-stats">
+          <div className="dg-stat">
+            <strong>{groups.length}</strong>
+            <span>Active Groups</span>
+          </div>
+          <div className="dg-stat-divider" />
+          <div className="dg-stat">
+            <strong>{groups.reduce((s, g) => s + (g.member_count || 0), 0)}</strong>
+            <span>Total Members</span>
+          </div>
+        </div>
       </div>
 
-      {actionMsg && <div className="alert alert-success" style={{ marginBottom: 16 }}>{actionMsg}</div>}
-      {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
+      {/* ── Alerts ── */}
+      {actionMsg && (
+        <div className="alert alert-success" style={{ marginBottom: 20 }}>
+          <CheckCircle size={15} style={{ flexShrink: 0 }} /> {actionMsg}
+        </div>
+      )}
+      {error && (
+        <div className="alert" style={{ marginBottom: 20, background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' }}>
+          <AlertCircle size={15} style={{ flexShrink: 0 }} /> {error}
+        </div>
+      )}
 
+      {/* ── Cards ── */}
       {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">Loading D-Groups...</p>
-        </div>
-      ) : groups.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <p className="muted">No D-Groups currently available.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-          {groups.map((g) => (
-            <div key={g.id} className="card" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              border: g.is_joined ? '2px solid #2f8f5b' : '1px solid var(--border)',
-              boxShadow: g.is_joined ? '0 4px 14px rgba(47,143,91,0.2)' : 'var(--shadow)',
-              position: 'relative'
-            }}>
-              {g.is_joined && (
-                <div style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  background: '#1e7a46',
-                  color: '#fff',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4
-                }}>
-                  <CheckCircle size={14} /> My D-Group
-                </div>
-              )}
-
-              <div>
-                <h3 style={{ fontSize: '1.3rem', color: 'var(--navy)', marginBottom: 6, paddingRight: g.is_joined ? 90 : 0 }}>
-                  {g.name}
-                </h3>
-                <div style={{ fontSize: '0.9rem', color: '#3f5749', fontWeight: 600, marginBottom: 12 }}>
-                  Leader: {g.leader_name}
-                </div>
-
-                <p style={{ fontSize: '0.92rem', color: '#445', marginBottom: 16 }}>
-                  {g.description || 'Join this discipleship group to study scripture and encourage one another.'}
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.86rem', color: 'var(--muted)', marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Calendar size={15} color="var(--navy)" />
-                    <span>{g.schedule}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MapPin size={15} color="var(--navy)" />
-                    <span>{g.location}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Users size={15} color="var(--navy)" />
-                    <span>{g.member_count} member{g.member_count !== 1 ? 's' : ''} enrolled</span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                {!user ? (
-                  <Link to="/login" className="btn" style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
-                    Sign In to Join
-                  </Link>
-                ) : g.is_joined ? (
-                  <button
-                    onClick={handleLeave}
-                    disabled={processingId === 'leave'}
-                    style={{
-                      width: '100%',
-                      background: '#fff',
-                      color: '#b3261e',
-                      border: '1px solid #b3261e',
-                      padding: '8px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <LogOut size={16} />
-                    {processingId === 'leave' ? 'Leaving...' : 'Leave Group'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleJoin(g.id)}
-                    disabled={processingId === g.id}
-                    style={{ width: '100%' }}
-                  >
-                    {processingId === g.id ? 'Joining...' : 'Join this D-Group'}
-                  </button>
-                )}
+        <div className="dg-skeleton-grid">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="dg-skel-card">
+              <div className="dg-skel-img" />
+              <div className="dg-skel-body">
+                <div className="dg-skel-line w65" />
+                <div className="dg-skel-line w45" />
+                <div className="dg-skel-line w85" />
+                <div className="dg-skel-line w55" />
               </div>
             </div>
           ))}
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+          <Network size={32} strokeWidth={1.5} style={{ opacity: 0.4, marginBottom: 12 }} />
+          <p className="muted">No D-Groups are available right now.</p>
+        </div>
+      ) : (
+        <div className="dg-grid">
+          {groups.map((g) => {
+            const imgSrc = g.image ? resolveImageUrl(g.image) : null
+            const isMember = g.is_joined
+            const isPending = g.request_status === 'pending'
+
+            return (
+              <div
+                key={g.id}
+                className={`dg-card${isMember ? ' dg-card--joined' : ''}`}
+              >
+                {/* Image */}
+                <div className="dg-card-img-wrap">
+                  {imgSrc ? (
+                    <img src={imgSrc} alt={g.name} className="dg-card-img" />
+                  ) : (
+                    <div className="dg-card-img-placeholder">
+                      <Network size={36} strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="dg-card-img-overlay" />
+
+                  {isMember && (
+                    <div className="dg-joined-pill">
+                      <CheckCircle size={12} /> My D-Group
+                    </div>
+                  )}
+
+                  {!isMember && isPending && (
+                    <div className="dg-pending-pill">
+                      <Clock size={12} /> Request Pending
+                    </div>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div className="dg-card-body">
+                  <div className="dg-card-top">
+                    <h3 className="dg-card-title">{g.name}</h3>
+                    <p className="dg-card-leader">Led by {g.leader_name}</p>
+                  </div>
+
+                  {g.description && (
+                    <p className="dg-card-desc">{g.description}</p>
+                  )}
+
+                  <div className="dg-card-meta">
+                    {g.schedule && (
+                      <div className="dg-meta-row">
+                        <Calendar size={13} />
+                        <span>{g.schedule}</span>
+                      </div>
+                    )}
+                    {g.location && (
+                      <div className="dg-meta-row">
+                        <MapPin size={13} />
+                        <span>{g.location}</span>
+                      </div>
+                    )}
+                    <div className="dg-meta-row">
+                      <Users size={13} />
+                      <span>{g.member_count} member{g.member_count !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+
+                  <div className="dg-card-foot">
+                    {!user ? (
+                      <div>
+                        <Link to="/login" className="dg-btn-primary">
+                          Sign In to Join <ChevronRight size={15} />
+                        </Link>
+                        <div className="dg-gc-lock-hint">
+                          <Lock size={12} /> GC link unlocked upon leader approval
+                        </div>
+                      </div>
+                    ) : isMember ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {g.gc_link ? (
+                          <a
+                            href={g.gc_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="dg-btn-gc"
+                          >
+                            <MessageCircle size={17} /> Open Official Group Chat <ExternalLink size={14} />
+                          </a>
+                        ) : (
+                          <div className="dg-gc-empty-notice">
+                            <MessageCircle size={13} style={{ display: 'inline', marginRight: 4 }} />
+                            You're approved! Leader will post the GC link soon.
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="dg-btn-leave-text"
+                          onClick={handleLeave}
+                          disabled={processingId === 'leave'}
+                        >
+                          {processingId === 'leave' ? 'Leaving…' : 'Leave D-Group'}
+                        </button>
+                      </div>
+                    ) : isPending ? (
+                      <div className="dg-pending-box">
+                        <div className="dg-pending-text">
+                          <Clock size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                          <span><b>Request Sent:</b> Waiting for leader approval. GC link unlocks as soon as you're accepted.</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="dg-btn-cancel-req"
+                          onClick={() => handleCancelRequest(g.id)}
+                          disabled={processingId === g.id}
+                        >
+                          {processingId === g.id ? 'Cancelling…' : 'Cancel Request'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          type="button"
+                          className="dg-btn-primary"
+                          onClick={() => handleRequestJoin(g.id)}
+                          disabled={processingId === g.id}
+                        >
+                          <UserPlus size={15} />
+                          {processingId === g.id ? 'Submitting Request…' : 'Request to Join'}
+                        </button>
+                        <div className="dg-gc-lock-hint">
+                          <Lock size={12} /> Group Chat (GC) unlocked upon leader approval
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

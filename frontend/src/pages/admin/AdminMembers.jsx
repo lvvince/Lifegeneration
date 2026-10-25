@@ -48,6 +48,7 @@ export default function AdminMembers() {
       await apiPost('/api/members/update', {
         user_id: m.user_id,
         full_name: m.full_name ?? '',
+        gender: m.gender ?? '',
         age: m.age ?? '',
         address: m.address ?? '',
         ...patch,
@@ -113,6 +114,7 @@ export default function AdminMembers() {
       { key: 'member_id', label: 'Member ID' },
       { key: 'full_name', label: 'Name' },
       { key: 'email', label: 'Email' },
+      { key: 'gender', label: 'Gender' },
       { key: 'age', label: 'Age' },
       { key: 'address', label: 'Address' },
       { key: 'dgroup_name', label: 'D-Group' },
@@ -176,6 +178,7 @@ export default function AdminMembers() {
               <thead>
                 <tr>
                   <th>Member</th>
+                  <th>Gender</th>
                   <th>D-Group</th>
                   <th>Ministry</th>
                   <th>Role</th>
@@ -196,6 +199,7 @@ export default function AdminMembers() {
                         <div className="p-row-sub">{m.email}</div>
                         <div className="p-mono">{m.member_id}</div>
                       </td>
+                      <td className={m.gender ? '' : 'p-muted'}>{m.gender || '—'}</td>
                       <td className={m.dgroup_name ? '' : 'p-muted'}>{m.dgroup_name || '—'}</td>
                       <td className={m.ministry_name ? '' : 'p-muted'}>{m.ministry_name || '—'}</td>
                       <td>

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
+import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PortalLayout from './components/portal/PortalLayout.jsx'
 import { getUser } from './api.js'
@@ -13,6 +14,7 @@ import PrayerWall from './pages/PrayerWall.jsx'
 import Events from './pages/member/Events.jsx'
 import EventDetail from './pages/member/EventDetail.jsx'
 import Dashboard from './pages/member/Dashboard.jsx'
+import Overview from './pages/member/Overview.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminMembers from './pages/admin/AdminMembers.jsx'
 import AdminApplications from './pages/admin/AdminApplications.jsx'
@@ -21,6 +23,7 @@ import AdminEvents from './pages/admin/AdminEvents.jsx'
 import AdminDGroups from './pages/admin/AdminDGroups.jsx'
 import AdminMinistries from './pages/admin/AdminMinistries.jsx'
 import AdminReports from './pages/admin/AdminReports.jsx'
+import AdminAnnouncements from './pages/admin/AdminAnnouncements.jsx'
 import OfficerDashboard from './pages/officer/OfficerDashboard.jsx'
 import OfficerAttendance from './pages/officer/OfficerAttendance.jsx'
 import OfficerApplications from './pages/officer/OfficerApplications.jsx'
@@ -48,7 +51,8 @@ function PageRoutes() {
 
       {/* Member */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Overview />} />
+        <Route path="/dashboard/overview" element={<Overview />} />
         <Route path="/dashboard/profile" element={<Dashboard />} />
       </Route>
 
@@ -69,6 +73,7 @@ function PageRoutes() {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/dgroups" element={<AdminDGroups />} />
         <Route path="/admin/ministries" element={<AdminMinistries />} />
+        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
@@ -80,15 +85,24 @@ export default function App() {
   const { pathname } = useLocation()
   const user = getUser()
 
-  // Home, Login, Register
+  // Login at Register: walang navbar
+  if (pathname === '/login' || pathname === '/register') {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    )
+  }
+
+  // Home
   if (FULL_BLEED.includes(pathname)) {
     return (
       <>
+        <AnnouncementBanner />
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
         </Routes>
       </>
     )
@@ -106,6 +120,7 @@ export default function App() {
   // Bisita: public pages na may navbar
   return (
     <>
+      <AnnouncementBanner />
       <Navbar />
       <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 60px' }}>
         <PageRoutes />
