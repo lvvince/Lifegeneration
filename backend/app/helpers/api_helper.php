@@ -162,10 +162,29 @@ function require_auth_user() {
  */
 function require_admin_user() {
     $user = require_auth_user();
+
     if ($user['role'] !== 'admin') {
-        api_response(['error' => 'Forbidden. Administrator privileges required.'], 403);
+        api_response([
+            'error' => 'Forbidden. Administrator privileges required.'
+        ], 403);
     }
+
     return $user;
+}
+
+if (!function_exists('require_staff')) {
+    function require_staff()
+    {
+        $user = require_auth_user();
+
+        if (!in_array($user['role'], ['admin', 'officer', 'secretary'], true)) {
+            api_response([
+                'error' => 'Forbidden. Staff privileges required.'
+            ], 403);
+        }
+
+        return $user;
+    }
 }
 
 

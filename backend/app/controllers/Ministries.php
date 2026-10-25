@@ -113,18 +113,19 @@ class Ministries extends Controller
     }
 
     public function applications()
-    {
-        require_admin_user();
-        $stmt = $this->db->raw(
-            "SELECT a.*, min.name AS ministry_name, min.icon AS ministry_icon, u.email, u.member_id, m.age, m.address
-             FROM ministry_applications a
-             JOIN ministries min ON min.id = a.ministry_id
-             JOIN users u ON u.id = a.user_id
-             LEFT JOIN members m ON m.user_id = u.id
-             ORDER BY a.created_at DESC"
-        );
-        api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
+{
+    require_admin_user();
+    $stmt = $this->db->raw(
+        "SELECT a.*, min.name AS ministry_name, min.icon AS ministry_icon,
+                u.email, m.member_code AS member_id, m.age, m.address
+         FROM ministry_applications a
+         JOIN ministries min ON min.id = a.ministry_id
+         JOIN users u ON u.id = a.user_id
+         LEFT JOIN members m ON m.user_id = u.id
+         ORDER BY a.created_at DESC"
+    );
+    api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
+}
 
     public function update_application()
     {

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -27,16 +27,19 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements.jsx'
 import OfficerDashboard from './pages/officer/OfficerDashboard.jsx'
 import OfficerAttendance from './pages/officer/OfficerAttendance.jsx'
 import OfficerApplications from './pages/officer/OfficerApplications.jsx'
+import OfficerMembers from './pages/officer/OfficerMembers.jsx'
+import OfficerSideLayout from './pages/officer/OfficerSideLayout.jsx'
 
 // Public pages na walang portal layout at may sariling full-width na itsura
 const FULL_BLEED = ['/', '/login', '/register']
 
-// Officer/secretary at admin lang ang pwedeng pumasok sa /officer
+// Officer/secretary at admin lang ang pwedeng pumasok sa /officer.
+// Nakabalot sa dashboard sidebar (OfficerSideLayout, may <Outlet /> sa loob).
 function StaffRoute() {
   const user = getUser()
   if (!user) return <Navigate to="/login" replace />
-  if (user.role !== 'officer' && user.role !== 'admin') return <Navigate to="/" replace />
-  return <Outlet />
+  if (!['officer', 'secretary', 'admin'].includes(user.role)) return <Navigate to="/" replace />
+  return <OfficerSideLayout />
 }
 
 function PageRoutes() {
@@ -59,6 +62,7 @@ function PageRoutes() {
       {/* Officer / Secretary */}
       <Route element={<StaffRoute />}>
         <Route path="/officer" element={<OfficerDashboard />} />
+        <Route path="/officer/members" element={<OfficerMembers />} />
         <Route path="/officer/attendance" element={<OfficerAttendance />} />
         <Route path="/officer/applications" element={<OfficerApplications />} />
       </Route>
@@ -108,7 +112,7 @@ export default function App() {
     )
   }
 
-  // Naka-login: portal (sidebar). Ang /admin ay admin lang, ang /officer ay officer at admin.
+  // Naka-login: portal (icon rail). Ang /admin ay admin lang, ang /officer ay officer at admin.
   if (user) {
     return (
       <PortalLayout>

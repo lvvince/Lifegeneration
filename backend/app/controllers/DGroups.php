@@ -31,7 +31,6 @@ class DGroups extends Controller
                     $userRequests[$r['dgroup_id']] = $r['status'];
                 }
             } catch (Exception $e) {
-                // Table might not exist yet if migration pending
                 $userRequests = [];
             }
         }
@@ -53,14 +52,14 @@ class DGroups extends Controller
             $reqStatus = $userRequests[$g['id']] ?? ($isMember ? 'approved' : null);
             $g['request_status'] = $reqStatus;
 
-            $hasGc = !empty($g['gc_link']);
-            $g['has_gc'] = $hasGc;
+            $g['has_gc'] = !empty($g['gc_link']);
 
-            // Only reveal the direct GC link if approved member or admin
+            // Only reveal the direct GC link to approved members or admins
             if (!$isMember && !$isAdmin) {
                 $g['gc_link'] = null;
             }
         }
+        unset($g);
 
         api_response($groups);
     }
@@ -88,18 +87,28 @@ class DGroups extends Controller
         }
 
         // Verify D-Group exists
-        $check = $this->db->raw("SELECT id, name FROM dgroups WHERE id = ? LIMIT 1", [$dgroupId])->fetch();
+        $check = $this->db->raw("SELECT id, name FROM dgroups WHERE id = ? LIMIT 1", [$dgroupId])->fetch(PDO::FETCH_ASSOC);
         if (!$check) {
             api_response(['error' => 'D-Group not found.'], 404);
         }
 
-        // Check if already an approved member of this or another D-Group
-        $mStmt = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId]);
-        $mem = $mStmt->fetch(PDO::FETCH_ASSOC);
+        // Already in a D-Group? (members.dgroup_id holds only one)
+        $mem = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId])->fetch(PDO::FETCH_ASSOC);
         if ($mem && !empty($mem['dgroup_id'])) {
             if ((int)$mem['dgroup_id'] === $dgroupId) {
                 api_response(['error' => "You are already an approved member of {$check['name']}!"], 400);
             }
+            api_response(['error' => 'You are already in a D-Group. Leave it first before joining another.'], 409);
+        }
+
+        // Only one pending request at a time
+        $otherPending = $this->db->raw(
+            "SELECT id FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND dgroup_id <> ? LIMIT 1",
+            [$userId, $dgroupId]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if ($otherPending) {
+            api_response(['error' => 'You already have a pending request for another D-Group. Cancel it first before requesting a new one.'], 409);
         }
 
         // Upsert join request
@@ -181,10 +190,11 @@ class DGroups extends Controller
         require_admin_user();
 
         $stmt = $this->db->raw(
-            "SELECT dr.*, 
+            "SELECT dr.*,
                     d.name AS dgroup_name, d.leader_name, d.gc_link,
-                    u.username, u.email, u.full_name,
-                    m.member_id, m.avatar, m.age, m.address
+                    u.username, u.email,
+                    COALESCE(m.full_name, u.username) AS full_name,
+                    m.member_code AS member_id, m.avatar, m.age, m.address
              FROM dgroup_requests dr
              INNER JOIN dgroups d ON d.id = dr.dgroup_id
              INNER JOIN users u ON u.id = dr.user_id
@@ -199,6 +209,7 @@ class DGroups extends Controller
             $r['user_id'] = (int) $r['user_id'];
             $r['display_name'] = $r['full_name'] ?: $r['username'];
         }
+        unset($r);
 
         api_response($requests);
     }
@@ -219,16 +230,24 @@ class DGroups extends Controller
 
         $req = $this->db->raw(
             "SELECT dr.*, d.name AS dgroup_name, d.leader_name, d.schedule, d.location, d.gc_link,
-                    u.email, u.full_name, u.username
+                    u.email, u.username,
+                    COALESCE(m.full_name, u.username) AS full_name
              FROM dgroup_requests dr
              INNER JOIN dgroups d ON d.id = dr.dgroup_id
              INNER JOIN users u ON u.id = dr.user_id
+             LEFT JOIN members m ON m.user_id = u.id
              WHERE dr.id = ? LIMIT 1",
             [$requestId]
         )->fetch(PDO::FETCH_ASSOC);
 
         if (!$req) {
             api_response(['error' => 'Request not found.'], 404);
+        }
+
+        // The user must have a member profile, otherwise the approval would do nothing
+        $hasMember = $this->db->raw("SELECT id FROM members WHERE user_id = ? LIMIT 1", [$req['user_id']])->fetch(PDO::FETCH_ASSOC);
+        if (!$hasMember) {
+            api_response(['error' => 'This user has no member profile yet, so they cannot be added to a D-Group.'], 422);
         }
 
         // 1. Mark request approved
@@ -241,6 +260,12 @@ class DGroups extends Controller
         $this->db->raw(
             "UPDATE members SET dgroup_id = ?, updated_at = NOW() WHERE user_id = ?",
             [$req['dgroup_id'], $req['user_id']]
+        );
+
+        // 3. Clear this user's other pending requests (they can only be in one D-Group)
+        $this->db->raw(
+            "DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND id <> ?",
+            [$req['user_id'], $requestId]
         );
 
         // Automated Gmail SMTP Acceptance Notification
@@ -269,6 +294,11 @@ class DGroups extends Controller
             api_response(['error' => 'Request ID is required.'], 422);
         }
 
+        $exists = $this->db->raw("SELECT id FROM dgroup_requests WHERE id = ? LIMIT 1", [$requestId])->fetch(PDO::FETCH_ASSOC);
+        if (!$exists) {
+            api_response(['error' => 'Request not found.'], 404);
+        }
+
         $this->db->raw(
             "UPDATE dgroup_requests SET status = 'rejected', updated_at = NOW() WHERE id = ?",
             [$requestId]
@@ -293,14 +323,14 @@ class DGroups extends Controller
         $description = trim($input['description'] ?? '');
         $image       = trim($input['image'] ?? '');
 
-        if (empty($name) || empty($leaderName)) {
+        if ($name === '' || $leaderName === '') {
             api_response(['error' => 'Group name and leader name are required.'], 422);
         }
 
         $this->db->raw(
             "INSERT INTO dgroups (name, leader_name, schedule, location, gc_link, description, image, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
-            [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image]
+            [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image ?: null]
         );
 
         $newId = (int) $this->db->last_id();
@@ -327,14 +357,29 @@ class DGroups extends Controller
         $location    = trim($input['location'] ?? '');
         $gcLink      = trim($input['gc_link'] ?? '');
         $description = trim($input['description'] ?? '');
-        $image       = trim($input['image'] ?? '');
 
-        $this->db->raw(
-            "UPDATE dgroups
-             SET name = ?, leader_name = ?, schedule = ?, location = ?, gc_link = ?, description = ?, image = ?, updated_at = NOW()
-             WHERE id = ?",
-            [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image, $id]
-        );
+        if ($name === '' || $leaderName === '') {
+            api_response(['error' => 'Group name and leader name are required.'], 422);
+        }
+
+        if (array_key_exists('image', $input)) {
+            // Image field sent: update it
+            $image = trim($input['image'] ?? '');
+            $this->db->raw(
+                "UPDATE dgroups
+                 SET name = ?, leader_name = ?, schedule = ?, location = ?, gc_link = ?, description = ?, image = ?
+                 WHERE id = ?",
+                [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $image ?: null, $id]
+            );
+        } else {
+            // Image field not sent: keep the existing image
+            $this->db->raw(
+                "UPDATE dgroups
+                 SET name = ?, leader_name = ?, schedule = ?, location = ?, gc_link = ?, description = ?
+                 WHERE id = ?",
+                [$name, $leaderName, $schedule, $location, $gcLink ?: null, $description, $id]
+            );
+        }
 
         api_response(['success' => true, 'message' => 'D-Group updated successfully.']);
     }

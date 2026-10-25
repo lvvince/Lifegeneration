@@ -9,22 +9,33 @@ import {
 } from 'lucide-react'
 import '../styles/pages.css'
 
+/* Backend sometimes returns HTML-escaped text (e.g. &#039;) – decode it for display */
+function decodeEntities(str) {
+  if (!str) return ''
+  const el = document.createElement('textarea')
+  el.innerHTML = str
+  return el.value
+}
+
 export default function DGroups() {
   const [groups, setGroups]             = useState([])
   const [loading, setLoading]           = useState(true)
+  const [loadFailed, setLoadFailed]     = useState(false)
   const [error, setError]               = useState('')
   const [actionMsg, setActionMsg]       = useState('')
   const [processingId, setProcessingId] = useState(null)
 
   const user = getUser()
 
-  const fetchGroups = async () => {
+  const fetchGroups = async ({ silent = false } = {}) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
+      setLoadFailed(false)
       const data = await apiGet('/api/dgroups')
       setGroups(Array.isArray(data) ? data : [])
     } catch (err) {
-      setError(err.message || 'Failed to load D-Groups.')
+      setLoadFailed(true)
+      setError(decodeEntities(err.message) || 'Failed to load D-Groups.')
     } finally {
       setLoading(false)
     }
@@ -32,56 +43,51 @@ export default function DGroups() {
 
   useEffect(() => { fetchGroups() }, [])
 
-  const handleRequestJoin = async (id) => {
+  const runAction = async (id, request, fallbackSuccess, fallbackError) => {
     if (!user) return
     setProcessingId(id)
     setActionMsg('')
     setError('')
     try {
-      const res = await apiPost('/api/dgroups/request', { dgroup_id: id })
-      setActionMsg(res.message || 'Join request submitted! Awaiting leader approval.')
-      fetchGroups()
+      const res = await request()
+      setActionMsg(decodeEntities(res?.message) || fallbackSuccess)
+      await fetchGroups({ silent: true })
     } catch (err) {
-      setError(err.message || 'Failed to submit join request.')
+      setError(decodeEntities(err.message) || fallbackError)
     } finally {
       setProcessingId(null)
     }
   }
 
-  const handleCancelRequest = async (id) => {
-    if (!user) return
-    setProcessingId(id)
-    setActionMsg('')
-    setError('')
-    try {
-      const res = await apiPost('/api/dgroups/cancel-request', { dgroup_id: id })
-      setActionMsg(res.message || 'Join request cancelled.')
-      fetchGroups()
-    } catch (err) {
-      setError(err.message || 'Failed to cancel request.')
-    } finally {
-      setProcessingId(null)
-    }
-  }
+  const handleRequestJoin = (id) =>
+    runAction(
+      id,
+      () => apiPost('/api/dgroups/request', { dgroup_id: id }),
+      'Join request submitted! Awaiting leader approval.',
+      'Failed to submit join request.'
+    )
 
-  const handleLeave = async () => {
-    if (!user) return
+  const handleCancelRequest = (id) =>
+    runAction(
+      id,
+      () => apiPost('/api/dgroups/cancel-request', { dgroup_id: id }),
+      'Join request cancelled.',
+      'Failed to cancel request.'
+    )
+
+  const handleLeave = () => {
     if (!window.confirm('Are you sure you want to leave your D-Group? You will lose access to the official Group Chat (GC).')) {
       return
     }
-    setProcessingId('leave')
-    setActionMsg('')
-    setError('')
-    try {
-      const res = await apiPost('/api/dgroups/leave')
-      setActionMsg(res.message || 'You have left your D-Group.')
-      fetchGroups()
-    } catch (err) {
-      setError(err.message || 'Failed to leave group.')
-    } finally {
-      setProcessingId(null)
-    }
+    runAction(
+      'leave',
+      () => apiPost('/api/dgroups/leave'),
+      'You have left your D-Group.',
+      'Failed to leave group.'
+    )
   }
+
+  const totalMembers = groups.reduce((s, g) => s + (g.member_count || 0), 0)
 
   return (
     <div className="dg-page pg-root">
@@ -103,7 +109,7 @@ export default function DGroups() {
           </div>
           <div className="dg-stat-divider" />
           <div className="dg-stat">
-            <strong>{groups.reduce((s, g) => s + (g.member_count || 0), 0)}</strong>
+            <strong>{totalMembers}</strong>
             <span>Total Members</span>
           </div>
         </div>
@@ -136,6 +142,14 @@ export default function DGroups() {
             </div>
           ))}
         </div>
+      ) : loadFailed ? (
+        <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+          <AlertCircle size={32} strokeWidth={1.5} style={{ opacity: 0.4, marginBottom: 12 }} />
+          <p className="muted">Couldn't load D-Groups.</p>
+          <button type="button" className="dg-btn-primary" style={{ marginTop: 16 }} onClick={() => fetchGroups()}>
+            Try Again
+          </button>
+        </div>
       ) : groups.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: 48 }}>
           <Network size={32} strokeWidth={1.5} style={{ opacity: 0.4, marginBottom: 12 }} />
@@ -147,6 +161,7 @@ export default function DGroups() {
             const imgSrc = g.image ? resolveImageUrl(g.image) : null
             const isMember = g.is_joined
             const isPending = g.request_status === 'pending'
+            const count = g.member_count || 0
 
             return (
               <div
@@ -181,7 +196,9 @@ export default function DGroups() {
                 <div className="dg-card-body">
                   <div className="dg-card-top">
                     <h3 className="dg-card-title">{g.name}</h3>
-                    <p className="dg-card-leader">Led by {g.leader_name}</p>
+                    {g.leader_name && (
+                      <p className="dg-card-leader">Led by {g.leader_name}</p>
+                    )}
                   </div>
 
                   {g.description && (
@@ -203,7 +220,7 @@ export default function DGroups() {
                     )}
                     <div className="dg-meta-row">
                       <Users size={13} />
-                      <span>{g.member_count} member{g.member_count !== 1 ? 's' : ''}</span>
+                      <span>{count} member{count !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
 

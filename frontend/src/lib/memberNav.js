@@ -38,6 +38,7 @@ const O = (id, to, label, icon, blurb, extra = {}) => ({ id, to, label, icon, bl
 
 export const OFFICER_NAV = [
   O('o-home', '/officer', 'Overview', LayoutDashboard, 'Pending sign-ups, events and attendance at a glance.', { end: true }),
+  O('o-members', '/officer/members', 'Members', Users, 'View the member list.'),
   O('o-apps', '/officer/applications', 'Applications', ClipboardList, 'Approve or reject ministry applications.'),
   O('o-attendance', '/officer/attendance', 'Attendance', UserCheck, 'Scan passes and record who attended.'),
   ...MEMBER_NAV.filter((n) => n.id !== 'home'),
