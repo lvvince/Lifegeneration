@@ -46,6 +46,7 @@ export default function AdminReports() {
         { key: 'member_id', label: 'Member ID' },
         { key: 'full_name', label: 'Name' },
         { key: 'email', label: 'Email' },
+        { key: 'gender', label: 'Gender' },
         { key: 'age', label: 'Age' },
         { key: 'address', label: 'Address' },
         { key: 'dgroup_name', label: 'D-Group' },

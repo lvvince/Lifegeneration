@@ -244,6 +244,7 @@ export default function Dashboard() {
         setUser(res.user)
         setEditForm({
           full_name: res.user.full_name || '',
+          gender: res.user.gender || res.user.member?.gender || '',
           age: res.user.age || res.user.member?.age || '',
           address: res.user.address || res.user.member?.address || ''
         })
@@ -334,6 +335,7 @@ export default function Dashboard() {
       await apiPost('/api/members/update', {
         user_id: profile.id,
         full_name: editForm.full_name,
+        gender: editForm.gender,
         age: editForm.age,
         address: editForm.address
       })
@@ -534,6 +536,14 @@ export default function Dashboard() {
               <input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
             </label>
             <label>
+              Gender
+              <select value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </label>
+            <label>
               Age
               <input type="number" inputMode="numeric" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
             </label>
@@ -558,6 +568,12 @@ export default function Dashboard() {
                   <Cake size={15} /> Age
                 </dt>
                 <dd>{profile?.age || member?.age || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Users size={15} /> Gender
+                </dt>
+                <dd>{profile?.gender || member?.gender || 'Not set'}</dd>
               </div>
               <div>
                 <dt>

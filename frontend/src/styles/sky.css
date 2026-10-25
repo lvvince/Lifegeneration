@@ -814,6 +814,8 @@ html.sk-loading .portal.px.lgx .hm-in { animation-play-state: paused; }
 @media (min-width: 760px) { .portal.px.lgx .fb-form { grid-template-columns: 1fr 1fr; } .portal.px.lgx .fb-form .is-wide { grid-column: 1 / -1; } }
 .portal.px.lgx .fb-form label { display: grid; gap: 6px; color: var(--sk-ink-2); font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .portal.px.lgx .fb-form input { height: 52px; padding: 0 14px; border: 2px solid var(--sk-ink); background: var(--sk-surface); color: var(--sk-ink); font: inherit; font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.portal.px.lgx .fb-form select { height: 52px; padding: 0 14px; border: 2px solid var(--sk-ink); background: var(--sk-surface); color: var(--sk-ink); font: inherit; font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
+.portal.px.lgx .fb-form select:focus { outline: 2px solid var(--sk-or); outline-offset: 2px; }
 .portal.px.lgx .fb-links { display: grid; margin: 0; padding: 0; list-style: none; }
 .portal.px.lgx .fb-links a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 66px; border-bottom: 2px solid var(--sk-ink); color: var(--sk-ink); font-size: clamp(1.3rem, 5vw, 2rem); font-weight: 900; letter-spacing: -0.03em; text-transform: uppercase; transition: padding 0.3s var(--sk-ease), color 0.2s; }
 .portal.px.lgx .fb-links svg { flex: none; color: var(--sk-or); }

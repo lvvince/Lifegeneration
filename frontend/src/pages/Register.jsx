@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, ArrowRight, ArrowLeft, AlertCircle, Hash } from 'lucide-react'
+import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, ArrowRight, ArrowLeft, AlertCircle, Hash, Users } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
 import { useGoogleButton } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
 import AuthInput from '../components/auth/AuthInput.jsx'
 
-const EMPTY = { full_name: '', email: '', age: '', address: '', password: '', confirm: '' }
-const STEP1 = ['full_name', 'email', 'age', 'address']
+const EMPTY = { full_name: '', email: '', age: '', gender: '', address: '', password: '', confirm: '' }
+const STEP1 = ['full_name', 'email', 'age', 'gender', 'address']
 
 function strength(pw) {
   let n = 0
@@ -144,8 +144,13 @@ export default function Register() {
             <AuthInput icon={Mail} label="Email" name="email" type="email" value={form.email} onChange={change} error={errors.email} autoComplete="email" />
             <div className="au-row">
               <AuthInput icon={CalendarDays} label="Age" name="age" type="number" inputMode="numeric" value={form.age} onChange={change} error={errors.age} />
-              <AuthInput icon={MapPin} label="Location" name="address" value={form.address} onChange={change} error={errors.address} autoComplete="address-level2" />
+              <AuthInput icon={Users} label="Gender" name="gender" type="select" value={form.gender} onChange={change} error={errors.gender}>
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </AuthInput>
             </div>
+            <AuthInput icon={MapPin} label="Location" name="address" value={form.address} onChange={change} error={errors.address} autoComplete="address-level2" />
             <button type="submit" className="au-btn">
               Continue <ArrowRight size={18} />
             </button>

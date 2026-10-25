@@ -92,6 +92,13 @@
 .au-eye { position: absolute; right: 6px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #7d7870; cursor: pointer; transition: color 0.2s, background 0.2s; }
 .au-eye:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .au-f.has-err .au-field input { border-color: var(--bad); animation: au-shake 0.4s; }
+.au-field select { display: block; width: 100%; height: var(--fh); margin: 0; padding: 20px 44px 5px 44px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; outline: none; transition: border-color 0.2s, box-shadow 0.25s, background 0.2s; -webkit-appearance: none; appearance: none; }
+.au-field select:hover { border-color: #444; }
+.au-field select:focus { border-color: var(--or); background: #1f1f1f; box-shadow: 0 0 0 4px rgba(255, 90, 10, 0.16); }
+.au-field select option { background: #1a1a1a; color: #fff; }
+.au-field select + .au-field-label { top: 16px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.au-field select:focus + .au-field-label { color: var(--or); }
+.au-f.has-err .au-field select { border-color: var(--bad); animation: au-shake 0.4s; }
 .au-f.has-err .au-field-label { color: var(--bad); }
 @keyframes au-shake { 20% { translate: -5px 0; } 40% { translate: 5px 0; } 60% { translate: -3px 0; } 80% { translate: 3px 0; } }
 .au-err, .au-hint { padding-left: 4px; font-size: 12px; font-weight: 600; animation: au-fade 0.3s both; }
@@ -175,6 +182,10 @@
 .au-field input:hover { border-color: #cfc4b6; }
 .au-field input:focus { border-color: var(--or); background: #fff; box-shadow: 0 0 0 4px rgba(255, 90, 10, 0.15); }
 .au-field input:-webkit-autofill { -webkit-text-fill-color: #17130f; box-shadow: 0 0 0 40px #fff6ef inset; caret-color: #17130f; }
+.au-field select { border-color: var(--line); background: #fff; color: #17130f; }
+.au-field select:hover { border-color: #cfc4b6; }
+.au-field select:focus { border-color: var(--or); background: #fff; box-shadow: 0 0 0 4px rgba(255, 90, 10, 0.15); }
+.au-field select option { background: #fff; color: #17130f; }
 .au-field-ico { color: #9b9185; }
 .au-eye { color: #9b9185; }
 .au-eye:hover { color: #17130f; background: rgba(0, 0, 0, 0.06); }

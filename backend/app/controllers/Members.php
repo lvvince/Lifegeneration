@@ -52,6 +52,19 @@ class Members extends Controller
             $sets[] = 'full_name = ?';
             $params[] = $fullName;
         }
+        if (array_key_exists('gender', $input)) {
+            $rawGender = trim((string) $input['gender']);
+            if ($rawGender !== '') {
+                $normGender = ucfirst(strtolower($rawGender));
+                if (!in_array($normGender, ['Male', 'Female'])) {
+                    api_response(['error' => 'Gender must be either Male or Female.'], 422);
+                }
+                $sets[] = 'gender = ?';
+                $params[] = $normGender;
+            } else {
+                $sets[] = 'gender = NULL';
+            }
+        }
         if (array_key_exists('age', $input)) {
             $sets[] = 'age = ?';
             $params[] = ($input['age'] !== '' && $input['age'] !== null) ? (int) $input['age'] : null;
@@ -65,6 +78,30 @@ class Members extends Controller
             $sets[] = 'updated_at = NOW()';
             $params[] = $targetUserId;
             $this->db->raw("UPDATE members SET " . implode(', ', $sets) . " WHERE user_id = ?", $params);
+
+            // Keep users table in sync with profile details
+            $uSets = [];
+            $uParams = [];
+            if (array_key_exists('full_name', $input)) {
+                $uSets[] = 'full_name = ?';
+                $uParams[] = $fullName;
+            }
+            if (array_key_exists('gender', $input)) {
+                $uSets[] = isset($normGender) ? 'gender = ?' : 'gender = NULL';
+                if (isset($normGender)) $uParams[] = $normGender;
+            }
+            if (array_key_exists('age', $input)) {
+                $uSets[] = 'age = ?';
+                $uParams[] = ($input['age'] !== '' && $input['age'] !== null) ? (int) $input['age'] : null;
+            }
+            if (array_key_exists('address', $input)) {
+                $uSets[] = 'address = ?';
+                $uParams[] = trim((string) $input['address']);
+            }
+            if ($uSets) {
+                $uParams[] = $targetUserId;
+                $this->db->raw("UPDATE users SET " . implode(', ', $uSets) . " WHERE id = ?", $uParams);
+            }
         }
 
         // Role: admin lang, at hindi sariling role

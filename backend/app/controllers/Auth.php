@@ -141,6 +141,17 @@ class Auth extends Controller
         $age      = !empty($input['age']) ? (int) $input['age'] : null;
         $username = trim($input['username'] ?? '');
 
+        // Gender: Male or Female only (optional on registration, validated if provided)
+        $rawGender = trim($input['gender'] ?? '');
+        $gender    = null;
+        if (!empty($rawGender)) {
+            $normGender = ucfirst(strtolower($rawGender));
+            if (!in_array($normGender, ['Male', 'Female'])) {
+                api_response(['error' => 'Validation error.', 'fields' => ['gender' => 'Gender must be either Male or Female.']], 422);
+            }
+            $gender = $normGender;
+        }
+
         // Auto-generate username from email if not provided
         if (empty($username) && !empty($email)) {
             $parts = explode('@', $email);
@@ -187,22 +198,22 @@ class Auth extends Controller
 
         // Insert into users
         $this->db->raw(
-            "INSERT INTO users (member_id, username, full_name, email, address, age, password, role, membership_tier, is_active, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'Standard Member', 1, ?)",
-            [$memberId, $username, $fullName, $email, $address, $age, $passwordHash, $now]
+            "INSERT INTO users (member_id, username, full_name, gender, email, address, age, password, role, membership_tier, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', 'Standard Member', 1, ?)",
+            [$memberId, $username, $fullName, $gender, $email, $address, $age, $passwordHash, $now]
         );
         $userId = (int) $this->db->last_id();
 
         // Insert linked record in members
         $this->db->raw(
-            "INSERT INTO members (user_id, member_id, full_name, email, age, address, membership_tier, is_active, joined_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'Standard Member', 1, ?)",
-            [$userId, $memberId, $fullName, $email, $age, $address, $now]
+            "INSERT INTO members (user_id, member_id, full_name, gender, email, age, address, membership_tier, is_active, joined_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'Standard Member', 1, ?)",
+            [$userId, $memberId, $fullName, $gender, $email, $age, $address, $now]
         );
         $memberRecordId = (int) $this->db->last_id();
 
         // Fetch created user & member
-        $userStmt = $this->db->raw("SELECT id, member_id, username, full_name, email, address, age, role, membership_tier, is_active, created_at FROM users WHERE id = ?", [$userId]);
+        $userStmt = $this->db->raw("SELECT id, member_id, username, full_name, gender, email, address, age, role, membership_tier, is_active, created_at FROM users WHERE id = ?", [$userId]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 
         $memStmt = $this->db->raw("SELECT * FROM members WHERE id = ?", [$memberRecordId]);
