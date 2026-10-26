@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+﻿import { useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
 import { useGoogleButton } from '../lib/useGoogleButton.js'
@@ -75,6 +75,9 @@ export default function Login() {
           onKeyUp={(e) => setCaps(e.getModifierState?.('CapsLock') || false)}
           hint={caps ? 'Caps Lock is on' : undefined}
         />
+        <div className="au-forgot-row">
+          <Link to="/forgot-password" className="au-forgot">Forgot password?</Link>
+        </div>
         <button type="submit" className="au-btn" disabled={loading}>
           {loading ? <span className="au-spin" /> : <>Log in <ArrowRight size={18} /></>}
         </button>
@@ -82,7 +85,6 @@ export default function Login() {
 
       <div className="au-or"><span>or</span></div>
       <div className="au-google"><div ref={gRef} /></div>
-
     </AuthShell>
   )
 }

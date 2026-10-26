@@ -2,9 +2,16 @@
 export const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost/Lifegeneration/backend/public'
 
+// Decode HTML entities (e.g. &#039; -> ') so PHP error messages read normally
+function decodeEntities(s) {
+  const el = document.createElement('textarea')
+  el.innerHTML = s
+  return el.value
+}
+
 function extractPhpError(html) {
   const clean = (s) =>
-    (s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    decodeEntities((s || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim()
 
   const type = clean(html.match(/exc-type">([\s\S]*?)<\/(?:span|div)>/)?.[1])
   const msg = clean(html.match(/exc-msg">([\s\S]*?)<\/(?:span|div)>/)?.[1])

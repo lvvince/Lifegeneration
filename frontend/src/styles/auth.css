@@ -378,3 +378,19 @@
 .auth-google-wrapper:hover {
   transform: translateY(-1px);
 }
+
+.au-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.au-back svg { transition: transform 0.2s; }
+.au-back:hover { color: #f26b2a; }
+.au-back:hover svg { transform: translateX(-3px); }
+.au-back-row { display: flex; flex-direction: column; gap: 4px; }

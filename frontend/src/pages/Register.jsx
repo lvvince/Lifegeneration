@@ -1,13 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, ArrowRight, ArrowLeft, AlertCircle, Hash, Users } from 'lucide-react'
-import { apiPost, setUser, saveTokens } from '../api.js'
+import { apiPost, setUser, saveTokens, getUser } from '../api.js'
 import { useGoogleButton } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
 import AuthInput from '../components/auth/AuthInput.jsx'
 
 const EMPTY = { full_name: '', email: '', age: '', gender: '', address: '', password: '', confirm: '' }
 const STEP1 = ['full_name', 'email', 'age', 'gender', 'address']
+const MIN_PASSWORD = 6 // dapat pareho sa ResetPassword.jsx at PasswordReset.php
 
 function strength(pw) {
   let n = 0
@@ -32,17 +33,20 @@ export default function Register() {
   const gRef = useRef(null)
   const level = useMemo(() => strength(form.password), [form.password])
 
+  const enter = (data) => {
+    const user = data.user || data.data || data
+    setUser(user)
+    if (data.tokens) saveTokens(data.tokens)
+    navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true })
+  }
+
   useGoogleButton(gRef, {
     text: 'signup_with',
     onCredential: async (credential) => {
       setLoading(true)
       setServerError('')
       try {
-        const data = await apiPost('/api/auth/google', { credential })
-        const user = data.user || data.data || data
-        setUser(user)
-        if (data.tokens) saveTokens(data.tokens)
-        navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true })
+        enter(await apiPost('/api/auth/google', { credential }))
       } catch (err) {
         setServerError(err.message || 'Google sign-up failed. Please try again.')
         setLoading(false)
@@ -58,16 +62,16 @@ export default function Register() {
   }
 
   const validate = (only) => {
-    const next = {}
-    if (!form.full_name.trim()) next.full_name = 'Full name is required.'
-    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) next.email = 'Enter a valid email.'
-    if (form.age && (Number(form.age) < 5 || Number(form.age) > 120)) next.age = 'Enter a valid age.'
-    if (form.password.length < 6) next.password = 'At least 6 characters.'
-    if (form.confirm !== form.password) next.confirm = 'Passwords do not match.'
-    return only ? Object.fromEntries(Object.entries(next).filter(([k]) => only.includes(k))) : next
+    const found = {}
+    if (!form.full_name.trim()) found.full_name = 'Full name is required.'
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) found.email = 'Enter a valid email.'
+    if (form.age && (Number(form.age) < 5 || Number(form.age) > 120)) found.age = 'Enter a valid age.'
+    if (form.password.length < MIN_PASSWORD) found.password = `At least ${MIN_PASSWORD} characters.`
+    if (form.confirm !== form.password) found.confirm = 'Passwords do not match.'
+    return only ? Object.fromEntries(Object.entries(found).filter(([k]) => only.includes(k))) : found
   }
 
-  const next = (e) => {
+  const goNext = (e) => {
     e.preventDefault()
     const found = validate(STEP1)
     if (Object.keys(found).length) return setErrors(found)
@@ -76,6 +80,7 @@ export default function Register() {
 
   const submit = async (e) => {
     e.preventDefault()
+    if (loading) return
     const found = validate()
     if (Object.keys(found).length) {
       setErrors(found)
@@ -83,10 +88,16 @@ export default function Register() {
       return
     }
     setLoading(true)
+    setServerError('')
     try {
-      const { confirm: _c, ...payload } = form
-      payload.full_name = payload.full_name.trim()
-      payload.email = payload.email.trim()
+      const { confirm: _c, age, ...rest } = form
+      const payload = {
+        ...rest,
+        full_name: rest.full_name.trim(),
+        email: rest.email.trim().toLowerCase(),
+        address: rest.address.trim(),
+        ...(age !== '' ? { age: Number(age) } : {}),
+      }
       const data = await apiPost('/api/auth/register', payload)
       if (data.tokens && data.user) {
         setUser(data.user)
@@ -106,6 +117,7 @@ export default function Register() {
   const memberId = success && (success.user?.member_id || success.user?.member?.member_id || success.member_id)
 
   if (success) {
+    const loggedIn = Boolean(getUser())
     return (
       <AuthShell title="You’re in" sub="Your account is ready." switchLabel="Log in" switchTo="/login">
         <div className="au-done">
@@ -121,8 +133,8 @@ export default function Register() {
               <b>{memberId}</b>
             </div>
           )}
-          <button type="button" className="au-btn" onClick={() => navigate('/dashboard')}>
-            Go to dashboard <ArrowRight size={18} />
+          <button type="button" className="au-btn" onClick={() => navigate(loggedIn ? '/dashboard' : '/login')}>
+            {loggedIn ? 'Go to dashboard' : 'Log in'} <ArrowRight size={18} />
           </button>
         </div>
       </AuthShell>
@@ -139,7 +151,7 @@ export default function Register() {
 
       {step === 1 ? (
         <>
-          <form onSubmit={next} noValidate className="au-form au-step" key="s1">
+          <form onSubmit={goNext} noValidate className="au-form au-step" key="s1">
             <AuthInput icon={User} label="Full name" name="full_name" value={form.full_name} onChange={change} error={errors.full_name} autoComplete="name" autoFocus />
             <AuthInput icon={Mail} label="Email" name="email" type="email" value={form.email} onChange={change} error={errors.email} autoComplete="email" />
             <div className="au-row">

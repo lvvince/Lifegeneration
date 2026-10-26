@@ -7,6 +7,8 @@ import { getUser } from './api.js'
 import Home from './pages/Home.jsx'
 import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import NotFound from './pages/NotFound.jsx'
 import DGroups from './pages/DGroups.jsx'
 import Ministries from './pages/Ministries.jsx'
@@ -30,8 +32,8 @@ import OfficerApplications from './pages/officer/OfficerApplications.jsx'
 import OfficerMembers from './pages/officer/OfficerMembers.jsx'
 import OfficerSideLayout from './pages/officer/OfficerSideLayout.jsx'
 
-// Public pages na walang portal layout at may sariling full-width na itsura
-const FULL_BLEED = ['/', '/login', '/register']
+// Auth pages: full-screen, walang navbar at walang portal layout
+const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password']
 
 // Officer/secretary at admin lang ang pwedeng pumasok sa /officer.
 // Nakabalot sa dashboard sidebar (OfficerSideLayout, may <Outlet /> sa loob).
@@ -89,18 +91,20 @@ export default function App() {
   const { pathname } = useLocation()
   const user = getUser()
 
-  // Login at Register: walang navbar
-  if (pathname === '/login' || pathname === '/register') {
+  // Login, Register, Forgot/Reset password: walang navbar
+  if (AUTH_PATHS.includes(pathname)) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     )
   }
 
-  // Home
-  if (FULL_BLEED.includes(pathname)) {
+  // Home: may sariling full-width na itsura
+  if (pathname === '/') {
     return (
       <>
         <AnnouncementBanner />

@@ -1,3 +1,5 @@
+import { API_URL } from '../api.js'
+
 export function parseDate(d) {
   if (!d) return null
   const [y, m, day] = String(d).slice(0, 10).split('-').map(Number)
@@ -52,15 +54,13 @@ export function initials(name) {
 }
 
 /**
- * Resolves local upload paths and external URLs into valid image sources
+ * Resolves local upload paths and external URLs into valid image sources.
+ * Uses API_URL from api.js so there is only one backend base URL to maintain.
  */
 export function resolveImageUrl(path) {
   if (!path) return null
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
     return path
   }
-  const base = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace(/\/+$/, '')
-    : 'http://localhost/LIFEGEN/backend/public'
-  return `${base}/${path.replace(/^\/+/, '')}`
+  return `${API_URL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }

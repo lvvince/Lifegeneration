@@ -19,6 +19,10 @@ $router->post('/api/auth/refresh',  'Auth::refresh');
 $router->post('/api/auth/logout',   'Auth::logout');
 $router->post('/api/logout',        'Auth::logout');
 
+// 1b. Password reset
+$router->post('/api/auth/forgot-password', 'PasswordReset::forgot');
+$router->post('/api/auth/reset-password',  'PasswordReset::reset');
+
 // 2. Discipleship Groups (D-Groups)
 $router->get('/api/dgroups',                 'DGroups::index');
 $router->post('/api/dgroups/join',           'DGroups::join');
