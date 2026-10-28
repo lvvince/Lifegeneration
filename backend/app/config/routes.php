@@ -105,3 +105,5 @@ $router->post('/api/admin/donations/verify',  'Donations::verify');
 // 10. Daily Devotional & Verse of the Day
 $router->get('/api/devotional/today',  'Devotionals::today');
 $router->get('/api/devotional/random', 'Devotionals::random');
+$router->get('/api/bible/lookup',      'Devotionals::lookup');
+$router->get('/api/bible/search',      'Devotionals::lookup');

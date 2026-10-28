@@ -154,5 +154,58 @@ class Devotionals extends Controller
 
         api_response($item);
     }
+
+    /**
+     * Live Bible Search & Passage Lookup (via bible-api.com)
+     * GET /api/bible/lookup?q=John+3:16&translation=web
+     */
+    public function lookup()
+    {
+        $query = trim($_GET['q'] ?? $_GET['passage'] ?? $_GET['query'] ?? '');
+        $translation = strtolower(trim($_GET['translation'] ?? 'web'));
+
+        if (empty($query)) {
+            api_response(['error' => 'Please provide a scripture reference to search (e.g. John 3:16, Psalm 23).'], 422);
+        }
+
+        $allowedTranslations = ['web', 'kjv', 'bbe', 'oeb-us', 'almeida', 'clementine'];
+        if (!in_array($translation, $allowedTranslations)) {
+            $translation = 'web';
+        }
+
+        $url = 'https://bible-api.com/' . rawurlencode($query) . '?translation=' . urlencode($translation);
+
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 6,
+                'ignore_errors' => true,
+                'header' => "User-Agent: LifeGen-Youth-Community/1.0\r\n"
+            ]
+        ]);
+
+        $response = @file_get_contents($url, false, $ctx);
+        if ($response === false) {
+            api_response(['error' => 'Unable to connect to the Bible service. Please verify your internet connection.'], 503);
+        }
+
+        $data = json_decode($response, true);
+        if (!$data || isset($data['error'])) {
+            api_response([
+                'error' => "Scripture reference \"{$query}\" not found. Please try standard formats like \"John 3:16\", \"Psalm 23\", or \"Romans 8:28\"."
+            ], 404);
+        }
+
+        $cleanText = trim(preg_replace('/\s+/', ' ', $data['text'] ?? ''));
+
+        api_response([
+            'success'          => true,
+            'reference'        => $data['reference'] ?? $query,
+            'text'             => $cleanText,
+            'verses'           => $data['verses'] ?? [],
+            'translation_id'   => $data['translation_id'] ?? $translation,
+            'translation_name' => $data['translation_name'] ?? strtoupper($translation),
+            'translation_note' => $data['translation_note'] ?? '',
+        ]);
+    }
 }
 
