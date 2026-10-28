@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  BookOpen, Sparkles, MessageCircleHeart, Share2, Copy, Check,
-  RefreshCw, Heart, Quote, ArrowRight, SunMedium, Search, X,
-  ExternalLink, ChevronLeft
+  Sparkles, MessageCircleHeart, Share2, Check,
+  RefreshCw, Heart, ArrowRight, SunMedium, Search, Languages
 } from 'lucide-react'
 import { apiGet } from '../../api.js'
 
 const QUICK_SEARCHES = [
   'John 3:16',
+  'Jeremiah 29:11',
+  'Philippians 4:6',
   'Psalm 23',
   'Romans 8:28',
-  'Philippians 4:13',
-  'Proverbs 3:5-6',
-  'Isaiah 40:31',
+  'Joshua 1:9',
   '1 Corinthians 13:4-7'
 ]
 
@@ -25,10 +24,13 @@ export default function DailyDevotional() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
+  // Language Mode: 'en' (English) | 'tl' (Tagalog / Filipino)
+  const [lang, setLang] = useState('en')
+
   // Live Bible Lookup State
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [translation, setTranslation] = useState('web') // 'web' | 'kjv' | 'bbe'
+  const [translation, setTranslation] = useState('niv') // 'niv' | 'tl' | 'nkjv' | 'kjv' | 'web'
   const [searching, setSearching] = useState(false)
   const [searchResult, setSearchResult] = useState(null)
   const [searchError, setSearchError] = useState('')
@@ -63,20 +65,31 @@ export default function DailyDevotional() {
     loadToday()
   }, [])
 
+  // Dynamic values depending on selected language
+  const isTl = lang === 'tl'
+  const currentVerse = (isTl && data?.verse_tl) ? data.verse_tl : data?.verse
+  const currentRef = (isTl && data?.reference_tl) ? data.reference_tl : data?.reference
+  const currentTitle = (isTl && data?.title_tl) ? data.title_tl : data?.title
+  const currentTheme = (isTl && data?.theme_tl) ? data.theme_tl : data?.theme
+  const currentReflection = (isTl && data?.reflection_tl) ? data.reflection_tl : data?.reflection
+  const currentPrayer = (isTl && data?.prayer_prompt_tl) ? data.prayer_prompt_tl : data?.prayer_prompt
+  const currentTransTag = isTl ? 'Tagalog (MBB)' : (data?.translation || 'NIV')
+
   const handleShare = async () => {
     if (!data) return
 
-    const shareText = `“${data.verse}”\n— ${data.reference} (${data.translation})\n\nToday's Reflection: ${data.reflection}\n\nShared via LifeGen Portal`
+    const label = isTl ? 'Pagninilay Ngayong Araw' : "Today's Reflection"
+    const shareText = `“${currentVerse}”\n— ${currentRef} (${currentTransTag})\n\n${label}: ${currentReflection}\n\nShared via LifeGen Portal`
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `LifeGen Verse of the Day: ${data.reference}`,
+          title: `LifeGen Verse: ${currentRef}`,
           text: shareText,
         })
         return
       } catch (e) {
-        // Fallback to clipboard if cancelled or not supported
+        // Fallback to clipboard if cancelled
       }
     }
 
@@ -87,8 +100,9 @@ export default function DailyDevotional() {
 
   const handleWritePrayer = () => {
     if (!data) return
-    const title = `Prayer: ${data.reference}`
-    const body = `Inspired by ${data.reference} (“${data.verse}”):\n\n${data.prayer_prompt}`
+    const title = isTl ? `Panalangin: ${currentRef}` : `Prayer: ${currentRef}`
+    const promptIntro = isTl ? 'Hango sa' : 'Inspired by'
+    const body = `${promptIntro} ${currentRef} (“${currentVerse}”):\n\n${currentPrayer}`
     navigate(`/prayer?compose=1&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`)
   }
 
@@ -110,7 +124,7 @@ export default function DailyDevotional() {
         setSearchResult(null)
       }
     } catch (err) {
-      setSearchError(err.message || 'Passage not found. Try format like "John 3:16" or "Psalm 23".')
+      setSearchError(err.message || 'Passage not found. Try standard formats like "John 3:16", "Awit 23", or "Romans 8:28".')
       setSearchResult(null)
     } finally {
       setSearching(false)
@@ -149,55 +163,57 @@ export default function DailyDevotional() {
   const handleWriteSearchPrayer = () => {
     if (!searchResult) return
     const title = `Prayer on ${searchResult.reference}`
-    const body = `Reflecting on ${searchResult.reference} (${searchResult.translation_name}):\n“${searchResult.text}”\n\nLord, teach me how to live out this truth in my life today.`
+    const body = `Scripture: ${searchResult.reference} (${searchResult.translation_name})\n“${searchResult.text}”\n\nLord, teach me how to live out this truth today...`
     navigate(`/prayer?compose=1&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`)
   }
 
   if (loading) {
     return (
-      <section className="hm-band" style={{ padding: '24px 0' }}>
-        <div className="hm-wrap">
-          <div style={{ background: 'var(--p-surface, #fff)', border: '1px solid var(--p-border, #e5e8f1)', borderRadius: 24, padding: 28, minHeight: 200, opacity: 0.6 }} />
+      <section className="p-section" style={{ marginBottom: 24 }}>
+        <div className="p-card" style={{ padding: 28, textAlign: 'center', opacity: 0.7 }}>
+          <Sparkles size={20} className="p-spin" style={{ margin: '0 auto 8px', color: 'var(--p-accent, #c2410c)' }} />
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--p-text-2, #586079)' }}>
+            Loading today's devotional verse...
+          </p>
         </div>
       </section>
     )
   }
 
-  if (error || !data) return null
+  if (error || !data) {
+    return null // Graceful hide if backend unavailable
+  }
 
   return (
-    <section className="hm-band" style={{ padding: '20px 0 28px' }}>
-      <div className="hm-wrap">
+    <section className="p-section" style={{ marginBottom: 24 }}>
+      <div
+        className="p-card"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          padding: 0,
+          background: 'linear-gradient(145deg, rgba(255, 247, 237, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%)',
+          borderColor: 'rgba(251, 146, 60, 0.3)',
+          boxShadow: '0 10px 30px -10px rgba(194, 65, 12, 0.12)'
+        }}
+      >
+        {/* Subtle decorative glow accents */}
         <div
+          aria-hidden="true"
           style={{
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, var(--p-surface, #ffffff) 0%, var(--p-sunken, #f8fafc) 100%)',
-            border: '1.5px solid var(--p-border, #e5e8f1)',
-            borderRadius: 28,
-            padding: 'clamp(20px, 3.5vw, 32px)',
-            boxShadow: 'var(--p-shadow, 0 10px 30px -10px rgba(0,0,0,0.06))',
+            position: 'absolute',
+            top: -60,
+            right: -60,
+            width: 200,
+            height: 200,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(251, 146, 60, 0.25) 0%, transparent 70%)',
+            pointerEvents: 'none'
           }}
-        >
-          {/* Subtle decorative watermark */}
-          <div
-            style={{
-              position: 'absolute',
-              right: -15,
-              top: -20,
-              opacity: 0.04,
-              pointerEvents: 'none',
-              fontSize: 180,
-              fontWeight: 900,
-              fontFamily: 'serif',
-              lineHeight: 1,
-              userSelect: 'none'
-            }}
-          >
-            &rdquo;
-          </div>
+        />
 
-          {/* Top Header Pill Bar */}
+        <div style={{ padding: '24px 26px' }}>
+          {/* Top Header Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span
@@ -215,14 +231,64 @@ export default function DailyDevotional() {
                   color: 'var(--p-accent, #c2410c)',
                 }}
               >
-                <SunMedium size={14} /> Verse of the Day
+                <SunMedium size={14} /> {isTl ? 'Talata Ngayong Araw' : 'Verse of the Day'}
               </span>
 
               <span style={{ fontSize: 13, color: 'var(--p-text-2, #586079)', fontWeight: 500 }}>
                 {data.formatted_date}
               </span>
 
-              {data.theme && !showSearch && (
+              {/* Language Switcher Pill */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  borderRadius: 999,
+                  padding: 2,
+                  background: 'rgba(0,0,0,0.06)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  alignItems: 'center'
+                }}
+                title="Switch Language (English / Tagalog)"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLang('en')}
+                  style={{
+                    border: 0,
+                    background: !isTl ? '#ffffff' : 'transparent',
+                    color: !isTl ? '#c2410c' : '#586079',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: !isTl ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang('tl')}
+                  style={{
+                    border: 0,
+                    background: isTl ? '#ffffff' : 'transparent',
+                    color: isTl ? '#c2410c' : '#586079',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: isTl ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  🇵🇭 TL
+                </button>
+              </div>
+
+              {currentTheme && !showSearch && (
                 <span
                   style={{
                     fontSize: 11.5,
@@ -233,7 +299,7 @@ export default function DailyDevotional() {
                     fontWeight: 600
                   }}
                 >
-                  {data.theme}
+                  {currentTheme}
                 </span>
               )}
             </div>
@@ -248,7 +314,7 @@ export default function DailyDevotional() {
                 }}
                 style={{
                   border: 0,
-                  background: showSearch ? 'var(--p-accent, #c2410c)' : 'rgba(0,0,0,0.05)',
+                  background: showSearch ? 'var(--p-accent, #c2410c)' : 'rgba(0,0,0,0.06)',
                   color: showSearch ? '#fff' : 'var(--p-text-2, #586079)',
                   cursor: 'pointer',
                   display: 'inline-flex',
@@ -263,7 +329,7 @@ export default function DailyDevotional() {
                 title="Search any chapter or verse live"
               >
                 <Search size={13} />
-                <span>{showSearch ? 'Close Search' : 'Search Bible'}</span>
+                <span>{showSearch ? (isTl ? 'Isara ang Search' : 'Close Search') : (isTl ? 'Maghanap sa Bibliya' : 'Search Bible')}</span>
               </button>
 
               {!showSearch && (
@@ -281,14 +347,14 @@ export default function DailyDevotional() {
                     fontSize: 12,
                     fontWeight: 600,
                     color: 'var(--p-text-2, #586079)',
-                    opacity: 0.8,
+                    opacity: 0.85,
                     padding: '4px 8px',
                     borderRadius: 8
                   }}
                   title="Read another scripture verse"
                 >
                   <RefreshCw size={13} className={fetchingNew ? 'p-spin' : ''} />
-                  <span>Inspire Me</span>
+                  <span>{isTl ? 'Iba Pang Talata' : 'Inspire Me'}</span>
                 </button>
               )}
             </div>
@@ -305,7 +371,7 @@ export default function DailyDevotional() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search any passage (e.g. John 3:16, Psalm 23, Romans 8:28)..."
+                    placeholder={isTl ? "I-type ang talata (hal. Juan 3:16, Awit 23, Roma 8:28)..." : "Search any passage (e.g. John 3:16, Psalm 23, Romans 8:28)..."}
                     className="p-input"
                     style={{ width: '100%', paddingLeft: 36, height: 40, borderRadius: 12, fontSize: 13.5 }}
                     autoFocus
@@ -319,28 +385,30 @@ export default function DailyDevotional() {
                     if (searchQuery.trim()) doSearch(searchQuery, e.target.value)
                   }}
                   className="p-input"
-                  style={{ height: 40, borderRadius: 12, padding: '0 10px', fontSize: 13, minWidth: 100 }}
+                  style={{ height: 40, borderRadius: 12, padding: '0 10px', fontSize: 13, minWidth: 130 }}
                   title="Select Bible Translation"
                 >
-                  <option value="web">WEB (Modern)</option>
-                  <option value="kjv">KJV (Classic)</option>
-                  <option value="bbe">BBE (Basic English)</option>
+                  <option value="niv">NIV (New International)</option>
+                  <option value="tl">Tagalog (Magandang Balita)</option>
+                  <option value="nkjv">NKJV (New King James)</option>
+                  <option value="kjv">KJV (King James Version)</option>
+                  <option value="web">WEB (World English)</option>
                 </select>
 
                 <button
                   type="submit"
                   disabled={searching || !searchQuery.trim()}
                   className="p-btn p-btn-primary p-btn-sm"
-                  style={{ borderRadius: 12, padding: '0 16px', height: 40 }}
+                  style={{ borderRadius: 12, padding: '0 18px', height: 40 }}
                 >
-                  {searching ? 'Searching...' : 'Lookup'}
+                  {searching ? (isTl ? 'Hinahanap...' : 'Searching...') : (isTl ? 'Hanapin' : 'Lookup')}
                 </button>
               </form>
 
               {/* Quick suggestions chips */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--p-text-3)', textTransform: 'uppercase' }}>
-                  Popular:
+                  {isTl ? 'Mungkahi:' : 'Popular:'}
                 </span>
                 {QUICK_SEARCHES.map((chip) => (
                   <button
@@ -370,13 +438,13 @@ export default function DailyDevotional() {
                 </div>
               )}
 
-              {/* Live Passage Result View */}
+              {/* Search Results Display */}
               {searchResult && (
                 <div
                   style={{
-                    background: 'rgba(255, 255, 255, 0.85)',
-                    border: '1.5px solid var(--p-border, #e5e8f1)',
-                    borderRadius: 20,
+                    background: '#ffffff',
+                    border: '1px solid var(--p-border, #e5e8f1)',
+                    borderRadius: 16,
                     padding: '20px 22px',
                     marginBottom: 16,
                     boxShadow: '0 4px 16px -4px rgba(0,0,0,0.05)'
@@ -393,7 +461,7 @@ export default function DailyDevotional() {
                     </div>
 
                     <small style={{ fontSize: 11, color: 'var(--p-text-3)' }}>
-                      Live Bible API
+                      Live Scripture
                     </small>
                   </div>
 
@@ -419,7 +487,7 @@ export default function DailyDevotional() {
                       style={{ borderRadius: 10 }}
                     >
                       {searchCopied ? <Check size={13} color="#16a34a" /> : <Share2 size={13} />}
-                      <span>{searchCopied ? 'Copied!' : 'Copy Verse'}</span>
+                      <span>{searchCopied ? (isTl ? 'Nakopya!' : 'Copied!') : (isTl ? 'Kopyahin' : 'Copy Verse')}</span>
                     </button>
 
                     <button
@@ -429,7 +497,7 @@ export default function DailyDevotional() {
                       style={{ borderRadius: 10 }}
                     >
                       <MessageCircleHeart size={13} />
-                      <span>Write Prayer Request</span>
+                      <span>{isTl ? 'Magsulat ng Panalangin' : 'Write Prayer Request'}</span>
                     </button>
 
                     <button
@@ -437,7 +505,7 @@ export default function DailyDevotional() {
                       onClick={() => setShowSearch(false)}
                       style={{ border: 0, background: 'transparent', color: 'var(--p-text-2)', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}
                     >
-                      Back to Today's Devotional
+                      {isTl ? 'Bumalik sa Pagninilay Ngayong Araw' : "Back to Today's Devotional"}
                     </button>
                   </div>
                 </div>
@@ -459,15 +527,15 @@ export default function DailyDevotional() {
                     letterSpacing: '-0.01em'
                   }}
                 >
-                  &ldquo;{data.verse}&rdquo;
+                  &ldquo;{currentVerse}&rdquo;
                 </blockquote>
 
                 <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--p-accent, #c2410c)' }}>
-                    {data.reference}
+                    {currentRef}
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', opacity: 0.8 }}>
-                    {data.translation}
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', opacity: 0.85 }}>
+                    {currentTransTag}
                   </span>
                 </div>
               </div>
@@ -475,7 +543,7 @@ export default function DailyDevotional() {
               {/* 1-Minute Daily Reflection */}
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.7)',
+                  background: 'rgba(255, 255, 255, 0.75)',
                   border: '1px solid var(--p-border, #e5e8f1)',
                   borderRadius: 18,
                   padding: '16px 20px',
@@ -485,18 +553,18 @@ export default function DailyDevotional() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <Sparkles size={15} color="var(--p-accent, #c2410c)" />
                   <strong style={{ fontSize: 14, color: 'var(--p-text, #1a1f2e)' }}>
-                    {data.title}
+                    {currentTitle}
                   </strong>
                   <small style={{ fontSize: 11, color: 'var(--p-text-3, #8a92a8)', marginLeft: 'auto' }}>
-                    {data.reading_time || '1 min read'}
+                    {isTl ? '1 minutong pagbasa' : (data.reading_time || '1 min read')}
                   </small>
                 </div>
 
                 <p style={{ margin: '0 0 12px', fontSize: 13.5, lineHeight: 1.6, color: 'var(--p-text-2, #586079)' }}>
-                  {data.reflection}
+                  {currentReflection}
                 </p>
 
-                {data.prayer_prompt && (
+                {currentPrayer && (
                   <div
                     style={{
                       display: 'flex',
@@ -512,7 +580,7 @@ export default function DailyDevotional() {
                     }}
                   >
                     <Heart size={14} color="var(--p-accent, #c2410c)" style={{ flex: 'none', marginTop: 2 }} />
-                    <span><b>Today’s Prayer:</b> {data.prayer_prompt}</span>
+                    <span><b>{isTl ? 'Panalangin Ngayong Araw:' : 'Today’s Prayer:'}</b> {currentPrayer}</span>
                   </div>
                 )}
               </div>
@@ -525,10 +593,10 @@ export default function DailyDevotional() {
                     onClick={handleShare}
                     className="p-btn p-btn-secondary p-btn-sm"
                     style={{ borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Share this verse"
+                    title={isTl ? 'Ibahagi ang talatang ito' : 'Share this verse'}
                   >
                     {copied ? <Check size={14} color="#16a34a" /> : <Share2 size={14} />}
-                    <span>{copied ? 'Copied to Clipboard!' : 'Share Verse'}</span>
+                    <span>{copied ? (isTl ? 'Nakopya sa Clipboard!' : 'Copied to Clipboard!') : (isTl ? 'Ibahagi ang Talata' : 'Share Verse')}</span>
                   </button>
 
                   <button
@@ -536,10 +604,10 @@ export default function DailyDevotional() {
                     onClick={handleWritePrayer}
                     className="p-btn p-btn-primary p-btn-sm"
                     style={{ borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Bring this reflection to the Prayer Wall"
+                    title={isTl ? 'Dalhin ang pagninilay na ito sa Prayer Wall' : 'Bring this reflection to the Prayer Wall'}
                   >
                     <MessageCircleHeart size={14} />
-                    <span>Write Prayer Request</span>
+                    <span>{isTl ? 'Magsulat ng Panalangin' : 'Write Prayer Request'}</span>
                   </button>
                 </div>
 
@@ -555,7 +623,7 @@ export default function DailyDevotional() {
                     gap: 4
                   }}
                 >
-                  <span>Visit Prayer Wall</span>
+                  <span>{isTl ? 'Pumunta sa Prayer Wall' : 'Visit Prayer Wall'}</span>
                   <ArrowRight size={13} />
                 </Link>
               </div>

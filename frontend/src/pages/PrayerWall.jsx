@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X, Users, EyeOff, Send, Search } from 'lucide-react'
+import {
+  Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X,
+  Users, EyeOff, Send, Search, Check, Share2, BookOpen
+} from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
 import '../styles/prayer.css'
@@ -43,6 +46,20 @@ export default function PrayerWall() {
   const location = useLocation()
   const [initialPrayer, setInitialPrayer] = useState({ title: '', body: '' })
 
+  // Devotional & Language toggle state
+  const [devotional, setDevotional] = useState(null)
+  const [showDevotional, setShowDevotional] = useState(false)
+  const [pwLang, setPwLang] = useState('en') // 'en' | 'tl'
+
+  // Live Bible Search on Prayer Wall
+  const [showBibleSearch, setShowBibleSearch] = useState(false)
+  const [bibleQuery, setBibleQuery] = useState('')
+  const [bibleTrans, setBibleTrans] = useState('niv') // 'niv' | 'tl' | 'nkjv' | 'kjv' | 'web'
+  const [bibleSearching, setBibleSearching] = useState(false)
+  const [bibleResult, setBibleResult] = useState(null)
+  const [bibleError, setBibleError] = useState('')
+  const [bibleCopied, setBibleCopied] = useState(false)
+
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('compose') === '1') {
@@ -52,12 +69,11 @@ export default function PrayerWall() {
       setComposer(true)
     }
   }, [location.search])
-  const [devotional, setDevotional] = useState(null)
-  const [showDevotional, setShowDevotional] = useState(false)
 
   useEffect(() => {
     apiGet('/api/devotional/today').then(setDevotional).catch(() => {})
   }, [])
+
   const [open, setOpen] = useState(null) // id ng nakabukas na note
   const [toDelete, setToDelete] = useState(null)
   const [prayed, setPrayed] = useState(readPrayed)
@@ -72,6 +88,7 @@ export default function PrayerWall() {
         .finally(() => setLoading(false)),
     []
   )
+
   useEffect(() => {
     load()
   }, [load])
@@ -154,6 +171,52 @@ export default function PrayerWall() {
     }
   }
 
+  // Bible search executor on Prayer Wall
+  const doBibleSearch = async (queryToUse, transToUse = bibleTrans) => {
+    const qStr = (queryToUse || bibleQuery).trim()
+    if (!qStr) return
+    setBibleSearching(true)
+    setBibleError('')
+    try {
+      const res = await apiGet(`/api/bible/lookup?q=${encodeURIComponent(qStr)}&translation=${encodeURIComponent(transToUse)}`)
+      if (res.success) {
+        setBibleResult(res)
+        setBibleError('')
+      } else {
+        setBibleError(res.error || 'Passage not found')
+        setBibleResult(null)
+      }
+    } catch (err) {
+      setBibleError(err.message || 'Passage not found. Try e.g. "John 3:16", "Awit 23", or "Romans 8:28"')
+      setBibleResult(null)
+    } finally {
+      setBibleSearching(false)
+    }
+  }
+
+  const handleStickBibleVerse = (res) => {
+    if (!res) return
+    const title = `Prayer: ${res.reference}`
+    const body = `“${res.text}”\n— ${res.reference} (${res.translation_name})\n\nLord, teach me how to live out this truth...`
+    setInitialPrayer({ title, body })
+    setComposer(true)
+  }
+
+  const handleCopyBibleVerse = (res) => {
+    if (!res) return
+    navigator.clipboard?.writeText(`“${res.text}”\n— ${res.reference} (${res.translation_name})`)
+    setBibleCopied(true)
+    setTimeout(() => setBibleCopied(false), 2000)
+  }
+
+  const isTl = pwLang === 'tl'
+  const currentVerse = (isTl && devotional?.verse_tl) ? devotional.verse_tl : (devotional?.verse || 'In every situation, by prayer and petition, present your requests to God.')
+  const currentRef = (isTl && devotional?.reference_tl) ? devotional.reference_tl : (devotional?.reference || 'Philippians 4:6')
+  const currentTitle = (isTl && devotional?.title_tl) ? devotional.title_tl : (devotional?.title || 'Verse of the Day')
+  const currentTheme = (isTl && devotional?.theme_tl) ? devotional.theme_tl : (devotional?.theme || 'Prayer')
+  const currentReflection = (isTl && devotional?.reflection_tl) ? devotional.reflection_tl : devotional?.reflection
+  const currentPrayer = (isTl && devotional?.prayer_prompt_tl) ? devotional.prayer_prompt_tl : devotional?.prayer_prompt
+
   const tabs = [
     ['all', 'All', prayers.length],
     ['answered', 'Answered', prayers.filter(answered).length],
@@ -168,9 +231,62 @@ export default function PrayerWall() {
           <h1 className="pw-title">
             i <span>pray</span> for<em>…</em>
           </h1>
+
+          {/* Daily Scripture Bar */}
           <div className="pw-verse" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span>“{devotional?.verse || 'In every situation, by prayer and petition, present your requests to God.'}”</span>
-            <b>{devotional?.reference || 'Philippians 4:6'}</b>
+            <span>“{currentVerse}”</span>
+            <b>{currentRef}</b>
+
+            {/* Language Switcher */}
+            {devotional && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  borderRadius: 999,
+                  padding: 2,
+                  background: 'rgba(0,0,0,0.06)',
+                  alignItems: 'center'
+                }}
+                title="Switch Language"
+              >
+                <button
+                  type="button"
+                  onClick={() => setPwLang('en')}
+                  style={{
+                    border: 0,
+                    background: !isTl ? '#ffffff' : 'transparent',
+                    color: !isTl ? '#ff5a0a' : '#586079',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: !isTl ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPwLang('tl')}
+                  style={{
+                    border: 0,
+                    background: isTl ? '#ffffff' : 'transparent',
+                    color: isTl ? '#ff5a0a' : '#586079',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: isTl ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  🇵🇭 TL
+                </button>
+              </div>
+            )}
+
+            {/* Read Reflection toggle */}
             {devotional && (
               <button
                 type="button"
@@ -179,18 +295,45 @@ export default function PrayerWall() {
                   border: 0,
                   background: 'rgba(255, 90, 10, 0.12)',
                   color: '#ff5a0a',
-                  padding: '2px 10px',
+                  padding: '3px 11px',
                   borderRadius: 999,
                   fontSize: 11.5,
                   fontWeight: 700,
                   cursor: 'pointer'
                 }}
               >
-                {showDevotional ? 'Hide Reflection' : 'Read Today’s Reflection'}
+                {showDevotional ? (isTl ? 'Itago ang Pagninilay' : 'Hide Reflection') : (isTl ? 'Basahin ang Pagninilay' : 'Read Today’s Reflection')}
               </button>
             )}
+
+            {/* Search Bible button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowBibleSearch(!showBibleSearch)
+                if (!showBibleSearch) setBibleResult(null)
+              }}
+              style={{
+                border: 0,
+                background: showBibleSearch ? '#ff5a0a' : 'rgba(0,0,0,0.06)',
+                color: showBibleSearch ? '#fff' : 'var(--p-text-2, #586079)',
+                padding: '3px 11px',
+                borderRadius: 999,
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+              title="Look up any Bible verse in NIV, Tagalog, NKJV"
+            >
+              <Search size={12} />
+              <span>{showBibleSearch ? (isTl ? 'Isara ang Search' : 'Close Search') : (isTl ? 'Maghanap sa Bibliya' : 'Search Bible')}</span>
+            </button>
           </div>
 
+          {/* Collapsible Reflection Box */}
           {showDevotional && devotional && (
             <div
               style={{
@@ -205,22 +348,198 @@ export default function PrayerWall() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: '#ff5a0a', background: 'rgba(255, 90, 10, 0.1)', padding: '2px 8px', borderRadius: 6 }}>
-                  {devotional.theme || 'Verse of the Day'}
+                  {currentTheme}
                 </span>
-                <strong style={{ fontSize: 13 }}>{devotional.title}</strong>
+                <strong style={{ fontSize: 13.5 }}>{currentTitle}</strong>
               </div>
-              <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.5, color: 'var(--p-text-2, #586079)' }}>
-                {devotional.reflection}
+              <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.55, color: 'var(--p-text-2, #586079)' }}>
+                {currentReflection}
               </p>
     
-              <div style={{ fontSize: 12, fontStyle: 'italic', color: '#ff5a0a', borderLeft: '2px solid #ff5a0a', paddingLeft: 8 }}>
-                <b>Prayer:</b> {devotional.prayer_prompt}
-              </div>
+              {currentPrayer && (
+                <div style={{ fontSize: 12, fontStyle: 'italic', color: '#c2410c', borderLeft: '3px solid #ff5a0a', paddingLeft: 10, background: 'rgba(255, 90, 10, 0.04)', padding: '6px 10px', borderRadius: '0 8px 8px 0' }}>
+                  <b>{isTl ? 'Panalangin:' : 'Prayer:'}</b> {currentPrayer}
+                </div>
+              )}
             </div>
           )}
 
+          {/* Collapsible Live Bible Search Box */}
+          {showBibleSearch && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: '16px 20px',
+                background: '#ffffff',
+                border: '1px solid rgba(255, 90, 10, 0.25)',
+                borderRadius: 16,
+                boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)',
+                maxWidth: 620
+              }}
+            >
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  doBibleSearch()
+                }}
+                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}
+              >
+                <div style={{ position: 'relative', flex: '1 1 200px' }}>
+                  <Search size={15} style={{ position: 'absolute', left: 10, top: 11, opacity: 0.5 }} />
+                  <input
+                    type="text"
+                    value={bibleQuery}
+                    onChange={(e) => setBibleQuery(e.target.value)}
+                    placeholder={isTl ? "I-type ang talata (hal. Juan 3:16, Awit 23)..." : "Search passage (e.g. John 3:16, Psalm 23)..."}
+                    style={{
+                      width: '100%',
+                      paddingLeft: 32,
+                      paddingRight: 10,
+                      height: 38,
+                      borderRadius: 10,
+                      border: '1px solid var(--p-border, #e5e8f1)',
+                      fontSize: 13
+                    }}
+                    autoFocus
+                  />
+                </div>
 
+                <select
+                  value={bibleTrans}
+                  onChange={(e) => {
+                    setBibleTrans(e.target.value)
+                    if (bibleQuery.trim()) doBibleSearch(bibleQuery, e.target.value)
+                  }}
+                  style={{
+                    height: 38,
+                    borderRadius: 10,
+                    border: '1px solid var(--p-border, #e5e8f1)',
+                    padding: '0 8px',
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    background: '#fff'
+                  }}
+                >
+                  <option value="niv">NIV</option>
+                  <option value="tl">Tagalog (MBB)</option>
+                  <option value="nkjv">NKJV</option>
+                  <option value="kjv">KJV</option>
+                  <option value="web">WEB</option>
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={bibleSearching || !bibleQuery.trim()}
+                  style={{
+                    background: '#ff5a0a',
+                    color: '#fff',
+                    border: 0,
+                    borderRadius: 10,
+                    padding: '0 16px',
+                    height: 38,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {bibleSearching ? '...' : (isTl ? 'Hanapin' : 'Lookup')}
+                </button>
+              </form>
+
+              {/* Quick suggestions */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--p-text-3)', textTransform: 'uppercase' }}>
+                  {isTl ? 'Mungkahi:' : 'Popular:'}
+                </span>
+                {['John 3:16', 'Jeremiah 29:11', 'Philippians 4:6', 'Psalm 23'].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setBibleQuery(chip)
+                      doBibleSearch(chip)
+                    }}
+                    style={{
+                      border: 0,
+                      background: bibleQuery === chip ? 'rgba(255, 90, 10, 0.15)' : 'rgba(0,0,0,0.04)',
+                      color: bibleQuery === chip ? '#ff5a0a' : 'inherit',
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
+              {bibleError && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontSize: 12, marginBottom: 8 }}>
+                  {bibleError}
+                </div>
+              )}
+
+              {bibleResult && (
+                <div style={{ padding: '12px 14px', background: 'rgba(255, 90, 10, 0.04)', borderRadius: 12, border: '1px solid rgba(255, 90, 10, 0.15)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <strong style={{ fontSize: 14, color: '#ff5a0a' }}>{bibleResult.reference}</strong>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, background: 'rgba(0,0,0,0.06)', padding: '1px 6px', borderRadius: 4 }}>
+                      {bibleResult.translation_name}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.5, fontStyle: 'italic', color: '#1a1f2e' }}>
+                    &ldquo;{bibleResult.text}&rdquo;
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleStickBibleVerse(bibleResult)}
+                      style={{
+                        background: '#ff5a0a',
+                        color: '#fff',
+                        border: 0,
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <Plus size={13} />
+                      <span>{isTl ? 'I-stick bilang Panalangin' : 'Stick as Prayer Note'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyBibleVerse(bibleResult)}
+                      style={{
+                        background: '#fff',
+                        border: '1px solid var(--p-border, #e5e8f1)',
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      {bibleCopied ? <Check size={13} color="#16a34a" /> : <Share2 size={13} />}
+                      <span>{bibleCopied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
         <div className="pw-head-r">
           {user ? (
             <button type="button" className="pw-add" onClick={() => setComposer(true)}>
