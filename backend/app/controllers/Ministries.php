@@ -114,7 +114,7 @@ class Ministries extends Controller
 
     public function applications()
 {
-    require_admin_user();
+    require_staff_user();
     $stmt = $this->db->raw(
         "SELECT a.*, min.name AS ministry_name, min.icon AS ministry_icon,
                 u.email, m.member_code AS member_id, m.age, m.address
@@ -129,7 +129,7 @@ class Ministries extends Controller
 
     public function update_application()
     {
-        require_admin_user();
+        require_staff_user();
         $input = api_input();
         $appId = (int) ($input['application_id'] ?? $input['id'] ?? 0);
         $status = strtolower(trim($input['status'] ?? ''));

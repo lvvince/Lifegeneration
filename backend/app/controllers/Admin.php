@@ -19,14 +19,30 @@ class Admin extends Controller
     {
         require_admin_user();
 
+        $activePrayers = 0;
+        try {
+            $activePrayers = $this->count("SELECT COUNT(*) AS total FROM prayer_requests WHERE status = 'active'");
+        } catch (Exception $e) {
+            try { $activePrayers = $this->count("SELECT COUNT(*) AS total FROM prayers WHERE is_answered = 0"); } catch (Exception $e2) {}
+        }
+
+        $checkedIn = 0;
+        try {
+            $checkedIn = $this->count("SELECT COUNT(*) AS total FROM event_attendances WHERE checked_in = 1");
+        } catch (Exception $e) {
+            try { $checkedIn = $this->count("SELECT COUNT(*) AS total FROM attendance"); } catch (Exception $e2) {}
+        }
+
         api_response([
             'members'              => $this->count("SELECT COUNT(*) AS total FROM members WHERE is_active = 1"),
             'events'               => $this->count("SELECT COUNT(*) AS total FROM events"),
             'dgroups'              => $this->count("SELECT COUNT(*) AS total FROM dgroups"),
             'ministries'           => $this->count("SELECT COUNT(*) AS total FROM ministries"),
             'pending_applications' => $this->count("SELECT COUNT(*) AS total FROM ministry_applications WHERE status = 'pending'"),
-            'active_prayers'       => $this->count("SELECT COUNT(*) AS total FROM prayers WHERE is_answered = 0"),
-            'checked_in_attendees' => $this->count("SELECT COUNT(*) AS total FROM attendance"),
+            'pending_donations'    => $this->count("SELECT COUNT(*) AS total FROM donations WHERE status = 'pending'"),
+            'donations_total'      => (float) ($this->db->raw("SELECT COALESCE(SUM(amount), 0) AS total FROM donations WHERE status = 'verified'")->fetch(PDO::FETCH_ASSOC)['total'] ?? 0),
+            'active_prayers'       => $activePrayers,
+            'checked_in_attendees' => $checkedIn,
         ]);
     }
 

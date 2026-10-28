@@ -25,3 +25,8 @@ dist/
 
 # Allow official schema dump
 !database.sql
+
+
+# User uploads (keep directory structures via .gitkeep)
+backend/public/uploads/receipts/*
+!backend/public/uploads/receipts/.gitkeep

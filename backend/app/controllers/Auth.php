@@ -2,11 +2,8 @@
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
- * Auth controller para sa lgy_db:
- *  users:          id, username, email, password_hash, google_id, role('user','admin'), is_active, created_at
- *  members:        id, user_id, member_code, full_name, age, address, avatar, status, created_at, is_active
- *  refresh_tokens: id, user_id, token_hash, expires_at
- * Walang hiwalay na admins table: role = 'admin' sa users ang admin.
+ * Unified Auth Controller for Life Generation (lgy_db)
+ * Supports both dedicated admins table and regular users/members.
  */
 class Auth extends Controller
 {
@@ -16,7 +13,7 @@ class Auth extends Controller
         $this->call->database();
     }
 
-    /* ---------- helpers ---------- */
+    /* ---------- Helpers ---------- */
 
     private function make_member_code()
     {
@@ -24,7 +21,8 @@ class Auth extends Controller
         for ($i = 0; $i < 20; $i++) {
             $code = 'LG-' . $year . '-' . str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
             $exists = $this->db->raw(
-                "SELECT id FROM members WHERE member_code = ? LIMIT 1", [$code]
+                "SELECT id FROM members WHERE member_id = ? OR member_code = ? LIMIT 1",
+                [$code, $code]
             )->fetch(PDO::FETCH_ASSOC);
             if (!$exists) return $code;
         }
@@ -33,30 +31,44 @@ class Auth extends Controller
 
     private function find_member($userId)
     {
-        $m = $this->db->raw(
-            "SELECT m.*, m.member_code AS member_id,
-                    (SELECT dm.dgroup_id FROM dgroup_members dm
-                     WHERE dm.member_id = m.id AND dm.status = 'active' LIMIT 1) AS dgroup_id,
-                    (SELECT ma.ministry_id FROM ministry_applications ma
-                     WHERE ma.member_id = m.id AND ma.status = 'approved' LIMIT 1) AS ministry_id
-             FROM members m WHERE m.user_id = ? LIMIT 1",
-            [(int) $userId]
-        )->fetch(PDO::FETCH_ASSOC);
-        return $m ?: null;
+        try {
+            $m = $this->db->raw(
+                "SELECT m.*,
+                        d.name AS dgroup_name,
+                        min.name AS ministry_name
+                 FROM members m
+                 LEFT JOIN dgroups d ON d.id = m.dgroup_id
+                 LEFT JOIN ministries min ON min.id = m.ministry_id
+                 WHERE m.user_id = ? LIMIT 1",
+                [(int) $userId]
+            )->fetch(PDO::FETCH_ASSOC);
+
+            if ($m) {
+                $code = $m['member_id'] ?? ($m['member_code'] ?? null);
+                $m['member_id']   = $code;
+                $m['member_code'] = $code;
+            }
+            return $m ?: null;
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     private function user_payload($user, $member)
     {
-        unset($user['password_hash']);
+        unset($user['password'], $user['password_hash']);
         $isAdmin = ($user['role'] ?? 'user') === 'admin';
-        $user['member_id']   = $member['member_code'] ?? ($isAdmin ? 'LG-ADMIN' : null);
-        $user['full_name']   = $member['full_name'] ?? $user['username'];
-        $user['avatar']      = $member['avatar'] ?? null;
-        $user['age']         = $member['age'] ?? null;
-        $user['address']     = $member['address'] ?? null;
+        $code = $member['member_id'] ?? ($member['member_code'] ?? ($isAdmin ? 'LG-ADMIN' : null));
+
+        $user['member_id']   = $code;
+        $user['full_name']   = $member['full_name'] ?? ($user['full_name'] ?? $user['username']);
+        $user['avatar']      = $member['avatar'] ?? ($user['avatar'] ?? null);
+        $user['age']         = $member['age'] ?? ($user['age'] ?? null);
+        $user['gender']      = $member['gender'] ?? ($user['gender'] ?? null);
+        $user['address']     = $member['address'] ?? ($user['address'] ?? null);
         $user['dgroup_id']   = $member['dgroup_id'] ?? null;
         $user['ministry_id'] = $member['ministry_id'] ?? null;
-        $user['joined_at']   = $member['created_at'] ?? ($user['created_at'] ?? null);
+        $user['joined_at']   = $member['joined_at'] ?? ($member['created_at'] ?? ($user['created_at'] ?? null));
         $user['member']      = $member;
         return $user;
     }
@@ -76,11 +88,30 @@ class Auth extends Controller
 
         $access  = jwt_create($payload, get_jwt_secret(), 86400);
         $refresh = bin2hex(random_bytes(32));
+        $hash    = hash('sha256', $refresh);
+        $jti     = bin2hex(random_bytes(16));
+        $expires = date('Y-m-d H:i:s', time() + 7 * 86400);
 
-        $this->db->raw(
-            "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-            [(int) $user['id'], hash('sha256', $refresh), date('Y-m-d H:i:s', time() + 7 * 86400)]
-        );
+        try {
+            $this->db->raw(
+                "INSERT INTO refresh_tokens (user_id, token, token_hash, expires_at, jti) VALUES (?, ?, ?, ?, ?)",
+                [(int) $user['id'], $refresh, $hash, $expires, $jti]
+            );
+        } catch (Exception $e) {
+            try {
+                $this->db->raw(
+                    "INSERT INTO refresh_tokens (user_id, token, expires_at, jti) VALUES (?, ?, ?, ?)",
+                    [(int) $user['id'], $refresh, $expires, $jti]
+                );
+            } catch (Exception $e2) {
+                try {
+                    $this->db->raw(
+                        "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
+                        [(int) $user['id'], $hash, $expires]
+                    );
+                } catch (Exception $e3) {}
+            }
+        }
 
         return [
             'access_token'  => $access,
@@ -101,23 +132,23 @@ class Auth extends Controller
         return $username;
     }
 
-    private function create_account($username, $email, $passwordHash, $fullName, $age, $address, $avatar = null, $googleId = null)
+    private function create_account($username, $email, $passwordHash, $fullName, $age, $address, $avatar = null, $googleId = null, $gender = null)
     {
         $now = date('Y-m-d H:i:s');
+        $code = $this->make_member_code();
 
         $this->db->raw(
-            "INSERT INTO users (username, email, password_hash, google_id, role, is_active, created_at)
-             VALUES (?, ?, ?, ?, 'user', 1, ?)",
-            [$username, $email, $passwordHash, $googleId, $now]
+            "INSERT INTO users (member_id, username, full_name, gender, email, password, password_hash, google_id, role, membership_tier, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', 'Standard Member', 1, ?)",
+            [$code, $username, $fullName, $gender, $email, $passwordHash, $passwordHash, $googleId, $now]
         );
         $userId = (int) $this->db->last_id();
 
         try {
-            $code = $this->make_member_code();
             $this->db->raw(
-                "INSERT INTO members (user_id, member_code, full_name, age, address, avatar, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
-                [$userId, $code, $fullName, $age, $address, $avatar, $now]
+                "INSERT INTO members (user_id, member_id, member_code, full_name, gender, email, age, address, avatar, membership_tier, is_active, joined_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Standard Member', 1, ?)",
+                [$userId, $code, $code, $fullName, $gender, $email, $age, $address, $avatar, $now]
             );
         } catch (Exception $e) {
             $this->db->raw("DELETE FROM users WHERE id = ?", [$userId]);
@@ -127,7 +158,7 @@ class Auth extends Controller
         return $userId;
     }
 
-    /* ---------- endpoints ---------- */
+    /* ---------- Endpoints ---------- */
 
     public function login()
     {
@@ -142,13 +173,51 @@ class Auth extends Controller
             api_response(['error' => 'Please fill in all required fields.', 'fields' => $errors], 422);
         }
 
+        // 1. Check dedicated admins table first
+        try {
+            $admin = $this->db->raw(
+                "SELECT * FROM admins WHERE (username = ? OR email = ?) LIMIT 1",
+                [$identity, $identity]
+            )->fetch(PDO::FETCH_ASSOC);
+
+            if ($admin && password_verify($password, $admin['password'] ?? '')) {
+                if (isset($admin['is_active']) && (int) $admin['is_active'] === 0) {
+                    api_response(['error' => 'Your administrator account is inactive. Please contact support.'], 403);
+                }
+
+                unset($admin['password']);
+                $admin['role'] = 'admin';
+                $admin['member_id'] = 'LG-ADMIN';
+                $admin['member'] = null;
+
+                $tokens = $this->issue_tokens($admin, 'LG-ADMIN');
+
+                // Keep users table admin in sync if exists
+                try {
+                    $uAdmin = $this->db->raw("SELECT id FROM users WHERE email = ? LIMIT 1", [$admin['email']])->fetch(PDO::FETCH_ASSOC);
+                    if ($uAdmin) {
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $this->db->raw("UPDATE users SET password = ?, password_hash = ? WHERE id = ?", [$newHash, $newHash, $uAdmin['id']]);
+                    }
+                } catch (Exception $e) {}
+
+                api_response([
+                    'success' => true,
+                    'message' => 'Admin login successful.',
+                    'user'    => $admin,
+                    'tokens'  => $tokens,
+                ]);
+            }
+        } catch (Exception $e) {}
+
+        // 2. Check regular users table
         $user = $this->db->raw(
             "SELECT * FROM users WHERE (username = ? OR email = ?) LIMIT 1",
             [$identity, $identity]
         )->fetch(PDO::FETCH_ASSOC);
 
-        $hash = $user['password_hash'] ?? '';
-        if (!$user || $hash === '' || !password_verify($password, $hash)) {
+        $storedHash = $user['password'] ?? ($user['password_hash'] ?? '');
+        if (!$user || $storedHash === '' || !password_verify($password, $storedHash)) {
             api_response(['error' => 'Invalid username/email or password.'], 401);
         }
 
@@ -161,16 +230,17 @@ class Auth extends Controller
             api_response(['error' => 'Your membership is inactive. Please contact support.'], 403);
         }
 
-        if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
-            $this->db->raw("UPDATE users SET password_hash = ? WHERE id = ?",
-                [password_hash($password, PASSWORD_DEFAULT), $user['id']]);
+        if (password_needs_rehash($storedHash, PASSWORD_DEFAULT)) {
+            $newH = password_hash($password, PASSWORD_DEFAULT);
+            $this->db->raw("UPDATE users SET password = ?, password_hash = ? WHERE id = ?", [$newH, $newH, $user['id']]);
         }
 
-        $tokens = $this->issue_tokens($user, $member['member_code'] ?? null);
+        $code = $member['member_id'] ?? ($member['member_code'] ?? ($user['member_id'] ?? null));
+        $tokens = $this->issue_tokens($user, $code);
 
         api_response([
             'success' => true,
-            'message' => ($user['role'] === 'admin') ? 'Admin login successful.' : 'Login successful.',
+            'message' => (($user['role'] ?? '') === 'admin') ? 'Admin login successful.' : 'Login successful.',
             'user'    => $this->user_payload($user, $member),
             'tokens'  => $tokens,
         ]);
@@ -186,6 +256,16 @@ class Auth extends Controller
         $address  = trim($input['address'] ?? '');
         $age      = (isset($input['age']) && $input['age'] !== '') ? (int) $input['age'] : null;
         $username = trim($input['username'] ?? '');
+
+        // Gender validation
+        $rawGender = trim($input['gender'] ?? '');
+        $gender    = null;
+        if (!empty($rawGender)) {
+            $norm = ucfirst(strtolower($rawGender));
+            if (in_array($norm, ['Male', 'Female'], true)) {
+                $gender = $norm;
+            }
+        }
 
         if ($username === '' && $email !== '') {
             $username = explode('@', $email)[0];
@@ -212,20 +292,21 @@ class Auth extends Controller
         try {
             $userId = $this->create_account(
                 $username, $email, password_hash($password, PASSWORD_DEFAULT),
-                $fullName, $age, $address
+                $fullName, $age, $address, null, null, $gender
             );
         } catch (Exception $e) {
-            api_response(['error' => 'Registration failed. Please try again.'], 500);
+            api_response(['error' => 'Registration failed: ' . $e->getMessage()], 500);
         }
 
         $user   = $this->db->raw("SELECT * FROM users WHERE id = ?", [$userId])->fetch(PDO::FETCH_ASSOC);
         $member = $this->find_member($userId);
-        $tokens = $this->issue_tokens($user, $member['member_code'] ?? null);
+        $code   = $member['member_id'] ?? ($member['member_code'] ?? null);
+        $tokens = $this->issue_tokens($user, $code);
 
         api_response([
             'success'   => true,
             'message'   => 'Account created successfully! Welcome to Life Generation.',
-            'member_id' => $member['member_code'] ?? null,
+            'member_id' => $code,
             'user'      => $this->user_payload($user, $member),
             'tokens'    => $tokens,
         ], 201);
@@ -267,6 +348,29 @@ class Auth extends Controller
         $picture  = $g['picture'] ?? null;
         $googleId = $g['sub'] ?? null;
 
+        // 1. Check if email matches admins table
+        try {
+            $admin = $this->db->raw("SELECT * FROM admins WHERE email = ? LIMIT 1", [$email])->fetch(PDO::FETCH_ASSOC);
+            if ($admin) {
+                if (isset($admin['is_active']) && (int) $admin['is_active'] === 0) {
+                    api_response(['error' => 'Your administrator account is inactive.'], 403);
+                }
+                unset($admin['password']);
+                $admin['role'] = 'admin';
+                $admin['member_id'] = 'LG-ADMIN';
+                $admin['member'] = null;
+
+                $tokens = $this->issue_tokens($admin, 'LG-ADMIN');
+                api_response([
+                    'success' => true,
+                    'message' => 'Admin Google login successful.',
+                    'user'    => $admin,
+                    'tokens'  => $tokens,
+                ]);
+            }
+        } catch (Exception $e) {}
+
+        // 2. Regular users
         $user = $this->db->raw("SELECT * FROM users WHERE email = ? LIMIT 1", [$email])->fetch(PDO::FETCH_ASSOC);
 
         if (!$user) {
@@ -277,7 +381,7 @@ class Auth extends Controller
                     $name, null, '', $picture, $googleId
                 );
             } catch (Exception $e) {
-                api_response(['error' => 'Failed to create user account.'], 500);
+                api_response(['error' => 'Failed to create user account: ' . $e->getMessage()], 500);
             }
             $user = $this->db->raw("SELECT * FROM users WHERE id = ?", [$userId])->fetch(PDO::FETCH_ASSOC);
         } elseif (empty($user['google_id']) && $googleId) {
@@ -298,7 +402,8 @@ class Auth extends Controller
             $member['avatar'] = $picture;
         }
 
-        $tokens = $this->issue_tokens($user, $member['member_code'] ?? null);
+        $code = $member['member_id'] ?? ($member['member_code'] ?? ($user['member_id'] ?? null));
+        $tokens = $this->issue_tokens($user, $code);
 
         api_response([
             'success' => true,
@@ -311,6 +416,19 @@ class Auth extends Controller
     public function me()
     {
         $auth = require_auth_user();
+
+        // Check admins table
+        if (($auth['role'] ?? '') === 'admin') {
+            try {
+                $admin = $this->db->raw("SELECT id, username, full_name, email, role, avatar, is_active FROM admins WHERE id = ? LIMIT 1", [(int) $auth['id']])->fetch(PDO::FETCH_ASSOC);
+                if ($admin) {
+                    $admin['member_id'] = 'LG-ADMIN';
+                    $admin['member'] = null;
+                    api_response(['user' => $admin]);
+                }
+            } catch (Exception $e) {}
+        }
+
         $user = $this->db->raw("SELECT * FROM users WHERE id = ? LIMIT 1", [(int) $auth['id']])->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
             api_response(['error' => 'User not found.'], 404);
@@ -327,35 +445,65 @@ class Auth extends Controller
             api_response(['error' => 'Refresh token required.'], 400);
         }
 
+        $now  = date('Y-m-d H:i:s');
+        $hash = hash('sha256', $token);
+
+        // Check regular user tokens
         $record = $this->db->raw(
             "SELECT rt.id AS rt_id, u.*
              FROM refresh_tokens rt
              JOIN users u ON u.id = rt.user_id
-             WHERE rt.token_hash = ? AND rt.expires_at > ? AND u.is_active = 1
+             WHERE (rt.token_hash = ? OR rt.token = ?) AND rt.expires_at > ? AND u.is_active = 1
              LIMIT 1",
-            [hash('sha256', $token), date('Y-m-d H:i:s')]
+            [$hash, $token, $now]
         )->fetch(PDO::FETCH_ASSOC);
+
+        // Check admin tokens if not found in users
+        if (!$record) {
+            try {
+                $aRecord = $this->db->raw(
+                    "SELECT rt.id AS rt_id, a.id, a.username, a.email, 'admin' AS role, 'LG-ADMIN' AS member_id
+                     FROM refresh_tokens rt
+                     JOIN admins a ON a.id = rt.user_id
+                     WHERE (rt.token_hash = ? OR rt.token = ?) AND rt.expires_at > ? AND a.is_active = 1
+                     LIMIT 1",
+                    [$hash, $token, $now]
+                )->fetch(PDO::FETCH_ASSOC);
+                if ($aRecord) $record = $aRecord;
+            } catch (Exception $e) {}
+        }
 
         if (!$record) {
             api_response(['error' => 'Invalid or expired refresh token.'], 401);
         }
 
         $member = $this->find_member($record['id']);
+        $code = $record['member_id'] ?? ($member['member_id'] ?? ($member['member_code'] ?? null));
 
         $payload = [
             'sub'       => (int) $record['id'],
             'username'  => $record['username'],
             'email'     => $record['email'],
             'role'      => $record['role'],
-            'member_id' => $member['member_code'] ?? null,
+            'member_id' => $code,
         ];
         if ($record['role'] === 'admin') $payload['is_admin'] = true;
 
         $newRefresh = bin2hex(random_bytes(32));
-        $this->db->raw(
-            "UPDATE refresh_tokens SET token_hash = ?, expires_at = ? WHERE id = ?",
-            [hash('sha256', $newRefresh), date('Y-m-d H:i:s', time() + 7 * 86400), $record['rt_id']]
-        );
+        $newHash    = hash('sha256', $newRefresh);
+        $newExpires = date('Y-m-d H:i:s', time() + 7 * 86400);
+
+        try {
+            $this->db->raw(
+                "UPDATE refresh_tokens SET token = ?, token_hash = ?, expires_at = ? WHERE id = ?",
+                [$newRefresh, $newHash, $newExpires, $record['rt_id']]
+            );
+        } catch (Exception $e) {
+            $this->db->raw(
+                "UPDATE refresh_tokens SET token = ?, expires_at = ? WHERE id = ?",
+                [$newRefresh, $newExpires, $record['rt_id']]
+            );
+        }
 
         api_response([
             'tokens' => [
@@ -371,7 +519,8 @@ class Auth extends Controller
         $input = api_input();
         $token = trim($input['refresh_token'] ?? '');
         if ($token !== '') {
-            $this->db->raw("DELETE FROM refresh_tokens WHERE token_hash = ?", [hash('sha256', $token)]);
+            $hash = hash('sha256', $token);
+            $this->db->raw("DELETE FROM refresh_tokens WHERE token_hash = ? OR token = ?", [$hash, $token]);
         }
         api_response(['success' => true, 'message' => 'Logged out successfully.']);
     }

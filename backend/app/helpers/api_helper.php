@@ -126,15 +126,34 @@ function get_auth_user() {
 
     $lava = lava_instance();
 
+    // 1. Check if admin token
+    if (!empty($payload['role']) && $payload['role'] === 'admin') {
+        try {
+            $aStmt = $lava->db->raw(
+                "SELECT id, 'LG-ADMIN' AS member_id, username, full_name, email, role, is_active,
+                        NULL AS member_record_id, NULL AS dgroup_id, NULL AS ministry_id, NULL AS age, NULL AS address, avatar
+                 FROM admins
+                 WHERE id = ? AND is_active = 1
+                 LIMIT 1",
+                [$payload['sub']]
+            );
+            $admin = $aStmt->fetch(PDO::FETCH_ASSOC);
+            if ($admin) {
+                return $admin;
+            }
+        } catch (Exception $e) {}
+    }
+
+    // 2. Regular user
     $stmt = $lava->db->raw(
-        "SELECT u.id, m.member_code AS member_id, u.username,
+        "SELECT u.id,
+                COALESCE(m.member_id, m.member_code) AS member_id,
+                u.username,
                 COALESCE(m.full_name, u.username) AS full_name,
                 u.email, u.role, u.is_active,
                 m.id AS member_record_id, m.age, m.address, m.avatar,
-                (SELECT dm.dgroup_id FROM dgroup_members dm
-                 WHERE dm.member_id = m.id AND dm.status = 'active' LIMIT 1) AS dgroup_id,
-                (SELECT ma.ministry_id FROM ministry_applications ma
-                 WHERE ma.member_id = m.id AND ma.status = 'approved' LIMIT 1) AS ministry_id
+                m.dgroup_id,
+                m.ministry_id
          FROM users u
          LEFT JOIN members m ON m.user_id = u.id
          WHERE u.id = ? AND u.is_active = 1

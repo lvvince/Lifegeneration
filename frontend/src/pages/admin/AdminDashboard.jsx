@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight } from 'lucide-react'
+import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight, HandCoins } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../../api.js'
-import { fmtDate, isUpcoming } from '../../lib/format.js'
+import { fmtDate, fmtCurrency, isUpcoming } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
 
 export default function AdminDashboard() {
@@ -55,6 +55,7 @@ export default function AdminDashboard() {
     { label: 'Ministries', value: stats?.ministries, to: '/admin/ministries', Icon: HeartHandshake },
     { label: 'Active prayers', value: stats?.active_prayers, to: '/prayer', Icon: MessageCircleHeart },
     { label: 'Check-ins', value: stats?.checked_in_attendees, to: '/admin/check-in', Icon: UserCheck },
+    { label: 'Donations', value: stats?.donations_total ? fmtCurrency(stats.donations_total) : '₱0', to: '/admin/donations', Icon: HandCoins },
   ]
   const day = (d) => fmtDate(d, { day: 'numeric' })
   const mon = (d) => fmtDate(d, { month: 'short' })

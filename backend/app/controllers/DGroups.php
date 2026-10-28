@@ -187,7 +187,7 @@ class DGroups extends Controller
      */
     public function requests()
     {
-        require_admin_user();
+        require_staff_user();
 
         $stmt = $this->db->raw(
             "SELECT dr.*,
@@ -220,7 +220,7 @@ class DGroups extends Controller
      */
     public function accept_request()
     {
-        require_admin_user();
+        require_staff_user();
         $input = api_input();
         $requestId = (int) ($input['request_id'] ?? $input['id'] ?? 0);
 
@@ -286,7 +286,7 @@ class DGroups extends Controller
      */
     public function reject_request()
     {
-        require_admin_user();
+        require_staff_user();
         $input = api_input();
         $requestId = (int) ($input['request_id'] ?? $input['id'] ?? 0);
 

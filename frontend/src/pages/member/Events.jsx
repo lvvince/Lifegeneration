@@ -6,6 +6,7 @@ import { isUpcoming, parseDate, resolveImageUrl } from '../../lib/format.js'
 import { shareEventOnFacebook } from '../../utils/share.js'
 import { FacebookIcon } from '../../components/home/SocialIcons.jsx'
 import { addToGoogleCalendar } from '../../utils/calendar.js'
+import { getGoogleMapsDirectionsUrl } from '../../utils/maps.js'
 import { useToast } from '../../components/portal/ui.jsx'
 import '../../styles/pages.css'
 
@@ -105,7 +106,18 @@ export default function Events() {
                   {e.description && <p className="pg-desc">{e.description}</p>}
                   <div className="pg-meta">
                     {e.event_time && <span><Clock size={15} /> {e.event_time}</span>}
-                    {e.location && <span><MapPin size={15} /> {e.location}</span>}
+                    {e.location && (
+                      <a
+                        href={getGoogleMapsDirectionsUrl(e.location, e.map_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pg-loc-badge"
+                        title="Open location in Google Maps"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        <MapPin size={15} /> <span>{e.location}</span>
+                      </a>
+                    )}
                     <span><Users size={15} /> {e.attendee_count} going{e.capacity ? ` of ${e.capacity}` : ''}</span>
                   </div>
                   {e.capacity ? <div className="pg-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div> : null}

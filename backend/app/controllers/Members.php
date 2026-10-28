@@ -9,26 +9,30 @@ class Members extends Controller
         $this->call->database();
     }
 
-    // Officers lang ang pwedeng tumingin ng buong listahan ng members
+    // Officers at admins ang pwedeng tumingin ng buong listahan ng members
     public function index()
     {
-        require_admin_user();
+        $user = require_auth_user();
+        if (!in_array($user['role'], ['admin', 'officer'], true)) {
+            api_response(['error' => 'Forbidden. Admin or officer privileges required.'], 403);
+        }
 
         $stmt = $this->db->raw(
-            "SELECT m.id, m.user_id, m.member_code AS member_id, m.full_name, m.age,
-                    m.address, m.avatar, m.status, m.is_active AS user_active,
-                    m.created_at AS joined_at, u.username, u.email, u.role,
-                    (SELECT d.name FROM dgroup_members dm
-                     JOIN dgroups d ON d.id = dm.dgroup_id
-                     WHERE dm.member_id = m.id AND dm.status = 'active' LIMIT 1) AS dgroup_name,
-                    (SELECT mi.name FROM ministry_applications ma
-                     JOIN ministries mi ON mi.id = ma.ministry_id
-                     WHERE ma.member_id = m.id AND ma.status = 'approved' LIMIT 1) AS ministry_name
+            "SELECT m.*, u.username, u.email, u.role, u.is_active AS user_active,
+                    d.name AS dgroup_name, min.name AS ministry_name
              FROM members m
              JOIN users u ON u.id = m.user_id
-             ORDER BY m.created_at DESC"
+             LEFT JOIN dgroups d ON d.id = m.dgroup_id
+             LEFT JOIN ministries min ON min.id = m.ministry_id
+             ORDER BY m.joined_at DESC"
         );
-        api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
+        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($members as &$m) {
+            $m['member_id'] = $m['member_id'] ?? ($m['member_code'] ?? null);
+            $m['status']    = $m['status'] ?? ($m['is_active'] ? 'approved' : 'inactive');
+            $m['joined_at'] = $m['joined_at'] ?? ($m['created_at'] ?? null);
+        }
+        api_response($members);
     }
 
     public function update()
@@ -38,7 +42,8 @@ class Members extends Controller
         $targetUserId = (int) ($input['user_id'] ?? $input['id'] ?? $user['id']);
 
         $isAdmin = $user['role'] === 'admin';
-        $isStaff = $isAdmin;
+        $isOfficer = $user['role'] === 'officer';
+        $isStaff = $isAdmin || $isOfficer;
         $isSelf  = (int) $user['id'] === $targetUserId;
 
         if (!$isStaff && !$isSelf) {
@@ -109,16 +114,27 @@ class Members extends Controller
             }
         }
 
-        // Role: admin lang, at hindi sariling role (enum: user, admin)
+        // Role: admin at officer lang ang pwedeng magbago ng role
         if (isset($input['role'])) {
-            if (!$isAdmin) {
-                api_response(['error' => 'Only an admin can change roles.'], 403);
+            if (!$isAdmin && !$isOfficer) {
+                api_response(['error' => 'Only an admin or officer can change roles.'], 403);
             }
             if ($isSelf) {
                 api_response(['error' => 'You cannot change your own role.'], 422);
             }
-            if (in_array($input['role'], ['user', 'admin'], true)) {
-                $this->db->raw("UPDATE users SET role = ? WHERE id = ?", [$input['role'], $targetUserId]);
+            $targetRole = strtolower(trim((string)$input['role']));
+            if ($targetRole === 'member') {
+                $targetRole = 'user';
+            }
+            // Officer cannot assign admin role
+            if (!$isAdmin && $targetRole === 'admin') {
+                api_response(['error' => 'Only an administrator can assign the admin role.'], 403);
+            }
+            $allowed_roles = ['user', 'officer', 'admin'];
+            if (in_array($targetRole, $allowed_roles, true)) {
+                $this->db->raw("UPDATE users SET role = ? WHERE id = ?", [$targetRole, $targetUserId]);
+            } else {
+                api_response(['error' => 'Invalid role specified.'], 422);
             }
         }
 

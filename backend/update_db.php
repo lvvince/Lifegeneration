@@ -149,6 +149,215 @@ try {
     echo "Notice: " . $e->getMessage() . "\n";
 }
 
+// 6. Create password_resets table if missing
+echo "Checking 'password_resets' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `password_resets` (
+          `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `user_id` INT UNSIGNED NOT NULL,
+          `token_hash` VARCHAR(64) NOT NULL,
+          `expires_at` DATETIME NOT NULL,
+          `used_at` DATETIME DEFAULT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          KEY `idx_token_hash` (`token_hash`),
+          KEY `idx_user_id` (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+// 7. Add google_id and password_hash to users if missing
+echo "Checking 'google_id' in 'users'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'google_id'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `google_id` VARCHAR(255) DEFAULT NULL AFTER `email`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'password_hash' in 'users'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'password_hash'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `password_hash` VARCHAR(255) DEFAULT NULL AFTER `password`");
+        $pdo->exec("UPDATE `users` SET `password_hash` = `password` WHERE `password_hash` IS NULL AND `password` IS NOT NULL");
+        echo "✓ Column added & synced\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'member_code' in 'members'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `members` LIKE 'member_code'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `members` ADD COLUMN `member_code` VARCHAR(50) DEFAULT NULL AFTER `user_id`");
+        $pdo->exec("UPDATE `members` SET `member_code` = `member_id` WHERE `member_code` IS NULL AND `member_id` IS NOT NULL");
+        echo "✓ Column added & synced\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'token_hash' in 'refresh_tokens'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `refresh_tokens` LIKE 'token_hash'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `refresh_tokens` ADD COLUMN `token_hash` VARCHAR(64) DEFAULT NULL AFTER `token`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Ensuring 'jti' in 'refresh_tokens' has default NULL... ";
+try {
+    $pdo->exec("ALTER TABLE `refresh_tokens` MODIFY COLUMN `jti` VARCHAR(64) DEFAULT NULL");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Ensuring 'role' in 'users' is VARCHAR(50)... ";
+try {
+    $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'user'");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'map_url' column in 'events'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `events` LIKE 'map_url'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `events` ADD COLUMN `map_url` TEXT DEFAULT NULL AFTER `location`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'status' column in 'members'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `members` LIKE 'status'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `members` ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'approved' AFTER `is_active`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'created_at' column in 'members'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `members` LIKE 'created_at'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `members` ADD COLUMN `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP AFTER `joined_at`");
+        $pdo->exec("UPDATE `members` SET `created_at` = `joined_at` WHERE `joined_at` IS NOT NULL");
+        echo "✓ Column added & synced\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+// -------------------------------------------------------------
+// Donation Campaigns Table
+// -------------------------------------------------------------
+echo "Checking 'donation_campaigns' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `donation_campaigns` (
+          `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `title` VARCHAR(150) NOT NULL,
+          `category` VARCHAR(50) NOT NULL DEFAULT 'offering',
+          `description` TEXT DEFAULT NULL,
+          `target_amount` DECIMAL(12,2) DEFAULT NULL,
+          `collected_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+          `image` VARCHAR(255) DEFAULT NULL,
+          `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+          KEY `idx_active` (`is_active`),
+          KEY `idx_cat` (`category`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+
+    // Seed default campaigns if empty
+    $count = $pdo->query("SELECT COUNT(*) FROM `donation_campaigns`")->fetchColumn();
+    if ($count == 0) {
+        $stmt = $pdo->prepare("INSERT INTO `donation_campaigns` (`title`, `category`, `description`, `target_amount`, `is_active`) VALUES (?, ?, ?, ?, 1)");
+        $stmt->execute(['Tithes & General Offerings', 'tithe', 'Support Sunday celebrations, weekly discipleship gatherings, and regular ministry operations.', NULL]);
+        $stmt->execute(['Youth Camp & Summit 2026', 'camp_sponsor', 'Sponsor a student or young adult to attend the LifeGen Leadership & Ministry Summit.', 50000.00]);
+        $stmt->execute(['Missions & Community Outreach', 'missions', 'Fund school supply drives, feeding programs, and rural mission works.', 30000.00]);
+        $stmt->execute(['Audio & Multimedia Equipment Fund', 'building_fund', 'Help improve sound system, musical instruments, and media livestreaming gear.', 45000.00]);
+        $stmt->execute(['Benevolence & Love Gift', 'benevolence', 'Provide immediate financial or medical aid to brethren and community members in need.', NULL]);
+        echo "  ↳ Seeded 5 initial donation campaigns\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+// -------------------------------------------------------------
+// Donations Table
+// -------------------------------------------------------------
+echo "Checking 'donations' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `donations` (
+          `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `tracking_code` VARCHAR(32) NOT NULL UNIQUE,
+          `user_id` INT UNSIGNED DEFAULT NULL,
+          `campaign_id` INT UNSIGNED DEFAULT NULL,
+          `donor_name` VARCHAR(150) NOT NULL,
+          `is_anonymous` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+          `donor_email` VARCHAR(255) DEFAULT NULL,
+          `donor_phone` VARCHAR(50) DEFAULT NULL,
+          `category` VARCHAR(50) NOT NULL DEFAULT 'offering',
+          `amount` DECIMAL(12,2) NOT NULL,
+          `payment_method` ENUM('gcash','maya','bank_transfer','cash','other') NOT NULL DEFAULT 'gcash',
+          `reference_number` VARCHAR(100) DEFAULT NULL,
+          `proof_receipt` VARCHAR(255) DEFAULT NULL,
+          `status` ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+          `admin_notes` TEXT DEFAULT NULL,
+          `donor_message` TEXT DEFAULT NULL,
+          `verified_by` INT UNSIGNED DEFAULT NULL,
+          `verified_at` DATETIME DEFAULT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+          KEY `idx_user` (`user_id`),
+          KEY `idx_campaign` (`campaign_id`),
+          KEY `idx_status` (`status`),
+          KEY `idx_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+
+
 echo "\n========================================================\n";
 echo "✓ ALL DATABASE UPDATES COMPLETED SUCCESSFULLY!\n";
 echo "You can now refresh your browser and use all features.\n";

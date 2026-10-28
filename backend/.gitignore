@@ -24,3 +24,8 @@ runtime/*
 
 # OS
 Thumbs.db
+
+
+# Uploads
+public/uploads/receipts/*
+!public/uploads/receipts/.gitkeep

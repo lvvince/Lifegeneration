@@ -26,6 +26,7 @@ const fmtDate = (d) => {
 const QUICK = [
   { to: '/officer/applications', title: 'Applications', desc: 'Approve or reject ministry applications' },
   { to: '/officer/attendance', title: 'Attendance', desc: 'Scan QR and record who attended' },
+  { to: '/officer/donations', title: 'Donations', desc: 'Verify GCash & bank transfer receipts' },
   { to: '/events', title: 'Events', desc: 'View upcoming events' },
   { to: '/dgroups', title: 'D-Groups', desc: 'Browse discipleship groups' },
 ]
@@ -91,6 +92,9 @@ export default function OfficerDashboard() {
             Review applications{Number(s.pending) > 0 ? ` (${s.pending})` : ''}
           </Link>
           <Link to="/officer/attendance" className="p-btn p-btn-secondary">Take attendance</Link>
+          <Link to="/officer/donations" className="p-btn p-btn-secondary">
+            Donations{Number(s.pending_donations) > 0 ? ` (${s.pending_donations})` : ''}
+          </Link>
         </div>
       </div>
 

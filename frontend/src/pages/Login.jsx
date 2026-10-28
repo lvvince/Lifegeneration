@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
@@ -18,7 +18,7 @@ export default function Login() {
     const user = data.user || data.data || data
     setUser(user)
     if (data.tokens) saveTokens(data.tokens)
-    navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true })
+    navigate(user.role === 'admin' ? '/admin' : (user.role === 'officer' ? '/officer' : '/dashboard'), { replace: true })
   }
 
   useGoogleButton(gRef, {

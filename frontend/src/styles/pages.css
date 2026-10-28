@@ -371,10 +371,25 @@ html[data-theme='dark'] .pg-root {
   font-size: 13.5px;
 }
 .pg-root .pg-meta span,
+.pg-root .pg-meta a.pg-loc-badge,
 .pg-root .dg-meta-row {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.pg-root .pg-meta a.pg-loc-badge {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  width: fit-content;
+  border-radius: 4px;
+}
+.pg-root .pg-meta a.pg-loc-badge:hover {
+  color: var(--p-accent, #f97316);
+}
+.pg-root .pg-meta a.pg-loc-badge:hover span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .pg-root .pg-meta svg,
 .pg-root .dg-meta-row svg {

@@ -11,6 +11,8 @@ const isOn = (m) => Number(m.is_active ?? m.user_active) === 1
 
 export default function AdminMembers() {
   const me = getUser()
+  const isAdmin = me?.role === 'admin'
+  const isOfficer = me?.role === 'officer'
   const toast = useToast()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -77,6 +79,11 @@ export default function AdminMembers() {
 
   function askRole(m, next) {
     if (next === m.role) return
+    if ((next === 'admin' || m.role === 'admin') && !isAdmin) {
+      toast('Only an administrator can assign or change the admin role.', 'bad')
+      return
+    }
+    // Admin changes always need confirmation
     if (next === 'admin' || m.role === 'admin') {
       setConfirm({
         m,
@@ -87,6 +94,23 @@ export default function AdminMembers() {
             : `${m.full_name} will lose access to the admin pages.`,
         label: 'Change role',
         run: () => save(m, { role: next }, `${m.full_name} is now ${next}.`),
+      })
+    } else if (next === 'officer') {
+      setConfirm({
+        m,
+        title: 'Promote to Officer?',
+        message: `${m.full_name} will be able to scan QR codes, manage event attendance, and view member info.`,
+        label: 'Promote to Officer',
+        run: () => save(m, { role: next }, `${m.full_name} is now an Officer.`),
+      })
+    } else if (m.role === 'officer') {
+      setConfirm({
+        m,
+        title: 'Remove Officer access?',
+        message: `${m.full_name} will no longer have officer privileges.`,
+        label: 'Remove Officer',
+        danger: true,
+        run: () => save(m, { role: next }, `${m.full_name} is now a Member.`),
       })
     } else {
       save(m, { role: next }, `${m.full_name} is now ${next}.`)
@@ -153,7 +177,7 @@ export default function AdminMembers() {
         <select className="p-input p-auto" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Filter by role">
           <option value="all">All roles</option>
           <option value="user">Member</option>
-          <option value="moderator">Moderator</option>
+          <option value="officer">Officer</option>
           <option value="admin">Admin</option>
         </select>
         <select className="p-input p-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
@@ -207,14 +231,14 @@ export default function AdminMembers() {
                           className="p-input p-auto"
                           style={{ padding: '5px 8px', fontSize: 13 }}
                           value={m.role}
-                          disabled={busy || self}
-                          title={self ? 'You cannot change your own role' : undefined}
+                          disabled={busy || self || (!isAdmin && m.role === 'admin')}
+                          title={self ? 'You cannot change your own role' : (!isAdmin && m.role === 'admin' ? 'Only an admin can change admin accounts' : undefined)}
                           aria-label={`Role for ${m.full_name}`}
                           onChange={(e) => askRole(m, e.target.value)}
                         >
                           <option value="user">Member</option>
-                          <option value="moderator">Moderator</option>
-                          <option value="admin">Admin</option>
+                          <option value="officer">Officer</option>
+                          {(isAdmin || m.role === 'admin') && <option value="admin">Admin</option>}
                         </select>
                       </td>
                       <td className="p-num p-muted">{fmtDate(m.joined_at)}</td>

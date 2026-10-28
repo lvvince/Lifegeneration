@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../../api.js'
-import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle, Navigation, Copy, Check, ExternalLink } from 'lucide-react'
 import { FacebookIcon } from '../../components/Footer.jsx'
 import { shareEventOnFacebook } from '../../utils/share.js'
 import { resolveImageUrl } from '../../lib/format.js'
 import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
+import { getGoogleMapEmbedUrl, getGoogleMapsDirectionsUrl, isOnlineOnly } from '../../utils/maps.js'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -14,6 +15,7 @@ export default function EventDetail() {
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(true)
   const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const user = getUser()
 
@@ -32,6 +34,13 @@ export default function EventDetail() {
   useEffect(() => {
     loadEvent()
   }, [id])
+
+  const handleCopyLocation = () => {
+    if (!event?.location) return
+    navigator.clipboard.writeText(event.location)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2200)
+  }
 
   const handleRsvp = async () => {
     if (!user) return
@@ -67,8 +76,12 @@ export default function EventDetail() {
   if (error) return <div className="card"><div className="alert">{error}</div><Link to="/events">&larr; Back to events</Link></div>
   if (!event) return null
 
+  const embedUrl = getGoogleMapEmbedUrl(event.location, event.map_url)
+  const directionsUrl = getGoogleMapsDirectionsUrl(event.location, event.map_url)
+  const online = isOnlineOnly(event.location)
+
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div style={{ maxWidth: 740, margin: '0 auto', paddingBottom: 40 }}>
       <Link to="/events" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
         <ArrowLeft size={16} /> Back to all events
       </Link>
@@ -139,9 +152,157 @@ export default function EventDetail() {
           </div>
         </div>
 
-        <div style={{ fontSize: '1.05rem', lineHeight: 1.7, color: '#334', marginBottom: 28 }}>
+        <div style={{ fontSize: '1.05rem', lineHeight: 1.7, color: '#334', marginBottom: 24, whiteSpace: 'pre-wrap' }}>
           {event.description}
         </div>
+
+        {/* Venue & Google Maps Integration Section */}
+        {event.location && (
+          <div style={{
+            margin: '28px 0',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            background: 'var(--surface, #ffffff)',
+            overflow: 'hidden',
+            boxShadow: '0 4px 18px rgba(0,0,0,0.03)'
+          }}>
+            {/* Header bar */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              background: 'rgba(249, 115, 22, 0.04)'
+            }}>
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: '1.08rem',
+                  fontWeight: 700,
+                  color: 'var(--text-1, #0f172a)'
+                }}>
+                  <MapPin size={19} color="#f97316" />
+                  <span>Venue & Location</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', color: 'var(--muted, #64748b)', marginTop: 4, fontWeight: 500 }}>
+                  {event.location}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleCopyLocation}
+                  style={{
+                    background: '#fff',
+                    color: '#475569',
+                    border: '1px solid var(--border, #cbd5e1)',
+                    borderRadius: 8,
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                  }}
+                  title="Copy venue address"
+                >
+                  {copied ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy Address'}
+                </button>
+
+                {!online && (
+                  <a
+                    href={directionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: '#ea580c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '8px 16px',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      boxShadow: '0 2px 10px rgba(234, 88, 12, 0.25)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#c2410c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#ea580c')}
+                  >
+                    <Navigation size={14} /> Get Directions in Google Maps
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Google Maps Embed iframe */}
+            {embedUrl && !online ? (
+              <div>
+                <div style={{ position: 'relative', width: '100%', height: 320, background: '#f1f5f9' }}>
+                  <iframe
+                    title={`Google Map for ${event.title}`}
+                    src={embedUrl}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, display: 'block' }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+                <div style={{
+                  padding: '9px 16px',
+                  background: 'rgba(0,0,0,0.02)',
+                  borderTop: '1px solid var(--border)',
+                  fontSize: '0.78rem',
+                  color: 'var(--muted, #64748b)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 8
+                }}>
+                  <span>Interactive Google Map view for Life Generation attendees</span>
+                  <a
+                    href={directionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#ea580c',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    Open full map <ExternalLink size={12} />
+                  </a>
+                </div>
+              </div>
+            ) : online ? (
+              <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--muted, #64748b)' }}>
+                <p style={{ margin: 0, fontWeight: 500, fontSize: '0.92rem' }}>
+                  This is a virtual / online gathering. The meeting link will be shared with all registered members.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
 
         <div style={{
           borderTop: '1px solid var(--border)',

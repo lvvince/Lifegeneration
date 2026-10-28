@@ -13,6 +13,9 @@ import NotFound from './pages/NotFound.jsx'
 import DGroups from './pages/DGroups.jsx'
 import Ministries from './pages/Ministries.jsx'
 import PrayerWall from './pages/PrayerWall.jsx'
+import Give from './pages/Give.jsx'
+import AdminDonations from './pages/admin/AdminDonations.jsx'
+import OfficerDonations from './pages/officer/OfficerDonations.jsx'
 import Events from './pages/member/Events.jsx'
 import EventDetail from './pages/member/EventDetail.jsx'
 import Dashboard from './pages/member/Dashboard.jsx'
@@ -53,6 +56,8 @@ function PageRoutes() {
       <Route path="/ministries" element={<Ministries />} />
       <Route path="/prayer" element={<PrayerWall />} />
       <Route path="/prayers" element={<PrayerWall />} />
+      <Route path="/give" element={<Give />} />
+      <Route path="/donations" element={<Give />} />
 
       {/* Member */}
       <Route element={<ProtectedRoute />}>
@@ -67,6 +72,7 @@ function PageRoutes() {
         <Route path="/officer/members" element={<OfficerMembers />} />
         <Route path="/officer/attendance" element={<OfficerAttendance />} />
         <Route path="/officer/applications" element={<OfficerApplications />} />
+        <Route path="/officer/donations" element={<OfficerDonations />} />
       </Route>
 
       {/* Admin */}
@@ -80,6 +86,7 @@ function PageRoutes() {
         <Route path="/admin/dgroups" element={<AdminDGroups />} />
         <Route path="/admin/ministries" element={<AdminMinistries />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/admin/donations" element={<AdminDonations />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

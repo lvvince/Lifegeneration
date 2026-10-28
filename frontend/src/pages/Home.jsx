@@ -142,8 +142,8 @@ export default function Home() {
               </p>
               <div className="lg-cta" data-reveal style={{ '--d': '0.6s' }}>
                 {user ? (
-                  <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="lg-btn lg-btn-primary">
-                    {user.role === 'admin' ? 'Open admin' : 'My profile'} <ArrowRight size={18} />
+                  <Link to={user.role === 'admin' ? '/admin' : (user.role === 'officer' ? '/officer' : '/dashboard')} className="lg-btn lg-btn-primary">
+                    {user.role === 'admin' ? 'Open admin' : (user.role === 'officer' ? 'Officer portal' : 'My profile')} <ArrowRight size={18} />
                   </Link>
                 ) : (
                   <>

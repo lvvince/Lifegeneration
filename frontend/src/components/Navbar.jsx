@@ -13,6 +13,7 @@ const LINKS = [
   { to: '/dgroups', label: 'D-Groups' },
   { to: '/ministries', label: 'Ministries' },
   { to: '/prayer', label: 'Prayer Wall' },
+  { to: '/give', label: 'Give' },
 ]
 
 function LogoutDialog({ onCancel, onConfirm }) {

@@ -53,6 +53,11 @@ export function initials(name) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
 }
 
+export function fmtCurrency(amount) {
+  const n = Number(amount) || 0
+  return `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 /**
  * Resolves local upload paths and external URLs into valid image sources.
  * Uses API_URL from api.js so there is only one backend base URL to maintain.

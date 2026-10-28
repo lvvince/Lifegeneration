@@ -145,7 +145,9 @@ CREATE TABLE `members` (
   `email` VARCHAR(255) NOT NULL,
   `membership_tier` VARCHAR(50) NOT NULL DEFAULT 'Standard Member',
   `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'approved',
   `joined_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `members_user_id_unique` (`user_id`),
@@ -178,6 +180,7 @@ CREATE TABLE `events` (
   `description` TEXT DEFAULT NULL,
   `banner_image` VARCHAR(255) DEFAULT NULL,
   `location` VARCHAR(255) NOT NULL,
+  `map_url` TEXT DEFAULT NULL,
   `event_date` DATE NOT NULL,
   `event_time` VARCHAR(50) NOT NULL,
   `capacity` INT DEFAULT NULL,
@@ -304,3 +307,59 @@ CREATE TABLE IF NOT EXISTS `announcements` (
 
 INSERT IGNORE INTO `announcements` (`id`, `title`, `content`, `category`, `badge_text`, `link_url`, `link_text`, `is_pinned`, `is_active`) VALUES
 (1, 'Welcome to Life Generation Calapan!', 'Join us this week for youth gatherings, discipleship groups, and fellowship. Check our events tab to register!', 'general', 'WELCOME', '/events', 'View Gatherings', 1, 1);
+
+
+-- ----------------------------------------------------------------------------
+-- 12. Donation Campaigns Table
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `donation_campaigns` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(150) NOT NULL,
+  `category` VARCHAR(50) NOT NULL DEFAULT 'offering',
+  `description` TEXT DEFAULT NULL,
+  `target_amount` DECIMAL(12,2) DEFAULT NULL,
+  `collected_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `image` VARCHAR(255) DEFAULT NULL,
+  `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_active` (`is_active`),
+  KEY `idx_cat` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `donation_campaigns` (`id`, `title`, `category`, `description`, `target_amount`, `is_active`) VALUES
+(1, 'Tithes & General Offerings', 'tithe', 'Support Sunday celebrations, weekly discipleship gatherings, and regular ministry operations.', NULL, 1),
+(2, 'Youth Camp & Summit 2026', 'camp_sponsor', 'Sponsor a student or young adult to attend the LifeGen Leadership & Ministry Summit.', 50000.00, 1),
+(3, 'Missions & Community Outreach', 'missions', 'Fund school supply drives, feeding programs, and rural mission works.', 30000.00, 1),
+(4, 'Audio & Multimedia Equipment Fund', 'building_fund', 'Help improve sound system, musical instruments, and media livestreaming gear.', 45000.00, 1),
+(5, 'Benevolence & Love Gift', 'benevolence', 'Provide immediate financial or medical aid to brethren and community members in need.', NULL, 1);
+
+-- ----------------------------------------------------------------------------
+-- 13. Donations Table
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `donations` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `tracking_code` VARCHAR(32) NOT NULL UNIQUE,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `campaign_id` INT UNSIGNED DEFAULT NULL,
+  `donor_name` VARCHAR(150) NOT NULL,
+  `is_anonymous` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+  `donor_email` VARCHAR(255) DEFAULT NULL,
+  `donor_phone` VARCHAR(50) DEFAULT NULL,
+  `category` VARCHAR(50) NOT NULL DEFAULT 'offering',
+  `amount` DECIMAL(12,2) NOT NULL,
+  `payment_method` ENUM('gcash','maya','bank_transfer','cash','other') NOT NULL DEFAULT 'gcash',
+  `reference_number` VARCHAR(100) DEFAULT NULL,
+  `proof_receipt` VARCHAR(255) DEFAULT NULL,
+  `status` ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+  `admin_notes` TEXT DEFAULT NULL,
+  `donor_message` TEXT DEFAULT NULL,
+  `verified_by` INT UNSIGNED DEFAULT NULL,
+  `verified_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_user` (`user_id`),
+  KEY `idx_campaign` (`campaign_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

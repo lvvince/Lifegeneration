@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Plus, Pencil, Trash2, UserCheck, Upload, Image as ImageIcon, X } from 'lucide-react'
+import { CalendarDays, Plus, Pencil, Trash2, UserCheck, Upload, Image as ImageIcon, X, MapPin, ExternalLink, Compass } from 'lucide-react'
 import { apiGet, apiPost, API_URL } from '../../api.js'
 import { fmtDate, isUpcoming, to12h, to24h, resolveImageUrl } from '../../lib/format.js'
+import { getGoogleMapEmbedUrl, getGoogleMapsDirectionsUrl } from '../../utils/maps.js'
 import {
   PageHeader, Empty, Loading, Tabs, Modal, Field, ConfirmDialog, useToast,
 } from '../../components/portal/ui.jsx'
@@ -12,6 +13,7 @@ const blank = {
   title: '',
   description: '',
   location: '',
+  map_url: '',
   event_date: '',
   time: '10:00',
   capacity: '',
@@ -75,6 +77,7 @@ function EventForm({ initial, onClose, onSaved }) {
         title: f.title.trim(),
         description: f.description.trim(),
         location: f.location.trim(),
+        map_url: f.map_url?.trim() || '',
         event_date: f.event_date,
         event_time: to12h(f.time),
         capacity: f.capacity === '' ? '' : Number(f.capacity),
@@ -200,9 +203,107 @@ function EventForm({ initial, onClose, onSaved }) {
               <input id="ev-time" type="time" className="p-input" value={f.time} onChange={set('time')} />
             </Field>
           </div>
-          <Field label="Location" htmlFor="ev-loc">
-            <input id="ev-loc" className="p-input" value={f.location} onChange={set('location')} />
+          <Field label="Venue & Physical Location" htmlFor="ev-loc" hint="e.g. LifeGen Hall, Main Campus or CCF Center, Pasig City">
+            <input
+              id="ev-loc"
+              className="p-input"
+              placeholder="Enter venue name or address"
+              value={f.location}
+              onChange={set('location')}
+            />
           </Field>
+
+          <Field
+            label="Google Maps Pin / Link (Optional)"
+            htmlFor="ev-map"
+            hint="Paste Google Maps share link, coordinates, or leave blank to auto-pin from venue address above."
+          >
+            <input
+              id="ev-map"
+              className="p-input"
+              placeholder="e.g. https://maps.app.goo.gl/... or coordinates"
+              value={f.map_url || ''}
+              onChange={set('map_url')}
+              style={{ fontSize: '0.82rem' }}
+            />
+          </Field>
+
+          {/* Live Google Map Preview */}
+          {(() => {
+            const embedPreviewUrl = getGoogleMapEmbedUrl(f.location, f.map_url)
+            const directionsPreviewUrl = getGoogleMapsDirectionsUrl(f.location, f.map_url)
+
+            if (embedPreviewUrl) {
+              return (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--p-border-strong, rgba(255,255,255,0.12))',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    borderBottom: '1px solid var(--p-border, rgba(255,255,255,0.08))',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f97316' }}>
+                      <MapPin size={13} /> Live Google Map Pin Preview
+                    </span>
+                    <a
+                      href={directionsPreviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: 'var(--p-text-2, #a1a1aa)',
+                        textDecoration: 'none',
+                        fontSize: '0.74rem',
+                      }}
+                    >
+                      Test in Google Maps <ExternalLink size={11} />
+                    </a>
+                  </div>
+                  <div style={{ height: 160, width: '100%', position: 'relative', background: '#18181b' }}>
+                    <iframe
+                      title="Google Map Preview"
+                      src={embedPreviewUrl}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0, display: 'block' }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div style={{
+                padding: '9px 12px',
+                borderRadius: 8,
+                background: 'rgba(249, 115, 22, 0.05)',
+                border: '1px dashed rgba(249, 115, 22, 0.25)',
+                fontSize: '0.76rem',
+                color: 'var(--p-text-3, #71717a)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 16,
+              }}>
+                <MapPin size={14} style={{ color: '#f97316', flexShrink: 0 }} />
+                <span>Enter a venue or paste a Google Maps link to preview the pin members will see.</span>
+              </div>
+            )
+          })()}
           <Field label="Description" htmlFor="ev-desc">
             <textarea id="ev-desc" className="p-input" value={f.description} onChange={set('description')} />
           </Field>
@@ -259,6 +360,7 @@ export default function AdminEvents() {
       title: e.title || '',
       description: e.description || '',
       location: e.location || '',
+      map_url: e.map_url || '',
       event_date: String(e.event_date || '').slice(0, 10),
       time: to24h(e.event_time),
       capacity: e.capacity ?? '',

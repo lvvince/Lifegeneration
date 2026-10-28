@@ -90,3 +90,13 @@ $router->post('/api/admin/test-email', 'Admin::test_email');
 // 8. Officer portal
 $router->get('/api/officer/dashboard',             'Officer::dashboard');
 $router->post('/api/officer/registrations/review', 'Officer::review_registration');
+
+
+// 9. Donations & Giving
+$router->get('/api/donations/campaigns',     'Donations::campaigns');
+$router->get('/api/donations/payment-info',   'Donations::payment_info');
+$router->post('/api/donations/submit',        'Donations::submit');
+$router->get('/api/donations/my-history',     'Donations::my_history');
+$router->get('/api/admin/donations',          'Donations::admin_index');
+$router->get('/api/admin/donations/stats',    'Donations::stats');
+$router->post('/api/admin/donations/verify',  'Donations::verify');

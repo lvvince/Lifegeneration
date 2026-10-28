@@ -5,7 +5,7 @@
     </IfModule>
 
     RewriteEngine On
-    RewriteBase /Lifegeneration/backend/public/
+    RewriteBase /LIFEGEN/backend/public/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

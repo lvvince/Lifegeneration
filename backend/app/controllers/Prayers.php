@@ -9,68 +9,37 @@ class Prayers extends Controller
         $this->call->database();
     }
 
-    private function member_id_of($user)
-    {
-        if (!$user) return 0;
-        $row = $this->db->raw(
-            "SELECT id FROM members WHERE user_id = ? LIMIT 1",
-            [(int) $user['id']]
-        )->fetch(PDO::FETCH_ASSOC);
-        return $row ? (int) $row['id'] : 0;
-    }
-
-    private function find_prayer($id)
-    {
-        return $this->db->raw(
-            "SELECT p.*, m.user_id
-             FROM prayers p
-             LEFT JOIN members m ON m.id = p.member_id
-             WHERE p.id = ? LIMIT 1",
-            [$id]
-        )->fetch(PDO::FETCH_ASSOC);
-    }
-
     public function index()
     {
         $user = get_auth_user();
-        $userId = (int) ($user['id'] ?? 0);
-        $isStaff = $user && in_array($user['role'], ['admin', 'moderator']);
+        $userId = $user['id'] ?? 0;
+        $isAdmin = $user && in_array($user['role'], ['admin', 'officer', 'moderator']);
 
-        $sql = "SELECT p.id, p.member_id, p.title, p.content AS body, p.visibility,
-                       p.is_answered, IF(p.is_answered = 1, 'answered', 'active') AS status,
-                       p.is_anonymous, p.created_at, m.user_id,
-                       IF(p.is_anonymous = 1, 'Anonymous', COALESCE(m.full_name, 'Member')) AS member_name,
-                       (m.user_id = ?) AS is_mine
-                FROM prayers p
-                LEFT JOIN members m ON m.id = p.member_id";
-
-        if ($isStaff) {
-            $sql .= " ORDER BY p.is_answered ASC, p.created_at DESC";
-            $params = [$userId];
+        if ($isAdmin) {
+            $stmt = $this->db->raw(
+                "SELECT p.*, u.username, u.email
+                 FROM prayer_requests p
+                 LEFT JOIN users u ON u.id = p.user_id
+                 ORDER BY (p.status = 'active') DESC, p.created_at DESC"
+            );
+        } elseif ($userId > 0) {
+            $stmt = $this->db->raw(
+                "SELECT p.*, (p.user_id = ?) AS is_mine
+                 FROM prayer_requests p
+                 WHERE p.visibility = 'public' OR p.user_id = ?
+                 ORDER BY (p.status = 'active') DESC, p.created_at DESC",
+                [$userId, $userId]
+            );
         } else {
-            $viewerMemberId = $this->member_id_of($user);
-            $sql .= " WHERE p.visibility = 'public' OR m.user_id = ?
-                      OR (p.visibility = 'dgroup' AND EXISTS (
-                            SELECT 1 FROM dgroup_members a
-                            JOIN dgroup_members b ON b.dgroup_id = a.dgroup_id AND b.status = 'active'
-                            WHERE a.member_id = p.member_id AND a.status = 'active' AND b.member_id = ?))
-                      ORDER BY p.is_answered ASC, p.created_at DESC";
-            $params = [$userId, $userId, $viewerMemberId];
+            $stmt = $this->db->raw(
+                "SELECT p.*
+                 FROM prayer_requests p
+                 WHERE p.visibility = 'public'
+                 ORDER BY (p.status = 'active') DESC, p.created_at DESC"
+            );
         }
 
-        $rows = $this->db->raw($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($rows as &$r) {
-            $r['is_mine'] = (int) $r['is_mine'];
-            $r['is_answered'] = (int) $r['is_answered'];
-            // Itago ang user_id ng iba para hindi ma-trace ang anonymous
-            if (!$isStaff && !$r['is_mine']) {
-                $r['user_id'] = null;
-            }
-        }
-        unset($r);
-
-        api_response($rows);
+        api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     public function submit()
@@ -79,23 +48,20 @@ class Prayers extends Controller
         $input = api_input();
 
         $title      = trim($input['title'] ?? '');
-        $body       = trim($input['body'] ?? '');
-        $visibility = in_array($input['visibility'] ?? '', ['public', 'dgroup', 'private']) ? $input['visibility'] : 'public';
-        $anonymous  = !empty($input['is_anonymous']) ? 1 : 0;
+        $body       = trim($input['body'] ?? ($input['content'] ?? ''));
+        $visibility = in_array($input['visibility'] ?? '', ['public', 'private']) ? $input['visibility'] : 'public';
+        $anonymous  = !empty($input['is_anonymous']);
 
-        if ($title === '' || $body === '') {
+        if (empty($title) || empty($body)) {
             api_response(['error' => 'Prayer title and description are required.'], 422);
         }
 
-        $memberId = $this->member_id_of($user);
-        if ($memberId <= 0) {
-            api_response(['error' => 'No member profile is linked to this account.'], 404);
-        }
+        $memberName = $anonymous ? 'Anonymous' : ($user['full_name'] ?: $user['username']);
 
         $this->db->raw(
-            "INSERT INTO prayers (member_id, title, content, visibility, is_anonymous, is_answered, created_at)
-             VALUES (?, ?, ?, ?, ?, 0, NOW())",
-            [$memberId, $title, $body, $visibility, $anonymous]
+            "INSERT INTO prayer_requests (user_id, member_name, title, body, visibility, status, created_at)
+             VALUES (?, ?, ?, ?, ?, 'active', NOW())",
+            [$user['id'], $memberName, $title, $body, $visibility]
         );
 
         api_response([
@@ -115,16 +81,16 @@ class Prayers extends Controller
             api_response(['error' => 'Prayer request ID required.'], 422);
         }
 
-        $req = $this->find_prayer($id);
+        $req = $this->db->raw("SELECT * FROM prayer_requests WHERE id = ? LIMIT 1", [$id])->fetch();
         if (!$req) {
             api_response(['error' => 'Prayer request not found.'], 404);
         }
 
-        if ($user['role'] !== 'admin' && (int) $req['user_id'] !== (int) $user['id']) {
+        if (!in_array($user['role'], ['admin', 'officer'], true) && (int)$req['user_id'] !== (int)$user['id']) {
             api_response(['error' => 'Not authorized to update this prayer request.'], 403);
         }
 
-        $this->db->raw("UPDATE prayers SET is_answered = 1 WHERE id = ?", [$id]);
+        $this->db->raw("UPDATE prayer_requests SET status = 'answered', updated_at = NOW() WHERE id = ?", [$id]);
         api_response(['success' => true, 'message' => 'Praise God! Prayer marked as answered.']);
     }
 
@@ -138,16 +104,16 @@ class Prayers extends Controller
             api_response(['error' => 'Prayer request ID required.'], 422);
         }
 
-        $req = $this->find_prayer($id);
+        $req = $this->db->raw("SELECT * FROM prayer_requests WHERE id = ? LIMIT 1", [$id])->fetch();
         if (!$req) {
             api_response(['error' => 'Prayer request not found.'], 404);
         }
 
-        if ($user['role'] !== 'admin' && (int) $req['user_id'] !== (int) $user['id']) {
+        if (!in_array($user['role'], ['admin', 'officer'], true) && (int)$req['user_id'] !== (int)$user['id']) {
             api_response(['error' => 'Not authorized to delete this prayer request.'], 403);
         }
 
-        $this->db->raw("DELETE FROM prayers WHERE id = ?", [$id]);
+        $this->db->raw("DELETE FROM prayer_requests WHERE id = ?", [$id]);
         api_response(['success' => true, 'message' => 'Prayer request deleted.']);
     }
 }
