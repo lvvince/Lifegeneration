@@ -52,6 +52,12 @@ export default function PrayerWall() {
       setComposer(true)
     }
   }, [location.search])
+  const [devotional, setDevotional] = useState(null)
+  const [showDevotional, setShowDevotional] = useState(false)
+
+  useEffect(() => {
+    apiGet('/api/devotional/today').then(setDevotional).catch(() => {})
+  }, [])
   const [open, setOpen] = useState(null) // id ng nakabukas na note
   const [toDelete, setToDelete] = useState(null)
   const [prayed, setPrayed] = useState(readPrayed)
@@ -162,9 +168,58 @@ export default function PrayerWall() {
           <h1 className="pw-title">
             i <span>pray</span> for<em>…</em>
           </h1>
-          <p className="pw-verse">
-            “In every situation, by prayer and petition, present your requests to God.” <b>Philippians 4:6</b>
-          </p>
+          <div className="pw-verse" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span>“{devotional?.verse || 'In every situation, by prayer and petition, present your requests to God.'}”</span>
+            <b>{devotional?.reference || 'Philippians 4:6'}</b>
+            {devotional && (
+              <button
+                type="button"
+                onClick={() => setShowDevotional(!showDevotional)}
+                style={{
+                  border: 0,
+                  background: 'rgba(255, 90, 10, 0.12)',
+                  color: '#ff5a0a',
+                  padding: '2px 10px',
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                {showDevotional ? 'Hide Reflection' : 'Read Today’s Reflection'}
+              </button>
+            )}
+          </div>
+
+          {showDevotional && devotional && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: '16px 20px',
+                background: 'var(--p-surface, #ffffff)',
+                border: '1px solid var(--p-border, #e5e8f1)',
+                borderRadius: 16,
+                boxShadow: '0 8px 24px -8px rgba(0,0,0,0.08)',
+                maxWidth: 620
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: '#ff5a0a', background: 'rgba(255, 90, 10, 0.1)', padding: '2px 8px', borderRadius: 6 }}>
+                  {devotional.theme || 'Verse of the Day'}
+                </span>
+                <strong style={{ fontSize: 13 }}>{devotional.title}</strong>
+              </div>
+              <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.5, color: 'var(--p-text-2, #586079)' }}>
+                {devotional.reflection}
+              </p>
+    
+              <div style={{ fontSize: 12, fontStyle: 'italic', color: '#ff5a0a', borderLeft: '2px solid #ff5a0a', paddingLeft: 8 }}>
+                <b>Prayer:</b> {devotional.prayer_prompt}
+              </div>
+            </div>
+          )}
+
+
         </div>
         <div className="pw-head-r">
           {user ? (
