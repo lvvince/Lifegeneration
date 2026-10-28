@@ -8,6 +8,7 @@ import { on } from '../../lib/bus.js'
 import { catOf, useAnnouncements } from '../../components/portal/announcements.jsx'
 import MediaSlot from '../../components/portal/MediaSlot.jsx'
 import Faq from '../../components/portal/Faq.jsx'
+import DailyDevotional from '../../components/portal/DailyDevotional.jsx'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const keyOf = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -234,6 +235,7 @@ export default function Overview() {
       </section>
 
       {/* ===== 01 at a glance ===== */}
+      <DailyDevotional />
       <section className="hm-band hm-white">
         <div className="hm-wrap">
           <div className="hm-stats" data-reveal>

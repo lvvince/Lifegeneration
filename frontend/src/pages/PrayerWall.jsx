@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X, Users, EyeOff, Send, Search } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
@@ -40,6 +40,18 @@ export default function PrayerWall() {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [composer, setComposer] = useState(false)
+  const location = useLocation()
+  const [initialPrayer, setInitialPrayer] = useState({ title: '', body: '' })
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('compose') === '1') {
+      const title = params.get('title') || ''
+      const body = params.get('body') || ''
+      setInitialPrayer({ title, body })
+      setComposer(true)
+    }
+  }, [location.search])
   const [open, setOpen] = useState(null) // id ng nakabukas na note
   const [toDelete, setToDelete] = useState(null)
   const [prayed, setPrayed] = useState(readPrayed)
@@ -278,7 +290,7 @@ export default function PrayerWall() {
         document.body
       )}
 
-      {composer && createPortal(<div className="pw pw-layer"><Composer onClose={() => setComposer(false)} onDone={() => { setComposer(false); load() }} toast={toast} /></div>, document.body)}
+      {composer && createPortal(<div className="pw pw-layer"><Composer initial={initialPrayer} onClose={() => setComposer(false)} onDone={() => { setComposer(false); load() }} toast={toast} /></div>, document.body)}
 
       {toDelete && (
         <ConfirmDialog title="Delete this note?" message={`"${toDelete.title}" will be removed for everyone.`} confirmLabel="Delete" danger onConfirm={remove} onCancel={() => setToDelete(null)} />
@@ -288,8 +300,8 @@ export default function PrayerWall() {
 }
 
 /* Blangkong sticky note na sinusulatan */
-function Composer({ onClose, onDone, toast }) {
-  const [form, setForm] = useState({ title: '', body: '', visibility: 'public', anonymous: false })
+function Composer({ initial, onClose, onDone, toast }) {
+  const [form, setForm] = useState({ title: initial?.title || '', body: initial?.body || '', visibility: 'public', anonymous: false })
   const [color, setColor] = useState('yellow')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')

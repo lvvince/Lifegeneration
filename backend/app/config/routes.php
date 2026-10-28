@@ -100,3 +100,8 @@ $router->get('/api/donations/my-history',     'Donations::my_history');
 $router->get('/api/admin/donations',          'Donations::admin_index');
 $router->get('/api/admin/donations/stats',    'Donations::stats');
 $router->post('/api/admin/donations/verify',  'Donations::verify');
+
+
+// 10. Daily Devotional & Verse of the Day
+$router->get('/api/devotional/today',  'Devotionals::today');
+$router->get('/api/devotional/random', 'Devotionals::random');
