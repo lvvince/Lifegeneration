@@ -43,6 +43,24 @@ try {
     die("Database connection failed: " . $e->getMessage() . "\nCheck DB credentials in backend/.env\n");
 }
 
+// 0. Auto-initialize full database if 'users' or 'members' table is missing
+$hasUsers = $pdo->query("SHOW TABLES LIKE 'users'")->fetchAll();
+if (empty($hasUsers)) {
+    echo "Base tables ('users') missing in database '{$db}'!\n";
+    echo "Initializing full database schema from database.sql...\n";
+    $sqlFile = dirname(__DIR__) . '/database.sql';
+    if (!file_exists($sqlFile)) {
+        $sqlFile = __DIR__ . '/database.sql';
+    }
+    if (file_exists($sqlFile)) {
+        $sqlContent = file_get_contents($sqlFile);
+        $pdo->exec($sqlContent);
+        echo "✓ Full database schema ('users', 'members', 'events', 'dgroups', etc.) initialized successfully!\n\n";
+    } else {
+        echo "Warning: database.sql not found at {$sqlFile}\n";
+    }
+}
+
 // 1. Create announcements table if missing
 echo "Checking 'announcements' table... ";
 try {

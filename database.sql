@@ -3,8 +3,8 @@
 -- Character Set: utf8mb4 | Collation: utf8mb4_unicode_ci
 -- ============================================================================
 
-CREATE DATABASE IF NOT EXISTS `lgy_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `lgy_db`;
+-- CREATE DATABASE IF NOT EXISTS `lgy_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `lgy_db`;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `prayer_requests`;
