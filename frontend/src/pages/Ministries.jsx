@@ -4,7 +4,7 @@ import { API_URL, apiGet, apiPost, getUser } from '../api.js'
 import {
   CheckCircle, Clock, HeartHandshake, X, Users, Mic2,
   Monitor, UserCheck, Globe, Music, Star, Megaphone,
-  Camera, Headphones, Tent, Brush, ChevronRight
+  Camera, Headphones, Tent, Brush, ChevronRight, Sparkles
 } from 'lucide-react'
 import '../styles/pages.css'
 
@@ -139,6 +139,51 @@ export default function Ministries() {
       {error && (
         <div className="alert" style={{ marginBottom: 20 }}>{error}</div>
       )}
+
+
+      {/* ── Gifts Matcher Banner ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          background: 'linear-gradient(135deg, rgba(255,90,10,0.06) 0%, rgba(251,146,60,0.05) 100%)',
+          border: '1.5px solid rgba(255,90,10,0.2)',
+          borderRadius: 18,
+          padding: '16px 22px',
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,90,10,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Sparkles size={22} color="#ff5a0a" />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1f2e', marginBottom: 2 }}>
+              Not sure which team to join?
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--p-text-2, #586079)' }}>
+              Take our 2-minute Spiritual Gifts Quiz and we'll match you with the perfect ministry team and D-Group.
+            </div>
+          </div>
+        </div>
+        <Link
+          to="/gifts-matcher"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '10px 20px', borderRadius: 12,
+            background: '#ff5a0a', color: '#fff',
+            fontWeight: 700, fontSize: 13.5, textDecoration: 'none',
+            whiteSpace: 'nowrap', flexShrink: 0,
+            boxShadow: '0 4px 14px rgba(255,90,10,0.3)'
+          }}
+        >
+          <Sparkles size={14} />
+          Find My Place
+        </Link>
+      </div>
 
       {/* ── Cards ── */}
       {loading ? (

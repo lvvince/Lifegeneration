@@ -12,6 +12,7 @@ import ResetPassword from './pages/ResetPassword.jsx'
 import NotFound from './pages/NotFound.jsx'
 import DGroups from './pages/DGroups.jsx'
 import Ministries from './pages/Ministries.jsx'
+import GiftsMatcher from './pages/GiftsMatcher.jsx'
 import PrayerWall from './pages/PrayerWall.jsx'
 import Give from './pages/Give.jsx'
 import Legal from './pages/Legal.jsx'
@@ -56,6 +57,8 @@ function PageRoutes() {
       <Route path="/events/:id" element={<EventDetail />} />
       <Route path="/dgroups" element={<DGroups />} />
       <Route path="/ministries" element={<Ministries />} />
+      <Route path="/gifts-matcher" element={<GiftsMatcher />} />
+      <Route path="/matcher" element={<GiftsMatcher />} />
       <Route path="/prayer" element={<PrayerWall />} />
       <Route path="/prayers" element={<PrayerWall />} />
       <Route path="/give" element={<Give />} />

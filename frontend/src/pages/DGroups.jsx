@@ -5,7 +5,7 @@ import { resolveImageUrl } from '../lib/format.js'
 import {
   Users, Calendar, MapPin, CheckCircle,
   Network, UserPlus, ChevronRight, MessageCircle,
-  Lock, Clock, ExternalLink, AlertCircle
+  Lock, Clock, ExternalLink, AlertCircle, Sparkles
 } from 'lucide-react'
 import '../styles/pages.css'
 
@@ -113,6 +113,50 @@ export default function DGroups() {
             <span>Total Members</span>
           </div>
         </div>
+      </div>
+
+      {/* ── Gifts Matcher Banner ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.05) 100%)',
+          border: '1.5px solid rgba(99,102,241,0.2)',
+          borderRadius: 18,
+          padding: '16px 22px',
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Sparkles size={22} color="#6366f1" />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1f2e', marginBottom: 2 }}>
+              Don't know which D-Group fits you best?
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--p-text-2, #586079)' }}>
+              Answer 7 quick questions and we'll match you to the right community group for your season of life.
+            </div>
+          </div>
+        </div>
+        <Link
+          to="/gifts-matcher"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '10px 20px', borderRadius: 12,
+            background: '#6366f1', color: '#fff',
+            fontWeight: 700, fontSize: 13.5, textDecoration: 'none',
+            whiteSpace: 'nowrap', flexShrink: 0,
+            boxShadow: '0 4px 14px rgba(99,102,241,0.28)'
+          }}
+        >
+          <Sparkles size={14} />
+          Find My D-Group
+        </Link>
       </div>
 
       {/* ── Alerts ── */}

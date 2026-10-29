@@ -110,3 +110,6 @@ $router->get('/api/devotional/today',  'Devotionals::today');
 $router->get('/api/devotional/random', 'Devotionals::random');
 $router->get('/api/bible/lookup',      'Devotionals::lookup');
 $router->get('/api/bible/search',      'Devotionals::lookup');
+// 11. Spiritual Gifts & Community Matcher
+$router->get('/api/matcher/config',    'Matcher::config');
+$router->post('/api/matcher/suggest',  'Matcher::suggest');
