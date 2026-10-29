@@ -112,7 +112,22 @@ class Officer extends Controller
             "SELECT id, title, created_at FROM announcements ORDER BY created_at DESC LIMIT 5"
         )->fetchAll(PDO::FETCH_ASSOC);
 
+        $donations = ['month_total' => 0, 'pending_count' => $pendingDonations, 'pending_amount' => 0, 'recent' => []];
+        try {
+            $d = $this->db->raw(
+                "SELECT COALESCE(SUM(CASE WHEN status='verified' AND YEAR(created_at)=YEAR(CURDATE()) AND MONTH(created_at)=MONTH(CURDATE()) THEN amount END),0) AS month_total,
+                        COALESCE(SUM(CASE WHEN status='pending' THEN amount END),0) AS pending_amount
+                 FROM donations"
+            )->fetch(PDO::FETCH_ASSOC);
+            $donations['month_total'] = (float) $d['month_total'];
+            $donations['pending_amount'] = (float) $d['pending_amount'];
+            $donations['recent'] = $this->db->raw(
+                "SELECT id, tracking_code, donor_name, amount, status, created_at FROM donations ORDER BY created_at DESC LIMIT 5"
+            )->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {}
+
         api_response([
+            'donations' => $donations,
             'stats' => [
                 'members' => $members,
                 'pending' => $pending,

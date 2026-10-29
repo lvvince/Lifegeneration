@@ -15,6 +15,7 @@ export const MEDIA = {
   moment3:   { kind: 'image', src: '/media/moment-3.webp',      label: 'moment-3.webp',      ratio: '4 / 5',  hint: 'Outreach / serving' },
   dgroup:    { kind: 'image', src: '/media/dgroup.webp',        label: 'dgroup.webp',        ratio: '16 / 10', hint: 'D-Group photo' },
   ministry:  { kind: 'image', src: '/media/ministry.webp',      label: 'ministry.webp',      ratio: '16 / 10', hint: 'Ministry team photo' },
+  prayerVideo: { kind: 'video', src: '/media/prayer.mp4', poster: '/media/prayer.webp', label: 'prayer.mp4', ratio: '4 / 3', ambient: true, hint: 'Short prayer / worship clip (landscape, under 10 MB)' },
   prayer:    { kind: 'image', src: '/media/prayer.webp',        label: 'prayer.webp',        ratio: '1 / 1',  hint: 'Prayer / worship photo' },
   event:     { kind: 'image', src: '/media/event-default.webp', label: 'event-default.webp', ratio: '1 / 1',  hint: 'Default event picture' },
 }

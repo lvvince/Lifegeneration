@@ -1,0 +1,21 @@
+{
+  "name": "lifegeneration",
+  "version": "1.0.0",
+  "description": "> \"An empowered generation that is able to inspire the community through their kindled passion in Christ.\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lvvince/Lifegeneration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lvvince/Lifegeneration/issues"
+  },
+  "homepage": "https://github.com/lvvince/Lifegeneration#readme"
+}

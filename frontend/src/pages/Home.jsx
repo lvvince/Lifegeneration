@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, Clock, MapPin, Share2, Users, HeartHandshake, MessageSquare,
-  BookOpen, Music, Flame,
+  BookOpen, Music, Flame, HandCoins, ShieldCheck, ReceiptText, Smartphone,
 } from 'lucide-react'
 import { apiGet, getUser } from '../api.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
@@ -13,6 +13,7 @@ import { useHomeMotion } from '../components/home/motion.js'
 import HomeFooter from '../components/home/HomeFooter.jsx'
 import { FacebookIcon, InstagramIcon, TikTokIcon, SOCIALS } from '../components/home/SocialIcons.jsx'
 import '../styles/home.css'
+import '../styles/home-extra.css'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -363,6 +364,37 @@ export default function Home() {
                 <span className="lg-channel-cta">{cta} <ArrowRight size={16} /></span>
               </a>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== GIVE ===== */}
+      <section className="lg-section lg-give" id="give" aria-labelledby="give-h">
+        <span className="lg-give-ring" data-parallax="-0.08" aria-hidden="true" />
+        <div className="lg-wrap lg-give-grid">
+          <div data-reveal>
+            <span className="lg-eyebrow">Giving</span>
+            <h2 className="lg-h2" id="give-h">Give from<br />the heart</h2>
+            <p className="lg-lead">There is no required amount here. Whatever you place in the offering, big or small, helps fund youth nights, camps, outreach and discipleship in Calapan, and it is received with gratitude.</p>
+          </div>
+
+          <div className="lg-give-card" data-reveal style={{ '--d': '0.1s' }}>
+            <blockquote className="lg-give-verse">
+              <HeartHandshake size={22} aria-hidden="true" />
+              <p>“Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.”</p>
+              <cite>2 Corinthians 9:7</cite>
+            </blockquote>
+            <Link to="/give" className="lg-btn lg-btn-primary lg-give-go">
+              <HandCoins size={18} aria-hidden="true" /> Give as you are led <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+            <ul className="lg-give-points">
+              <li><Smartphone size={18} aria-hidden="true" /> GCash, Maya or bank transfer</li>
+              <li><ShieldCheck size={18} aria-hidden="true" /> Every gift is checked by our officers</li>
+              <li><ReceiptText size={18} aria-hidden="true" /> A tracking code for each gift</li>
+            </ul>
+            <p className="lg-give-policy">
+              By giving you agree to our <Link to="/giving-policy">Giving policy</Link>. See also our <Link to="/privacy">Privacy policy</Link>.
+            </p>
           </div>
         </div>
       </section>

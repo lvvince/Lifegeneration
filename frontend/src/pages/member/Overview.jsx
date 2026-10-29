@@ -450,7 +450,7 @@ export default function Overview() {
             </Link>
           </div>
           <div className="hm-pray-img" data-depth="0.05">
-            <MediaSlot slot="prayer" />
+            <MediaSlot slot="prayerVideo" alt="Friends praying together" />
           </div>
         </div>
       </section>

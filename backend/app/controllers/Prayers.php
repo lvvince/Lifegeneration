@@ -50,18 +50,44 @@ class Prayers extends Controller
         $title      = trim($input['title'] ?? '');
         $body       = trim($input['body'] ?? ($input['content'] ?? ''));
         $visibility = in_array($input['visibility'] ?? '', ['public', 'private']) ? $input['visibility'] : 'public';
-        $anonymous  = !empty($input['is_anonymous']);
+        $anonymous  = !empty($input['is_anonymous']) && $input['is_anonymous'] !== '0' && $input['is_anonymous'] !== 'false';
 
         if (empty($title) || empty($body)) {
             api_response(['error' => 'Prayer title and description are required.'], 422);
         }
 
+        // Optional photo (multipart). Images only, checked by real content, max 8 MB.
+        $image = null;
+        if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $f = $_FILES['image'];
+            if ($f['error'] !== UPLOAD_ERR_OK) {
+                api_response(['error' => 'The photo could not be uploaded. Please try again.'], 422);
+            }
+            if ($f['size'] > 8 * 1024 * 1024) {
+                api_response(['error' => 'The photo is over 8 MB. Please choose a smaller one.'], 422);
+            }
+            $info = @getimagesize($f['tmp_name']);
+            $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+            if (!$info || !isset($map[$info[2]])) {
+                api_response(['error' => 'Please attach a JPG, PNG or WEBP photo.'], 422);
+            }
+            $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'prayers' . DIRECTORY_SEPARATOR;
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            $name = 'prayer_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
+            if (!move_uploaded_file($f['tmp_name'], $dir . $name)) {
+                api_response(['error' => 'Failed to save the photo.'], 500);
+            }
+            $image = 'uploads/prayers/' . $name;
+        }
+
         $memberName = $anonymous ? 'Anonymous' : ($user['full_name'] ?: $user['username']);
 
         $this->db->raw(
-            "INSERT INTO prayer_requests (user_id, member_name, title, body, visibility, status, created_at)
-             VALUES (?, ?, ?, ?, ?, 'active', NOW())",
-            [$user['id'], $memberName, $title, $body, $visibility]
+            "INSERT INTO prayer_requests (user_id, member_name, title, body, image, visibility, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())",
+            [$user['id'], $memberName, $title, $body, $image, $visibility]
         );
 
         api_response([
@@ -114,6 +140,12 @@ class Prayers extends Controller
         }
 
         $this->db->raw("DELETE FROM prayer_requests WHERE id = ?", [$id]);
+        if (!empty($req['image']) && strpos($req['image'], 'uploads/prayers/') === 0) {
+            $path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $req['image']);
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
         api_response(['success' => true, 'message' => 'Prayer request deleted.']);
     }
 }

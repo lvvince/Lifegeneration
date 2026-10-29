@@ -44,6 +44,13 @@ export default function HomeFooter() {
                 </ul>
               </div>
               <div>
+                <h4>Give</h4>
+                <ul>
+                  <li><Link to="/give">Give online</Link></li>
+                  <li><Link to="/giving-policy">Giving policy</Link></li>
+                </ul>
+              </div>
+              <div>
                 <h4>Members</h4>
                 <ul>
                   {user ? (
@@ -70,6 +77,11 @@ export default function HomeFooter() {
 
           <div className="lg-foot-bottom">
             <span>© {new Date().getFullYear()} Life Generation Calapan</span>
+            <nav className="lg-foot-legal" aria-label="Legal">
+              <Link to="/privacy">Privacy policy</Link>
+              <Link to="/terms">Terms of use</Link>
+              <Link to="/giving-policy">Giving policy</Link>
+            </nav>
             <span>Calapan, Oriental Mindoro</span>
           </div>
         </div>

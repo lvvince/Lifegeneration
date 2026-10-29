@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X,
-  Users, EyeOff, Send, Search, Check, Share2, BookOpen
+  Users, EyeOff, Send, Search, Check, Share2, BookOpen, ImagePlus
 } from 'lucide-react'
-import { apiGet, apiPost, getUser } from '../api.js'
+import { apiGet, apiPost, apiRequest, API_URL, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
 import '../styles/prayer.css'
 
@@ -28,10 +28,12 @@ const writePrayed = (set) => {
 }
 
 // parehong note, parehong tabingi at kulay tuwing bubuksan (galing sa id)
+const KINDS = ['pin', 'paper', 'stack']
 const look = (id, i) => {
   const n = Number(id) || i + 1
-  return { color: COLORS[(n * 7) % 3], rot: (((n * 37) % 9) - 4) * 0.8, dy: ((n * 53) % 5) * 5 }
+  return { color: COLORS[(n * 7) % 3], kind: KINDS[(n * 5) % 3], rot: (((n * 37) % 9) - 4) * 0.7, flip: n % 2 === 0 }
 }
+const photoUrl = (p) => (/^(https?:|data:|blob:)/.test(String(p)) ? p : p ? `${API_URL}/${String(p).replace(/^\/+/, '')}` : '')
 const when = (d) => new Date(String(d).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
 
 export default function PrayerWall() {
@@ -232,312 +234,74 @@ export default function PrayerWall() {
             i <span>pray</span> for<em>…</em>
           </h1>
 
-          {/* Daily Scripture Bar */}
-          <div className="pw-verse" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span>“{currentVerse}”</span>
-            <b>{currentRef}</b>
-
-            {/* Language Switcher */}
-            {devotional && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  borderRadius: 999,
-                  padding: 2,
-                  background: 'rgba(0,0,0,0.06)',
-                  alignItems: 'center'
-                }}
-                title="Switch Language"
-              >
-                <button
-                  type="button"
-                  onClick={() => setPwLang('en')}
-                  style={{
-                    border: 0,
-                    background: !isTl ? '#ffffff' : 'transparent',
-                    color: !isTl ? '#ff5a0a' : '#586079',
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    cursor: 'pointer',
-                    boxShadow: !isTl ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                  }}
-                >
-                  EN
+          {/* Verse of the day: pinned to the board */}
+          <figure className="pw-vod">
+            <i className="pw-pin" aria-hidden="true" />
+            <figcaption className="pw-vod-top">
+              <span className="pw-vod-label"><BookOpen size={14} aria-hidden="true" /> {isTl ? 'Talata ngayong araw' : 'Verse of the day'}</span>
+              {devotional && (
+                <div className="pw-lang" role="group" aria-label="Language">
+                  <button type="button" aria-pressed={!isTl} className={!isTl ? 'is-on' : ''} onClick={() => setPwLang('en')}>EN</button>
+                  <button type="button" aria-pressed={isTl} className={isTl ? 'is-on' : ''} onClick={() => setPwLang('tl')}>TL</button>
+                </div>
+              )}
+            </figcaption>
+            <blockquote className="pw-vod-q">“{currentVerse}”</blockquote>
+            <cite className="pw-vod-ref">{currentRef}</cite>
+            <div className="pw-vod-acts">
+              {devotional && (
+                <button type="button" className="pw-chip" aria-expanded={showDevotional} onClick={() => setShowDevotional(!showDevotional)}>
+                  {showDevotional ? (isTl ? 'Itago ang Pagninilay' : 'Hide reflection') : (isTl ? 'Basahin ang Pagninilay' : 'Read reflection')}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPwLang('tl')}
-                  style={{
-                    border: 0,
-                    background: isTl ? '#ffffff' : 'transparent',
-                    color: isTl ? '#ff5a0a' : '#586079',
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    cursor: 'pointer',
-                    boxShadow: isTl ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                  }}
-                >
-                  🇵🇭 TL
-                </button>
-              </div>
-            )}
-
-            {/* Read Reflection toggle */}
-            {devotional && (
-              <button
-                type="button"
-                onClick={() => setShowDevotional(!showDevotional)}
-                style={{
-                  border: 0,
-                  background: 'rgba(255, 90, 10, 0.12)',
-                  color: '#ff5a0a',
-                  padding: '3px 11px',
-                  borderRadius: 999,
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                {showDevotional ? (isTl ? 'Itago ang Pagninilay' : 'Hide Reflection') : (isTl ? 'Basahin ang Pagninilay' : 'Read Today’s Reflection')}
+              )}
+              <button type="button" className={`pw-chip${showBibleSearch ? ' is-on' : ''}`} aria-expanded={showBibleSearch} onClick={() => { setShowBibleSearch(!showBibleSearch); if (!showBibleSearch) setBibleResult(null) }}>
+                <Search size={13} aria-hidden="true" /> {showBibleSearch ? (isTl ? 'Isara ang Search' : 'Close search') : (isTl ? 'Maghanap sa Bibliya' : 'Search Bible')}
               </button>
+            </div>
+
+            {showDevotional && devotional && (
+              <div className="pw-vod-more">
+                <p className="pw-vod-theme"><b>{currentTheme}</b> {currentTitle}</p>
+                {currentReflection && <p>{currentReflection}</p>}
+                {currentPrayer && <p className="pw-vod-prayer"><b>{isTl ? 'Panalangin:' : 'Prayer:'}</b> {currentPrayer}</p>}
+              </div>
             )}
 
-            {/* Search Bible button */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowBibleSearch(!showBibleSearch)
-                if (!showBibleSearch) setBibleResult(null)
-              }}
-              style={{
-                border: 0,
-                background: showBibleSearch ? '#ff5a0a' : 'rgba(0,0,0,0.06)',
-                color: showBibleSearch ? '#fff' : 'var(--p-text-2, #586079)',
-                padding: '3px 11px',
-                borderRadius: 999,
-                fontSize: 11.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4
-              }}
-              title="Look up any Bible verse in NIV, Tagalog, NKJV"
-            >
-              <Search size={12} />
-              <span>{showBibleSearch ? (isTl ? 'Isara ang Search' : 'Close Search') : (isTl ? 'Maghanap sa Bibliya' : 'Search Bible')}</span>
-            </button>
-          </div>
-
-          {/* Collapsible Reflection Box */}
-          {showDevotional && devotional && (
-            <div
-              style={{
-                marginTop: 12,
-                padding: '16px 20px',
-                background: 'var(--p-surface, #ffffff)',
-                border: '1px solid var(--p-border, #e5e8f1)',
-                borderRadius: 16,
-                boxShadow: '0 8px 24px -8px rgba(0,0,0,0.08)',
-                maxWidth: 620
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: '#ff5a0a', background: 'rgba(255, 90, 10, 0.1)', padding: '2px 8px', borderRadius: 6 }}>
-                  {currentTheme}
-                </span>
-                <strong style={{ fontSize: 13.5 }}>{currentTitle}</strong>
-              </div>
-              <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.55, color: 'var(--p-text-2, #586079)' }}>
-                {currentReflection}
-              </p>
-    
-              {currentPrayer && (
-                <div style={{ fontSize: 12, fontStyle: 'italic', color: '#c2410c', borderLeft: '3px solid #ff5a0a', paddingLeft: 10, background: 'rgba(255, 90, 10, 0.04)', padding: '6px 10px', borderRadius: '0 8px 8px 0' }}>
-                  <b>{isTl ? 'Panalangin:' : 'Prayer:'}</b> {currentPrayer}
+            {showBibleSearch && (
+              <div className="pw-vod-more">
+                <form className="pw-bs" onSubmit={(e) => { e.preventDefault(); doBibleSearch() }}>
+                  <label className="pw-bs-in">
+                    <Search size={15} aria-hidden="true" />
+                    <input type="text" value={bibleQuery} onChange={(e) => setBibleQuery(e.target.value)} placeholder={isTl ? 'Juan 3:16, Awit 23…' : 'John 3:16, Psalm 23…'} aria-label="Bible passage" autoFocus />
+                  </label>
+                  <select value={bibleTrans} aria-label="Translation" onChange={(e) => { setBibleTrans(e.target.value); if (bibleQuery.trim()) doBibleSearch(bibleQuery, e.target.value) }}>
+                    <option value="niv">NIV</option>
+                    <option value="tl">Tagalog (MBB)</option>
+                    <option value="nkjv">NKJV</option>
+                    <option value="kjv">KJV</option>
+                    <option value="web">WEB</option>
+                  </select>
+                  <button type="submit" className="pw-chip is-solid" disabled={bibleSearching || !bibleQuery.trim()}>{bibleSearching ? '…' : (isTl ? 'Hanapin' : 'Look up')}</button>
+                </form>
+                <div className="pw-bs-pop">
+                  {['John 3:16', 'Jeremiah 29:11', 'Philippians 4:6', 'Psalm 23'].map((chip) => (
+                    <button key={chip} type="button" className={`pw-chip${bibleQuery === chip ? ' is-on' : ''}`} onClick={() => { setBibleQuery(chip); doBibleSearch(chip) }}>{chip}</button>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Collapsible Live Bible Search Box */}
-          {showBibleSearch && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: '16px 20px',
-                background: '#ffffff',
-                border: '1px solid rgba(255, 90, 10, 0.25)',
-                borderRadius: 16,
-                boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)',
-                maxWidth: 620
-              }}
-            >
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  doBibleSearch()
-                }}
-                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}
-              >
-                <div style={{ position: 'relative', flex: '1 1 200px' }}>
-                  <Search size={15} style={{ position: 'absolute', left: 10, top: 11, opacity: 0.5 }} />
-                  <input
-                    type="text"
-                    value={bibleQuery}
-                    onChange={(e) => setBibleQuery(e.target.value)}
-                    placeholder={isTl ? "I-type ang talata (hal. Juan 3:16, Awit 23)..." : "Search passage (e.g. John 3:16, Psalm 23)..."}
-                    style={{
-                      width: '100%',
-                      paddingLeft: 32,
-                      paddingRight: 10,
-                      height: 38,
-                      borderRadius: 10,
-                      border: '1px solid var(--p-border, #e5e8f1)',
-                      fontSize: 13
-                    }}
-                    autoFocus
-                  />
-                </div>
-
-                <select
-                  value={bibleTrans}
-                  onChange={(e) => {
-                    setBibleTrans(e.target.value)
-                    if (bibleQuery.trim()) doBibleSearch(bibleQuery, e.target.value)
-                  }}
-                  style={{
-                    height: 38,
-                    borderRadius: 10,
-                    border: '1px solid var(--p-border, #e5e8f1)',
-                    padding: '0 8px',
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    background: '#fff'
-                  }}
-                >
-                  <option value="niv">NIV</option>
-                  <option value="tl">Tagalog (MBB)</option>
-                  <option value="nkjv">NKJV</option>
-                  <option value="kjv">KJV</option>
-                  <option value="web">WEB</option>
-                </select>
-
-                <button
-                  type="submit"
-                  disabled={bibleSearching || !bibleQuery.trim()}
-                  style={{
-                    background: '#ff5a0a',
-                    color: '#fff',
-                    border: 0,
-                    borderRadius: 10,
-                    padding: '0 16px',
-                    height: 38,
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {bibleSearching ? '...' : (isTl ? 'Hanapin' : 'Lookup')}
-                </button>
-              </form>
-
-              {/* Quick suggestions */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--p-text-3)', textTransform: 'uppercase' }}>
-                  {isTl ? 'Mungkahi:' : 'Popular:'}
-                </span>
-                {['John 3:16', 'Jeremiah 29:11', 'Philippians 4:6', 'Psalm 23'].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => {
-                      setBibleQuery(chip)
-                      doBibleSearch(chip)
-                    }}
-                    style={{
-                      border: 0,
-                      background: bibleQuery === chip ? 'rgba(255, 90, 10, 0.15)' : 'rgba(0,0,0,0.04)',
-                      color: bibleQuery === chip ? '#ff5a0a' : 'inherit',
-                      padding: '2px 8px',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-
-              {bibleError && (
-                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontSize: 12, marginBottom: 8 }}>
-                  {bibleError}
-                </div>
-              )}
-
-              {bibleResult && (
-                <div style={{ padding: '12px 14px', background: 'rgba(255, 90, 10, 0.04)', borderRadius: 12, border: '1px solid rgba(255, 90, 10, 0.15)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <strong style={{ fontSize: 14, color: '#ff5a0a' }}>{bibleResult.reference}</strong>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, background: 'rgba(0,0,0,0.06)', padding: '1px 6px', borderRadius: 4 }}>
-                      {bibleResult.translation_name}
-                    </span>
+                {bibleError && <p className="pw-err" role="alert">{bibleError}</p>}
+                {bibleResult && (
+                  <div className="pw-bs-res">
+                    <p className="pw-bs-ref"><b>{bibleResult.reference}</b> <span>{bibleResult.translation_name}</span></p>
+                    <p className="pw-bs-text">“{bibleResult.text}”</p>
+                    <div className="pw-vod-acts">
+                      <button type="button" className="pw-chip is-solid" onClick={() => handleStickBibleVerse(bibleResult)}><Plus size={13} aria-hidden="true" /> {isTl ? 'I-stick bilang Panalangin' : 'Stick as prayer note'}</button>
+                      <button type="button" className="pw-chip" onClick={() => handleCopyBibleVerse(bibleResult)}>{bibleCopied ? <Check size={13} aria-hidden="true" /> : <Share2 size={13} aria-hidden="true" />} {bibleCopied ? 'Copied' : 'Copy'}</button>
+                    </div>
                   </div>
-                  <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.5, fontStyle: 'italic', color: '#1a1f2e' }}>
-                    &ldquo;{bibleResult.text}&rdquo;
-                  </p>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleStickBibleVerse(bibleResult)}
-                      style={{
-                        background: '#ff5a0a',
-                        color: '#fff',
-                        border: 0,
-                        padding: '4px 10px',
-                        borderRadius: 8,
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      <Plus size={13} />
-                      <span>{isTl ? 'I-stick bilang Panalangin' : 'Stick as Prayer Note'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleCopyBibleVerse(bibleResult)}
-                      style={{
-                        background: '#fff',
-                        border: '1px solid var(--p-border, #e5e8f1)',
-                        padding: '4px 10px',
-                        borderRadius: 8,
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      {bibleCopied ? <Check size={13} color="#16a34a" /> : <Share2 size={13} />}
-                      <span>{bibleCopied ? 'Copied!' : 'Copy'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </figure>
         </div>
 
         <div className="pw-head-r">
@@ -593,27 +357,31 @@ export default function PrayerWall() {
             {shown.map((p, i) => {
               const l = look(p.id, i)
               return (
-                <article
-                  key={p.id}
-                  className={`pw-note c-${l.color}${answered(p) ? ' is-answered' : ''}${prayed.has(p.id) ? ' is-prayed' : ''}`}
-                  style={{ '--r': `${l.rot}deg`, '--i': Math.min(i, 12), '--k': (i % 3) + 1 }}
-                >
-                  <i className="pw-tape" aria-hidden="true" />
-                  <button type="button" className="pw-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer note: ${p.title}`} />
-                  <h3>{p.title}</h3>
-                  <p>{p.body}</p>
-                  <footer>
-                    <span className="pw-by">
-                      {p.visibility === 'private' && <Lock size={12} aria-label="Leaders only" />}
-                      {p.member_name}
-                      <time>{when(p.created_at)}</time>
-                    </span>
-                    <button type="button" className="pw-pray-mini" aria-pressed={prayed.has(p.id)} aria-label={prayed.has(p.id) ? 'Remove prayed mark' : 'I prayed for this'} onClick={() => togglePrayed(p.id)}>
-                      <HandHeart size={17} />
-                    </button>
-                  </footer>
-                  {answered(p) && <span className="pw-stamp">Answered</span>}
-                </article>
+                <div key={p.id} className={`pw-item${p.image ? ' has-photo' : ''}${l.flip ? ' is-flip' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${l.rot}deg` }}>
+                  <article className={`pw-note k-${l.kind} c-${l.color}${answered(p) ? ' is-answered' : ''}${prayed.has(p.id) ? ' is-prayed' : ''}`} style={{ '--k': (i % 3) + 1 }}>
+                    <i className="pw-fix" aria-hidden="true" />
+                    <button type="button" className="pw-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer note: ${p.title}`} />
+                    <h3>{p.title}</h3>
+                    <p>{p.body}</p>
+                    <footer>
+                      <span className="pw-by">
+                        {p.visibility === 'private' && <Lock size={12} aria-label="Leaders only" />}
+                        {p.member_name}
+                        <time>{when(p.created_at)}</time>
+                      </span>
+                      <button type="button" className="pw-pray-mini" aria-pressed={prayed.has(p.id)} aria-label={prayed.has(p.id) ? 'Remove prayed mark' : 'I prayed for this'} onClick={() => togglePrayed(p.id)}>
+                        <HandHeart size={17} />
+                      </button>
+                    </footer>
+                    {answered(p) && <span className="pw-stamp">Answered</span>}
+                  </article>
+                  {p.image && (
+                    <figure className="pw-photo">
+                      <i className="pw-fix is-tape" aria-hidden="true" />
+                      <img src={photoUrl(p.image)} alt={`Photo shared with: ${p.title}`} loading="lazy" decoding="async" />
+                    </figure>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -624,7 +392,7 @@ export default function PrayerWall() {
       {current && createPortal(
         <div className="pw pw-layer"><div className="pw-over" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
           <article className={`pw-big c-${look(current.id, 0).color}${answered(current) ? ' is-answered' : ''}`} role="dialog" aria-modal="true" aria-label={current.title}>
-            <i className="pw-tape" aria-hidden="true" />
+            <i className="pw-fix" aria-hidden="true" />
             <button type="button" className="pw-x" onClick={() => setOpen(null)} aria-label="Close">
               <X size={18} />
             </button>
@@ -639,6 +407,7 @@ export default function PrayerWall() {
               </span>
             )}
             <h2>{current.title}</h2>
+            {current.image && <img className="pw-big-img" src={photoUrl(current.image)} alt={`Photo shared with: ${current.title}`} decoding="async" />}
             <p>{current.body}</p>
             <footer>
               <span>{current.member_name}</span>
@@ -679,6 +448,19 @@ function Composer({ initial, onClose, onDone, toast }) {
   const [color, setColor] = useState('yellow')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [photo, setPhoto] = useState(null)
+  const [preview, setPreview] = useState('')
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+  const pick = (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return setErr('Please attach a JPG, PNG or WEBP photo.')
+    if (f.size > 8 * 1024 * 1024) return setErr('That photo is over 8 MB. Please choose a smaller one.')
+    setErr('')
+    setPhoto(f)
+    setPreview(URL.createObjectURL(f))
+  }
+  const dropPhoto = () => { setPhoto(null); setPreview('') }
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   async function submit(e) {
@@ -688,7 +470,13 @@ function Composer({ initial, onClose, onDone, toast }) {
     setErr('')
     setBusy(true)
     try {
-      const res = await apiPost('/api/prayer/submit', { title: form.title.trim(), body: form.body.trim(), visibility: form.visibility, is_anonymous: form.anonymous })
+      const fd = new FormData()
+      fd.append('title', form.title.trim())
+      fd.append('body', form.body.trim())
+      fd.append('visibility', form.visibility)
+      fd.append('is_anonymous', form.anonymous ? '1' : '0')
+      if (photo) fd.append('image', photo)
+      const res = await apiRequest('/api/prayer/submit', { method: 'POST', body: fd })
       toast(res.message || 'Your note is on the wall.')
       onDone()
     } catch (err) {
@@ -700,13 +488,26 @@ function Composer({ initial, onClose, onDone, toast }) {
   return (
     <div className="pw-over" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className={`pw-big is-compose c-${color}`} onSubmit={submit} noValidate role="dialog" aria-modal="true" aria-label="Write a prayer note">
-        <i className="pw-tape" aria-hidden="true" />
+        <i className="pw-fix" aria-hidden="true" />
         <button type="button" className="pw-x" onClick={onClose} aria-label="Close">
           <X size={18} />
         </button>
         <small className="pw-kicker">Write a note</small>
         <input className="pw-in pw-in-title" value={form.title} onChange={set('title')} placeholder="I pray for…" maxLength={80} autoFocus aria-label="Title" />
         <textarea className="pw-in pw-in-body" value={form.body} onChange={set('body')} placeholder="Share what we can pray about" rows={5} maxLength={600} aria-label="Details" />
+        <div className="pw-attach">
+          {preview ? (
+            <div className="pw-attach-prev">
+              <img src={preview} alt="Selected photo preview" />
+              <button type="button" onClick={dropPhoto} aria-label="Remove photo"><X size={15} /></button>
+            </div>
+          ) : (
+            <label className="pw-attach-btn">
+              <ImagePlus size={16} aria-hidden="true" /> Add a photo <small>optional</small>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} />
+            </label>
+          )}
+        </div>
         {err && <p className="pw-err" role="alert">{err}</p>}
         <div className="pw-opts">
           <div className="pw-sw" role="radiogroup" aria-label="Who can see this?">

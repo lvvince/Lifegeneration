@@ -14,6 +14,7 @@ import DGroups from './pages/DGroups.jsx'
 import Ministries from './pages/Ministries.jsx'
 import PrayerWall from './pages/PrayerWall.jsx'
 import Give from './pages/Give.jsx'
+import Legal from './pages/Legal.jsx'
 import AdminDonations from './pages/admin/AdminDonations.jsx'
 import OfficerDonations from './pages/officer/OfficerDonations.jsx'
 import Events from './pages/member/Events.jsx'
@@ -33,6 +34,7 @@ import OfficerDashboard from './pages/officer/OfficerDashboard.jsx'
 import OfficerAttendance from './pages/officer/OfficerAttendance.jsx'
 import OfficerApplications from './pages/officer/OfficerApplications.jsx'
 import OfficerMembers from './pages/officer/OfficerMembers.jsx'
+import OfficerInsights from './pages/officer/OfficerInsights.jsx'
 import OfficerSideLayout from './pages/officer/OfficerSideLayout.jsx'
 
 // Auth pages: full-screen, walang navbar at walang portal layout
@@ -58,6 +60,9 @@ function PageRoutes() {
       <Route path="/prayers" element={<PrayerWall />} />
       <Route path="/give" element={<Give />} />
       <Route path="/donations" element={<Give />} />
+      <Route path="/privacy" element={<Legal doc="privacy" />} />
+      <Route path="/terms" element={<Legal doc="terms" />} />
+      <Route path="/giving-policy" element={<Legal doc="giving" />} />
 
       {/* Member */}
       <Route element={<ProtectedRoute />}>
@@ -73,6 +78,7 @@ function PageRoutes() {
         <Route path="/officer/attendance" element={<OfficerAttendance />} />
         <Route path="/officer/applications" element={<OfficerApplications />} />
         <Route path="/officer/donations" element={<OfficerDonations />} />
+        <Route path="/officer/insights" element={<OfficerInsights />} />
       </Route>
 
       {/* Admin */}

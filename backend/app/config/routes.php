@@ -73,11 +73,14 @@ $router->post('/api/prayer/delete',         'Prayers::delete');
 // 6. Member Directory & Admin
 $router->get('/api/members',        'Members::index');
 $router->post('/api/members/update','Members::update');
+$router->get('/api/me/attendance',  'Members::my_attendance');
+$router->get('/api/members/{id}/attendance', 'Members::attendance');
 $router->post('/api/members/upload-avatar', 'Members::upload_avatar');
 $router->post('/api/members/remove-avatar', 'Members::remove_avatar');
 $router->get('/api/admin/stats',    'Admin::stats');
 $router->get('/api/stats',          'Admin::stats');
 $router->get('/api/reports/summary', 'Reports::summary');
+$router->get('/api/reports/predictive', 'Reports::predictive');
 
 // 7. Announcements Bulletin
 $router->get('/api/announcements',               'Announcements::index');

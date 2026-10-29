@@ -4,6 +4,7 @@ import { apiGet } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import { downloadCsv } from '../../lib/csv.js'
 import { PageHeader, Stats, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
+import Insights from '../../components/portal/Insights.jsx'
 
 function Bar({ value, max }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
@@ -72,7 +73,7 @@ export default function AdminReports() {
 
   return (
     <>
-      <PageHeader title="Reports" desc="Member numbers and event attendance. Export any table as CSV." />
+      <PageHeader title="Reports" desc="Member numbers, event attendance and forecasts. Export any table as CSV." />
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
       <Stats
@@ -84,6 +85,8 @@ export default function AdminReports() {
           { label: 'Joined in last 30 days', value: m?.new_30_days },
         ]}
       />
+
+      <Insights />
 
       {loading && (
         <section className="p-panel">

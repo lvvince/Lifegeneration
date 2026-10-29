@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Download, Users } from 'lucide-react'
+import { Search, Download, Users, History } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import { downloadCsv } from '../../lib/csv.js'
 import {
-  PageHeader, Empty, Loading, Switch, Badge, ConfirmDialog, useToast,
+  PageHeader, Empty, Loading, Switch, Badge, ConfirmDialog, Modal, useToast,
 } from '../../components/portal/ui.jsx'
+import AttendanceHistory from '../../components/portal/AttendanceHistory.jsx'
 
 const isOn = (m) => Number(m.is_active ?? m.user_active) === 1
 
@@ -22,6 +23,7 @@ export default function AdminMembers() {
   const [status, setStatus] = useState('all')
   const [busyId, setBusyId] = useState(null)
   const [confirm, setConfirm] = useState(null)
+  const [historyOf, setHistoryOf] = useState(null)
 
   useEffect(() => {
     apiGet('/api/members')
@@ -87,11 +89,11 @@ export default function AdminMembers() {
     if (next === 'admin' || m.role === 'admin') {
       setConfirm({
         m,
-        title: next === 'admin' ? 'Make this member an admin?' : 'Remove admin access?',
+        title: next === 'admin' ? 'Make this member an admin?' : (m.user_id === me?.id ? 'Change your own role?' : 'Remove admin access?'),
         message:
           next === 'admin'
             ? `${m.full_name} will be able to manage members, events and reports.`
-            : `${m.full_name} will lose access to the admin pages.`,
+            : (m.user_id === me?.id ? 'You will lose access to the admin pages right after this change. Another active admin must exist.' : `${m.full_name} will lose access to the admin pages.`),
         label: 'Change role',
         run: () => save(m, { role: next }, `${m.full_name} is now ${next}.`),
       })
@@ -212,7 +214,7 @@ export default function AdminMembers() {
               </thead>
               <tbody>
                 {filtered.map((m) => {
-                  const self = m.user_id === me?.id
+                  const self = m.user_id === me?.id && me?.member_id !== 'LG-ADMIN'
                   const busy = busyId === m.user_id
                   return (
                     <tr key={m.id}>
@@ -222,6 +224,9 @@ export default function AdminMembers() {
                         </div>
                         <div className="p-row-sub">{m.email}</div>
                         <div className="p-mono">{m.member_id}</div>
+                        <button type="button" className="p-btn p-btn-quiet p-btn-sm" style={{ marginTop: 6, paddingInline: 0 }} onClick={() => setHistoryOf(m)}>
+                          <History size={14} /> Attendance history
+                        </button>
                       </td>
                       <td className={m.gender ? '' : 'p-muted'}>{m.gender || '—'}</td>
                       <td className={m.dgroup_name ? '' : 'p-muted'}>{m.dgroup_name || '—'}</td>
@@ -231,8 +236,8 @@ export default function AdminMembers() {
                           className="p-input p-auto"
                           style={{ padding: '5px 8px', fontSize: 13 }}
                           value={m.role}
-                          disabled={busy || self || (!isAdmin && m.role === 'admin')}
-                          title={self ? 'You cannot change your own role' : (!isAdmin && m.role === 'admin' ? 'Only an admin can change admin accounts' : undefined)}
+                          disabled={busy || (self && !isAdmin) || (!isAdmin && m.role === 'admin')}
+                          title={self && !isAdmin ? 'You cannot change your own role' : (!isAdmin && m.role === 'admin' ? 'Only an admin can change admin accounts' : undefined)}
                           aria-label={`Role for ${m.full_name}`}
                           onChange={(e) => askRole(m, e.target.value)}
                         >
@@ -265,6 +270,14 @@ export default function AdminMembers() {
         <p className="p-hint" style={{ marginTop: 10 }}>
           Showing {filtered.length} of {members.length} members.
         </p>
+      )}
+
+      {historyOf && (
+        <Modal title={`${historyOf.full_name || historyOf.username}: attended events`} onClose={() => setHistoryOf(null)}>
+          <div style={{ padding: '4px 20px 20px' }}>
+            <AttendanceHistory endpoint={`/api/members/${historyOf.user_id}/attendance`} />
+          </div>
+        </Modal>
       )}
 
       {confirm && (

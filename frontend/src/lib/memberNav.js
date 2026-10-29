@@ -1,7 +1,7 @@
 import {
   LayoutGrid, CalendarDays, Users, HeartHandshake, MessageCircleHeart,
   LayoutDashboard, ClipboardList, UserCheck, FileText, Network, Megaphone,
-  HandCoins,
+  HandCoins, TrendingUp,
 } from 'lucide-react'
 
 /* Mga page ng portal. Dito rin kinukuha ng sidebar ang laman ng bawat icon. */
@@ -45,5 +45,6 @@ export const OFFICER_NAV = [
   O('o-apps', '/officer/applications', 'Applications', ClipboardList, 'Approve or reject ministry applications.'),
   O('o-attendance', '/officer/attendance', 'Attendance', UserCheck, 'Scan passes and record who attended.'),
   O('o-donations', '/officer/donations', 'Donations', HandCoins, 'Review and verify online giving receipts.'),
+  O('o-insights', '/officer/insights', 'Insights', TrendingUp, 'Forecasts for attendance, members and giving.'),
   ...MEMBER_NAV.filter((n) => n.id !== 'home'),
 ]

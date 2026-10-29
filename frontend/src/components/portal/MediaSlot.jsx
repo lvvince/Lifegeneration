@@ -7,29 +7,35 @@ import { MEDIA } from '../../lib/mediaSlots.js'
    <MediaSlot src="/uploads/x.webp" />       -> sariling path (hal. banner ng event)
    Kapag walang file o hindi nag-load, placeholder ang ipinapakita (hindi nabibitak ang layout).
    Video: may poster + play button. Awtomatikong humihinto kapag wala na sa screen o nakatago ang tab. */
-export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint, alt = '', className = '', children }) {
+export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint, ambient, alt = '', className = '', children }) {
   const cfg = (slot && MEDIA[slot]) || {}
-  const type = kind || cfg.kind || 'image'
-  const file = src || cfg.src
   const cover = poster || cfg.poster
+  const [still, setStill] = useState(false) // nasira ang video -> poster na lang
+  const type = still ? 'image' : kind || cfg.kind || 'image'
+  const file = still ? cover : src || cfg.src
+  const auto = !!(ambient ?? cfg.ambient) && type === 'video'
   const name = label || cfg.label || 'media.webp'
   const [ok, setOk] = useState(false)
   const [bad, setBad] = useState(!file)
   const [playing, setPlaying] = useState(false)
   const vid = useRef(null)
   const box = useRef(null)
+  const paused = useRef(false) // ang user mismo ang nag-pause
 
   useEffect(() => {
     setOk(false)
     setBad(!file)
     setPlaying(false)
   }, [file])
+  useEffect(() => setStill(false), [src, slot])
 
   // video: huminto kapag lumabas sa screen o nag-hide ang tab
   useEffect(() => {
     if (type !== 'video' || !box.current) return undefined
     const stop = () => vid.current && !vid.current.paused && vid.current.pause()
-    const io = new IntersectionObserver(([e]) => !e.isIntersecting && stop(), { threshold: 0.25 })
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const start = () => auto && !calm && !paused.current && vid.current?.paused && vid.current.play().catch(() => {})
+    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? e.intersectionRatio >= 0.5 && start() : stop()), { threshold: [0.25, 0.5] })
     io.observe(box.current)
     const onVis = () => document.visibilityState !== 'visible' && stop()
     document.addEventListener('visibilitychange', onVis)
@@ -37,13 +43,18 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
       io.disconnect()
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [type])
+  }, [type, auto])
 
   const toggle = () => {
     const v = vid.current
     if (!v) return
-    if (v.paused) v.play().catch(() => setBad(true))
-    else v.pause()
+    if (v.paused) {
+      paused.current = false
+      v.play().catch(() => setBad(true))
+    } else {
+      paused.current = true
+      v.pause()
+    }
   }
 
   const showPlaceholder = bad || (type === 'image' && !ok)
@@ -87,7 +98,7 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
             controlsList="nodownload noplaybackrate noremoteplayback"
             onContextMenu={(e) => e.preventDefault()}
             onLoadedData={() => setOk(true)}
-            onError={() => setBad(true)}
+            onError={() => (cover ? setStill(true) : setBad(true))}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
           />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, UserCheck, CalendarDays, HandCoins } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, UserCheck, CalendarDays, HandCoins, TrendingUp } from 'lucide-react'
 import { apiGet, getUser } from '../../api.js'
 import '../../styles/officer.css'
 
@@ -10,6 +10,7 @@ const LINKS = [
   { to: '/officer/applications', label: 'Applications', icon: ClipboardList },
   { to: '/officer/attendance', label: 'Attendance', icon: UserCheck },
   { to: '/officer/donations', label: 'Donations', icon: HandCoins },
+  { to: '/officer/insights', label: 'Insights', icon: TrendingUp },
   { to: '/events', label: 'Events', icon: CalendarDays },
 ]
 
@@ -46,7 +47,7 @@ export default function OfficerSideLayout() {
                 <i className="of-badge">{stats.pending}</i>
               )}
               {to === '/officer/donations' && Number(stats?.pending_donations) > 0 && (
-                <i className="of-badge" style={{ background: '#ff5a0a', color: '#fff' }}>{stats.pending_donations}</i>
+                <i className="of-badge" data-tone="orange">{stats.pending_donations}</i>
               )}
             </NavLink>
           ))}

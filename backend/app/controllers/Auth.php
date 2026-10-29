@@ -348,25 +348,22 @@ class Auth extends Controller
         $picture  = $g['picture'] ?? null;
         $googleId = $g['sub'] ?? null;
 
-        // 1. Check if email matches admins table
+        if (isset($g['email_verified']) && !in_array($g['email_verified'], [true, 'true', 1, '1'], true)) {
+            api_response(['error' => 'Your Google email is not verified.'], 401);
+        }
+
+        // 1. Admin email? Do NOT sign in as the bare `admins` row: its id lives in a different
+        //    table and collides with users.id, which made the account "self" for another member
+        //    and blocked role changes. Instead, sign in through the linked member account and
+        //    let users.role (the single source of truth) decide the permissions.
+        $isAdminEmail = false;
         try {
-            $admin = $this->db->raw("SELECT * FROM admins WHERE email = ? LIMIT 1", [$email])->fetch(PDO::FETCH_ASSOC);
+            $admin = $this->db->raw("SELECT id, is_active FROM admins WHERE email = ? LIMIT 1", [$email])->fetch(PDO::FETCH_ASSOC);
             if ($admin) {
                 if (isset($admin['is_active']) && (int) $admin['is_active'] === 0) {
                     api_response(['error' => 'Your administrator account is inactive.'], 403);
                 }
-                unset($admin['password']);
-                $admin['role'] = 'admin';
-                $admin['member_id'] = 'LG-ADMIN';
-                $admin['member'] = null;
-
-                $tokens = $this->issue_tokens($admin, 'LG-ADMIN');
-                api_response([
-                    'success' => true,
-                    'message' => 'Admin Google login successful.',
-                    'user'    => $admin,
-                    'tokens'  => $tokens,
-                ]);
+                $isAdminEmail = true;
             }
         } catch (Exception $e) {}
 
@@ -382,6 +379,11 @@ class Auth extends Controller
                 );
             } catch (Exception $e) {
                 api_response(['error' => 'Failed to create user account: ' . $e->getMessage()], 500);
+            }
+            if ($isAdminEmail) {
+                // First Google sign-in of a registered admin: grant admin once.
+                // Later role changes are made in Members and are never overwritten here.
+                $this->db->raw("UPDATE users SET role = 'admin' WHERE id = ?", [$userId]);
             }
             $user = $this->db->raw("SELECT * FROM users WHERE id = ?", [$userId])->fetch(PDO::FETCH_ASSOC);
         } elseif (empty($user['google_id']) && $googleId) {

@@ -1,0 +1,25 @@
+/* Home: Giving band + legal links sa footer. Sumusunod sa home.css tokens. */
+.lg-give { position: relative; overflow: hidden; background: var(--lg-bg-2); }
+.lg-give-ring { position: absolute; right: -18vw; top: -12vw; width: 56vw; height: 56vw; max-width: 720px; max-height: 720px; border: 2px solid var(--lg-line); border-radius: 50%; pointer-events: none; }
+.lg-give-ring::after { content: ''; position: absolute; inset: 14%; border: 2px solid var(--lg-line); border-radius: 50%; }
+.lg-give-grid { position: relative; display: grid; gap: clamp(28px, 5vw, 64px); align-items: center; }
+.lg-give-card { padding: clamp(20px, 4vw, 34px); border: 1px solid var(--lg-line); border-radius: 24px; background: var(--lg-bg); }
+.lg-give-verse { margin: 0 0 20px; padding: 0 0 20px; border-bottom: 1px solid var(--lg-line); color: var(--lg-text); }
+.lg-give-verse svg { color: var(--lg-accent); }
+.lg-give-verse p { margin: 10px 0 8px; font-size: clamp(1.05rem, 3.6vw, 1.3rem); font-weight: 600; line-height: 1.5; letter-spacing: -0.005em; }
+.lg-give-verse cite { color: var(--lg-text-2); font-size: 0.78rem; font-style: normal; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.lg-give-go { width: 100%; justify-content: center; }
+.lg-give-grid > * { min-width: 0; }
+.lg-give-points { display: grid; gap: 4px; margin: 20px 0 0; padding: 0; list-style: none; }
+.lg-give-points li { display: flex; align-items: center; gap: 12px; min-height: 40px; color: var(--lg-text-2); font-size: 0.95rem; }
+.lg-give-points svg { flex: none; color: var(--lg-accent); }
+.lg-give-policy { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--lg-line); color: var(--lg-text-2); font-size: 0.85rem; line-height: 1.55; }
+.lg-give-policy a { color: var(--lg-accent); text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) {
+  }
+
+.lg-foot-legal { display: flex; flex-wrap: wrap; gap: 0 18px; }
+.lg-foot-legal a { display: inline-flex; align-items: center; min-height: 36px; color: #b9b4aa; text-decoration: none; transition: color 0.2s; }
+@media (hover: hover) { .lg-foot-legal a:hover { color: var(--lg-hero-accent); } }
+@media (min-width: 900px) { .lg-foot-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { 

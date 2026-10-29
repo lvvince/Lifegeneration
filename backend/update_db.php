@@ -376,6 +376,21 @@ try {
 
 
 
+
+// Prayer wall photo
+echo "Checking 'image' in 'prayer_requests'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `prayer_requests` LIKE 'image'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `prayer_requests` ADD COLUMN `image` VARCHAR(255) DEFAULT NULL AFTER `body`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
 echo "\n========================================================\n";
 echo "✓ ALL DATABASE UPDATES COMPLETED SUCCESSFULLY!\n";
 echo "You can now refresh your browser and use all features.\n";

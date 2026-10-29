@@ -1466,3 +1466,26 @@ html[data-theme="dark"] .min-vol-pending-badge {
   border: 1px solid #bae6fd; border-radius: 8px;
   padding: 8px 10px; text-align: center;
 }
+
+/* ===== Walang aksidenteng text selection =====
+   Kontrol at dekorasyon lang ang hindi napipili (button, link, nav, tab, larawan).
+   Ang mga talata, talata ng Bibliya, input at code ay napipili at nakokopya pa rin. */
+button, a, summary, nav, label, [role='button'], [role='tab'], [role='radio'], thead, figure, img, svg, video {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+label:has(input[type='text']), label:has(input[type='email']), label:has(input[type='tel']), label:has(input[type='number']), label:has(input[type='search']), label:has(textarea) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+img, svg, video { -webkit-user-drag: none; -webkit-touch-callout: none; }
+input, textarea, select, [contenteditable='true'], .selectable, blockquote, code, pre {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

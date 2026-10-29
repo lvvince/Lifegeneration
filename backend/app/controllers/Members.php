@@ -35,6 +35,66 @@ class Members extends Controller
         api_response($members);
     }
 
+
+    // Attended-event history ng sariling account (member)
+    public function my_attendance()
+    {
+        $user = require_auth_user();
+        api_response($this->attendance_for((int) $user['id']));
+    }
+
+    // Attended-event history ng isang member (staff lang). {id} = users.id
+    public function attendance($userId)
+    {
+        require_staff_user();
+        api_response($this->attendance_for((int) $userId));
+    }
+
+    private function attendance_for($userId)
+    {
+        $rows = $this->db->raw(
+            "SELECT e.id AS event_id, e.title, e.event_date, e.event_time, e.location,
+                    ea.rsvp_status, ea.checked_in, ea.checked_in_at
+             FROM event_attendances ea
+             JOIN events e ON e.id = ea.event_id
+             WHERE ea.user_id = ?
+             ORDER BY e.event_date DESC, e.id DESC",
+            [$userId]
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $today = date('Y-m-d');
+        $attended = 0; $missed = 0; $first = null; $last = null;
+        foreach ($rows as &$r) {
+            $r['checked_in'] = (int) $r['checked_in'];
+            $past = substr($r['event_date'], 0, 10) < $today;
+            if ($r['checked_in'] === 1) { $r['status'] = 'attended'; $attended++; $last = $last ?: $r['event_date']; $first = $r['event_date']; }
+            elseif ($r['rsvp_status'] === 'cancelled') { $r['status'] = 'cancelled'; }
+            elseif ($past) { $r['status'] = 'missed'; $missed++; }
+            else { $r['status'] = 'upcoming'; }
+        }
+        unset($r);
+
+        // Streak: magkakasunod na attended sa pinakabagong past events na may record
+        $streak = 0;
+        foreach ($rows as $r) {
+            if ($r['status'] === 'upcoming' || $r['status'] === 'cancelled') continue;
+            if ($r['status'] === 'attended') $streak++; else break;
+        }
+
+        $counted = $attended + $missed;
+        return [
+            'summary' => [
+                'attended'   => $attended,
+                'missed'     => $missed,
+                'rate'       => $counted > 0 ? (int) round($attended / $counted * 100) : 0,
+                'streak'     => $streak,
+                'first_date' => $first,
+                'last_date'  => $last,
+            ],
+            'history' => $rows,
+        ];
+    }
+
     public function update()
     {
         $user  = require_auth_user();
@@ -119,9 +179,6 @@ class Members extends Controller
             if (!$isAdmin && !$isOfficer) {
                 api_response(['error' => 'Only an admin or officer can change roles.'], 403);
             }
-            if ($isSelf) {
-                api_response(['error' => 'You cannot change your own role.'], 422);
-            }
             $targetRole = strtolower(trim((string)$input['role']));
             if ($targetRole === 'member') {
                 $targetRole = 'user';
@@ -131,6 +188,22 @@ class Members extends Controller
                 api_response(['error' => 'Only an administrator can assign the admin role.'], 403);
             }
             $allowed_roles = ['user', 'officer', 'admin'];
+            if ($isSelf) {
+                // Only an admin may change their own role (officers can never self-promote),
+                // and the organisation must always keep at least one active admin.
+                if (!$isAdmin) {
+                    api_response(['error' => 'You cannot change your own role.'], 403);
+                }
+                if ($targetRole !== 'admin') {
+                    $left = (int) $this->db->raw("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1 AND id <> ?", [$targetUserId])->fetchColumn();
+                    try {
+                        $left += (int) $this->db->raw("SELECT COUNT(*) FROM admins WHERE is_active = 1 AND email <> ?", [(string) ($user['email'] ?? '')])->fetchColumn();
+                    } catch (Exception $e) {}
+                    if ($left < 1) {
+                        api_response(['error' => 'You are the only active admin. Make another admin first.'], 409);
+                    }
+                }
+            }
             if (in_array($targetRole, $allowed_roles, true)) {
                 $this->db->raw("UPDATE users SET role = ? WHERE id = ?", [$targetRole, $targetUserId]);
             } else {

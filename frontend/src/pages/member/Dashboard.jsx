@@ -5,6 +5,7 @@ import { resolveImageUrl, initials } from '../../lib/format.js'
 import { ArrowRight, Cake, Calendar, CalendarDays, CalendarPlus, Camera, Check, CheckCircle, Clock, Download, Edit3, HeartHandshake, MapPin, QrCode, Shield, Ticket, Trash2, Upload, User, Users, X } from 'lucide-react'
 import { addToGoogleCalendar } from '../../utils/calendar.js'
 import '../../styles/pages.css'
+import AttendanceHistory from '../../components/portal/AttendanceHistory.jsx'
 
 // Digital Attendance Pass Modal
 function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClose }) {
@@ -505,6 +506,14 @@ export default function Dashboard() {
             Browse events <ArrowRight size={17} />
           </Link>
         </div>
+      </section>
+
+      {/* ===== 3b. attended events history ===== */}
+      <section className="fb fb-tint" id="history">
+        <h2>
+          attended <em className="hl hl-blue">events</em>
+        </h2>
+        <AttendanceHistory endpoint="/api/me/attendance" />
       </section>
 
       {/* ===== 4. prayer (navy) ===== */}
