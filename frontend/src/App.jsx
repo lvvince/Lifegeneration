@@ -15,6 +15,7 @@ import Ministries from './pages/Ministries.jsx'
 import GiftsMatcher from './pages/GiftsMatcher.jsx'
 import PrayerWall from './pages/PrayerWall.jsx'
 import Give from './pages/Give.jsx'
+import Chat from './pages/Chat.jsx'
 import Legal from './pages/Legal.jsx'
 import AdminDonations from './pages/admin/AdminDonations.jsx'
 import OfficerDonations from './pages/officer/OfficerDonations.jsx'
@@ -62,6 +63,7 @@ function PageRoutes() {
       <Route path="/prayer" element={<PrayerWall />} />
       <Route path="/prayers" element={<PrayerWall />} />
       <Route path="/give" element={<Give />} />
+      <Route path="/chat" element={<Chat />} />
       <Route path="/donations" element={<Give />} />
       <Route path="/privacy" element={<Legal doc="privacy" />} />
       <Route path="/terms" element={<Legal doc="terms" />} />

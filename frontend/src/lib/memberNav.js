@@ -1,12 +1,13 @@
 import {
   LayoutGrid, CalendarDays, Users, HeartHandshake, MessageCircleHeart,
   LayoutDashboard, ClipboardList, UserCheck, FileText, Network, Megaphone,
-  HandCoins, TrendingUp, Sparkles,
+  HandCoins, TrendingUp, Sparkles, MessageSquare,
 } from 'lucide-react'
 
 /* Mga page ng portal. Dito rin kinukuha ng sidebar ang laman ng bawat icon. */
 export const MEMBER_NAV = [
   { id: 'home',     to: '/dashboard',     label: 'Overview',      icon: LayoutGrid,        end: true, blurb: 'Your space: updates, events and everything in one place.' },
+  { id: 'chat',     to: '/chat',          label: 'Fellowship Chat', icon: MessageSquare,   blurb: 'Chat with youth members, ask questions, and share photos.' },
   { id: 'events',   to: '/events',        label: 'Events',        icon: CalendarDays,      blurb: 'Youth nights, worship and special days.' },
   { id: 'dgroups',  to: '/dgroups',       label: 'D-Groups',      icon: Users,             blurb: 'Grow in faith with friends your age.' },
   { id: 'ministries', to: '/ministries',  label: 'Ministries',    icon: HeartHandshake,    blurb: 'Use your gifts to serve the community.' },
