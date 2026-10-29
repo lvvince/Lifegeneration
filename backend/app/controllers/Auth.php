@@ -66,6 +66,7 @@ class Auth extends Controller
         $user['age']         = $member['age'] ?? ($user['age'] ?? null);
         $user['gender']      = $member['gender'] ?? ($user['gender'] ?? null);
         $user['address']     = $member['address'] ?? ($user['address'] ?? null);
+        $user['bio']         = $member['bio'] ?? ($user['bio'] ?? null);
         $user['dgroup_id']   = $member['dgroup_id'] ?? null;
         $user['ministry_id'] = $member['ministry_id'] ?? null;
         $user['joined_at']   = $member['joined_at'] ?? ($member['created_at'] ?? ($user['created_at'] ?? null));
@@ -187,24 +188,40 @@ class Auth extends Controller
 
                 unset($admin['password']);
                 $admin['role'] = 'admin';
-                $admin['member_id'] = 'LG-ADMIN';
-                $admin['member'] = null;
 
-                $tokens = $this->issue_tokens($admin, 'LG-ADMIN');
-
-                // Keep users table admin in sync if exists
+                // Try to load full profile from users+members tables for this admin
+                $adminUserRow = null;
+                $adminMemberRow = null;
                 try {
-                    $uAdmin = $this->db->raw("SELECT id FROM users WHERE email = ? LIMIT 1", [$admin['email']])->fetch(PDO::FETCH_ASSOC);
-                    if ($uAdmin) {
+                    $adminUserRow = $this->db->raw("SELECT * FROM users WHERE email = ? LIMIT 1", [$admin['email']])->fetch(PDO::FETCH_ASSOC);
+                    if ($adminUserRow) {
+                        // Sync password hash
                         $newHash = password_hash($password, PASSWORD_DEFAULT);
-                        $this->db->raw("UPDATE users SET password = ?, password_hash = ? WHERE id = ?", [$newHash, $newHash, $uAdmin['id']]);
+                        $this->db->raw("UPDATE users SET password = ?, password_hash = ? WHERE id = ?", [$newHash, $newHash, $adminUserRow['id']]);
+                        $adminMemberRow = $this->find_member($adminUserRow['id']);
                     }
                 } catch (Exception $e) {}
+
+                $code = $adminMemberRow['member_id'] ?? ($adminMemberRow['member_code'] ?? 'LG-2026-ADMIN');
+                $tokens = $this->issue_tokens($admin, $code);
+
+                if ($adminUserRow) {
+                    $payload = $this->user_payload($adminUserRow, $adminMemberRow ?: []);
+                    if (empty($payload['member_id'])) $payload['member_id'] = 'LG-2026-ADMIN';
+                } else {
+                    $admin['member_id'] = 'LG-2026-ADMIN';
+                    $admin['member'] = null;
+                    $admin['age'] = null;
+                    $admin['gender'] = null;
+                    $admin['address'] = null;
+                    $admin['bio'] = null;
+                    $payload = $admin;
+                }
 
                 api_response([
                     'success' => true,
                     'message' => 'Admin login successful.',
-                    'user'    => $admin,
+                    'user'    => $payload,
                     'tokens'  => $tokens,
                 ]);
             }
@@ -418,20 +435,48 @@ class Auth extends Controller
     public function me()
     {
         $auth = require_auth_user();
+        $authId = (int) $auth['id'];
 
-        // Check admins table
+        // For admins: check users+members tables for full profile data (age, gender, address, bio etc.)
         if (($auth['role'] ?? '') === 'admin') {
+            // Try users table first (admin user record with full profile)
+            $user = $this->db->raw("SELECT * FROM users WHERE id = ? AND role = 'admin' LIMIT 1", [$authId])->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                // If id doesn't match, try finding by admin email
+                try {
+                    $adminRow = $this->db->raw("SELECT email FROM admins WHERE id = ? LIMIT 1", [$authId])->fetch(PDO::FETCH_ASSOC);
+                    if ($adminRow && !empty($adminRow['email'])) {
+                        $user = $this->db->raw("SELECT * FROM users WHERE email = ? LIMIT 1", [$adminRow['email']])->fetch(PDO::FETCH_ASSOC);
+                    }
+                } catch (Exception $e) {}
+            }
+
+            if ($user) {
+                $member = $this->find_member($user['id']);
+                $payload = $this->user_payload($user, $member ?: []);
+                if (empty($payload['member_id'])) {
+                    $payload['member_id'] = 'LG-2026-ADMIN';
+                }
+                api_response(['user' => $payload]);
+            }
+
+            // Fallback: basic admin info from admins table
             try {
-                $admin = $this->db->raw("SELECT id, username, full_name, email, role, avatar, is_active FROM admins WHERE id = ? LIMIT 1", [(int) $auth['id']])->fetch(PDO::FETCH_ASSOC);
+                $admin = $this->db->raw("SELECT id, username, full_name, email, role, avatar, is_active FROM admins WHERE id = ? LIMIT 1", [$authId])->fetch(PDO::FETCH_ASSOC);
                 if ($admin) {
-                    $admin['member_id'] = 'LG-ADMIN';
+                    $admin['member_id'] = 'LG-2026-ADMIN';
                     $admin['member'] = null;
+                    $admin['age'] = null;
+                    $admin['gender'] = null;
+                    $admin['address'] = null;
+                    $admin['bio'] = null;
                     api_response(['user' => $admin]);
                 }
             } catch (Exception $e) {}
         }
 
-        $user = $this->db->raw("SELECT * FROM users WHERE id = ? LIMIT 1", [(int) $auth['id']])->fetch(PDO::FETCH_ASSOC);
+        $user = $this->db->raw("SELECT * FROM users WHERE id = ? LIMIT 1", [$authId])->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
             api_response(['error' => 'User not found.'], 404);
         }

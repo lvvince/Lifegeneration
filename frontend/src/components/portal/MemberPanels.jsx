@@ -468,6 +468,16 @@ export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
           </>
         )}
 
+        {(item.id === 'chat' || item.id === 'a-chat') && (
+          <div className="sk-mine">
+            <span className="sk-tile is-lg">
+              <Icon size={22} strokeWidth={1.7} />
+            </span>
+            <small>Fellowship Chatroom</small>
+            <b>Connect with youth members, officers, and admins in real-time fellowship.</b>
+          </div>
+        )}
+
         {item.id === 'prayer' && (
           <div className="sk-mine">
             <span className="sk-tile is-lg">

@@ -124,3 +124,4 @@ $router->post('/api/chat/messages/{id}/pin',    'Chat::pin');
 $router->post('/api/chat/messages/{id}/react',  'Chat::react');
 $router->post('/api/chat/presence/ping',        'Chat::presence');
 $router->get('/api/chat/members',              'Chat::members');
+$router->get('/api/chat/user-profile/{id}',    'Chat::user_profile');

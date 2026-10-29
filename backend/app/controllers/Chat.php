@@ -121,7 +121,7 @@ class Chat extends Controller
                    u.email AS sender_email,
                    u.role AS sender_role,
                    mem.full_name AS sender_full_name,
-                   mem.avatar_url AS sender_avatar,
+                   mem.avatar AS sender_avatar,
                    -- Parent reply preview
                    rm.content AS reply_content,
                    rm.image_url AS reply_image,
@@ -250,15 +250,15 @@ class Chat extends Controller
             api_response(['error' => 'Only Pastors, Admins, and Officers can post in the Church Announcements room.'], 403);
         }
 
-        // Handle Image upload (JPG, PNG, WEBP, max 5MB)
+        // Handle Image upload (JPG, PNG, WEBP, max 50MB)
         $imageUrl = null;
         if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
             $f = $_FILES['image'];
             if ($f['error'] !== UPLOAD_ERR_OK) {
                 api_response(['error' => 'Image upload failed. Please try again.'], 422);
             }
-            if ($f['size'] > 5 * 1024 * 1024) {
-                api_response(['error' => 'Image must not exceed 5MB.'], 422);
+            if ($f['size'] > 50 * 1024 * 1024) {
+                api_response(['error' => 'Image must not exceed 50MB.'], 422);
             }
             $imgInfo = @getimagesize($f['tmp_name']);
             if (!$imgInfo) {
@@ -317,7 +317,7 @@ class Chat extends Controller
                    u.email AS sender_email,
                    u.role AS sender_role,
                    mem.full_name AS sender_full_name,
-                   mem.avatar_url AS sender_avatar,
+                   mem.avatar AS sender_avatar,
                    rm.content AS reply_content,
                    rm.image_url AS reply_image,
                    ru.username AS reply_sender_name
@@ -498,7 +498,7 @@ class Chat extends Controller
     public function members()
     {
         $stmt = $this->db->raw("
-            SELECT u.id, u.username, u.role, mem.full_name, mem.avatar_url
+            SELECT u.id, u.username, u.role, mem.full_name, mem.avatar AS avatar_url
             FROM users u
             LEFT JOIN members mem ON mem.user_id = u.id
             WHERE u.is_active = 1
@@ -507,4 +507,40 @@ class Chat extends Controller
         ");
         api_response($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
+
+    /**
+     * GET /api/chat/user-profile/{id}
+     * Returns rich member card details (ministry, dgroup, bio, role, joined date, personal details)
+     */
+    public function user_profile($userId)
+    {
+        $userId = (int) $userId;
+        $stmt = $this->db->raw("
+            SELECT u.id, u.username, u.email, u.role, u.is_active,
+                   COALESCE(mem.full_name, u.full_name, u.username) AS full_name,
+                   mem.avatar AS avatar,
+                   COALESCE(mem.bio, u.bio) AS bio,
+                   COALESCE(mem.gender, u.gender) AS gender,
+                   COALESCE(mem.age, u.age) AS age,
+                   COALESCE(mem.address, u.address) AS address,
+                   COALESCE(mem.member_id, mem.member_code) AS member_id,
+                   COALESCE(mem.joined_at, u.created_at) AS joined_at,
+                   d.id AS dgroup_id, d.name AS dgroup_name, d.leader_name AS dgroup_leader,
+                   min.id AS ministry_id, min.name AS ministry_name
+            FROM users u
+            LEFT JOIN members mem ON mem.user_id = u.id
+            LEFT JOIN dgroups d ON d.id = mem.dgroup_id
+            LEFT JOIN ministries min ON min.id = mem.ministry_id
+            WHERE u.id = ?
+            LIMIT 1
+        ", [$userId]);
+
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$profile) {
+            api_response(['error' => 'Member profile not found.'], 404);
+        }
+
+        api_response(['profile' => $profile]);
+    }
 }
+

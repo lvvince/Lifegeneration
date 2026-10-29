@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight, HandCoins } from 'lucide-react'
+import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight, HandCoins, MessageSquare } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate, fmtCurrency, isUpcoming } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
@@ -135,6 +135,7 @@ export default function AdminDashboard() {
             {pending > 0 ? <span className="ao-pill">{pending}</span> : <ArrowUpRight size={16} className="ao-go" />}
           </Link>
           <div className="ao-quick">
+            <Link to="/chat"><MessageSquare size={18} /><span>Chat</span></Link>
             <Link to="/admin/check-in"><UserCheck size={18} /><span>Check-in</span></Link>
             <Link to="/admin/reports"><FileText size={18} /><span>Reports</span></Link>
             <Link to="/admin/announcements"><Megaphone size={18} /><span>Announce</span></Link>

@@ -3,9 +3,10 @@ import {
   MessageSquare, Send, Image as ImageIcon, Smile, Pin, Trash2,
   Edit2, CornerUpLeft, Search, X, Check, CheckCheck, Loader2,
   Users, Megaphone, Sparkles, Heart, Lock, AlertCircle, ArrowLeft,
-  ChevronDown, RefreshCw, ThumbsUp, Flame, ShieldAlert, AtSign
+  ChevronDown, RefreshCw, ThumbsUp, Flame, ShieldAlert, AtSign, HeartHandshake, MapPin, Cake, Shield, User as UserIcon
 } from 'lucide-react'
 import { apiGet, apiPost, getUser } from '../api.js'
+import { resolveImageUrl } from '../lib/format.js'
 import '../styles/pages.css'
 
 // Quick reaction map
@@ -38,8 +39,11 @@ export default function Chat() {
   const [showSearch, setShowSearch] = useState(false)
   const [lightboxImage, setLightboxImage] = useState(null)
   const [mobileShowChat, setMobileShowChat] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(true)
   const [showMentionMenu, setShowMentionMenu] = useState(false)
   const [mentionFilter, setMentionFilter] = useState('')
+  const [userProfilePopup, setUserProfilePopup] = useState(null)
+  const [loadingProfile, setLoadingProfile] = useState(false)
 
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -47,6 +51,24 @@ export default function Chat() {
   const pollTimerRef = useRef(null)
 
   const isStaff = currentUser && ['admin', 'officer', 'moderator'].includes(currentUser.role)
+
+  const handleOpenUserProfile = async (userId, e) => {
+    e?.stopPropagation()
+    if (!userId) return
+    setLoadingProfile(true)
+    setUserProfilePopup({ id: userId, loading: true })
+    try {
+      const res = await apiGet(`/api/chat/user-profile/${userId}`)
+      if (res?.profile) {
+        setUserProfilePopup(res.profile)
+      }
+    } catch (err) {
+      console.error('Failed to load user profile card:', err)
+      setUserProfilePopup(null)
+    } finally {
+      setLoadingProfile(false)
+    }
+  }
 
   // 1. Load Rooms & Member Directory on mount
   useEffect(() => {
@@ -136,8 +158,8 @@ export default function Chat() {
       alert('Only JPG, PNG, and WEBP images are supported.')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size exceeds the 5MB limit.')
+    if (file.size > 50 * 1024 * 1024) {
+      alert('File size exceeds the 50MB limit.')
       return
     }
 
@@ -325,10 +347,9 @@ export default function Chat() {
             display: 'flex',
             flexDirection: 'column',
             background: '#fafbfd',
-            flexShrink: 0,
-            ...(mobileShowChat ? { display: 'none' } : {})
+            flexShrink: 0
           }}
-          className="chat-room-sidebar"
+          className={`chat-room-sidebar ${mobileShowChat ? 'is-mobile-chat-open' : ''} ${!showSidebar ? 'is-collapsed' : ''}`}
         >
           {/* Header */}
           <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--p-border, #e5e8f1)', background: '#fff' }}>
@@ -458,6 +479,7 @@ export default function Chat() {
             background: '#ffffff',
             minWidth: 0
           }}
+          className={`chat-main-pane ${!mobileShowChat ? 'is-mobile-rooms-open' : ''}`}
         >
           {/* Header */}
           {activeRoom ? (
@@ -472,16 +494,41 @@ export default function Chat() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                {/* Mobile Back Button */}
+                {/* Back to All Rooms Button */}
                 <button
                   type="button"
-                  onClick={() => setMobileShowChat(false)}
-                  className="chat-back-mobile"
+                  onClick={() => {
+                    setMobileShowChat(false)
+                    setShowSidebar(prev => !prev)
+                  }}
+                  className="chat-back-btn"
+                  title="Back to all chat rooms"
                   style={{
-                    border: 'none', background: 'transparent', cursor: 'pointer', padding: 4, display: 'none'
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 13px',
+                    borderRadius: 12,
+                    background: '#fff1e6',
+                    border: '1.5px solid #ffd8bf',
+                    color: '#c2410c',
+                    fontSize: 12.5,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#ffe5d0'
+                    e.currentTarget.style.borderColor = '#fb923c'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#fff1e6'
+                    e.currentTarget.style.borderColor = '#ffd8bf'
                   }}
                 >
-                  <ArrowLeft size={18} color="#1a1f2e" />
+                  <ArrowLeft size={16} strokeWidth={2.8} color="#c2410c" />
+                  <span>All Rooms</span>
                 </button>
 
                 <div
@@ -634,18 +681,24 @@ export default function Chat() {
                       position: 'relative'
                     }}
                   >
-                    {/* Avatar */}
+                    {/* Avatar with tap/click card trigger */}
                     <div
+                      onClick={(e) => handleOpenUserProfile(msg.sender_id, e)}
+                      title="View member card & bio"
                       style={{
-                        width: 34, height: 34, borderRadius: '50%',
+                        width: 36, height: 36, borderRadius: '50%',
                         background: isMine ? '#ff5a0a' : isMsgStaff ? '#6366f1' : '#e5e7eb',
                         color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 800, fontSize: 13, flexShrink: 0
+                        fontWeight: 800, fontSize: 13, flexShrink: 0,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                        transition: 'transform 0.15s ease',
                       }}
+                      className="chat-avatar-hover"
                     >
                       {msg.sender_avatar ? (
                         <img
-                          src={msg.sender_avatar}
+                          src={resolveImageUrl(msg.sender_avatar)}
                           alt="avatar"
                           style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                         />
@@ -658,7 +711,12 @@ export default function Chat() {
                     <div style={{ maxWidth: '75%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
                       {/* Name & Role */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 11 }}>
-                        <span style={{ fontWeight: 700, color: '#1a1f2e' }}>
+                        <span
+                          onClick={(e) => handleOpenUserProfile(msg.sender_id, e)}
+                          title="View member card & bio"
+                          style={{ fontWeight: 700, color: '#1a1f2e', cursor: 'pointer', textDecoration: 'underline text-decoration-color: transparent', transition: 'color 0.15s' }}
+                          className="chat-name-hover"
+                        >
                           {isMine ? 'You' : msg.sender_full_name || msg.sender_name}
                         </span>
                         {isMsgStaff && (
@@ -721,9 +779,9 @@ export default function Chat() {
                         {msg.image_url && !msg.is_deleted && (
                           <div style={{ marginTop: 8 }}>
                             <img
-                              src={msg.image_url}
+                              src={resolveImageUrl(msg.image_url)}
                               alt="attached"
-                              onClick={() => setLightboxImage(msg.image_url)}
+                              onClick={() => setLightboxImage(resolveImageUrl(msg.image_url))}
                               style={{
                                 maxWidth: '100%',
                                 maxHeight: 240,
@@ -987,7 +1045,7 @@ export default function Chat() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                title="Attach photo (JPG, PNG, WEBP max 5MB)"
+                title="Attach photo (JPG, PNG, WEBP max 50MB)"
                 style={{
                   border: '1px solid var(--p-border, #e5e8f1)',
                   background: '#fafbfd',
@@ -1106,16 +1164,274 @@ export default function Chat() {
         </div>
       )}
 
+      
+      {/* ─── REDESIGNED MEMBER PROFILE & BIO CARD MODAL ───────────── */}
+      {userProfilePopup && (
+        <div
+          onClick={() => setUserProfilePopup(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            backdropFilter: 'blur(4px)'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              borderRadius: 24,
+              maxWidth: 420,
+              width: '100%',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid var(--p-border, #e2e8f0)',
+              animation: 'profilePop 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            {/* Elegant Header Banner */}
+            <div
+              style={{
+                background: userProfilePopup.role === 'admin'
+                  ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+                  : userProfilePopup.role === 'officer'
+                    ? 'linear-gradient(135deg, #3730a3 0%, #4f46e5 100%)'
+                    : 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)',
+                height: 100,
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Role Pill */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  borderRadius: 999,
+                  background: 'rgba(255, 255, 255, 0.22)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#ffffff',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em'
+                }}
+              >
+                {userProfilePopup.role === 'admin' ? (
+                  <><Shield size={12} /> Administrator</>
+                ) : userProfilePopup.role === 'officer' ? (
+                  <><Sparkles size={12} /> Church Officer</>
+                ) : (
+                  <><UserIcon size={12} /> LifeGen Member</>
+                )}
+              </div>
+
+              {/* Close Button - Explicit styling to never shrink or render as dot */}
+              <button
+                type="button"
+                onClick={() => setUserProfilePopup(null)}
+                aria-label="Close"
+                style={{
+                  width: 32,
+                  height: 32,
+                  minWidth: 32,
+                  minHeight: 32,
+                  padding: 0,
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  border: '1px solid rgba(255, 255, 255, 0.35)',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', width: 14, height: 14 }}>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Avatar & Identity */}
+            <div style={{ padding: '0 22px 22px', textAlign: 'center' }}>
+              {/* Circular Avatar - Larger and positioned center top */}
+              <div
+                style={{
+                  width: 92,
+                  height: 92,
+                  borderRadius: '50%',
+                  margin: '-46px auto 12px',
+                  border: '4px solid #ffffff',
+                  background: '#ff5a0a',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 34,
+                  fontWeight: 900,
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  zIndex: 3
+                }}
+              >
+                {userProfilePopup.avatar ? (
+                  <img
+                    src={resolveImageUrl(userProfilePopup.avatar)}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+                  />
+                ) : (
+                  (userProfilePopup.username || 'U').charAt(0).toUpperCase()
+                )}
+              </div>
+
+              {/* Name & Username */}
+              <h3 style={{ margin: '0 0 4px', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                {userProfilePopup.full_name || userProfilePopup.username}
+              </h3>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', marginBottom: 14 }}>
+                <span>@{userProfilePopup.username}</span>
+                {userProfilePopup.member_id && (
+                  <>
+                    <span>&bull;</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, background: '#f1f5f9', fontFamily: 'monospace', fontWeight: 700, fontSize: 11.5, color: '#334155' }}>
+                      {userProfilePopup.member_id}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Bio Box */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 16,
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  marginBottom: 14
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#ea580c', marginBottom: 5 }}>
+                  <Heart size={13} color="#ea580c" />
+                  <span>About &bull; Bio</span>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.5, fontStyle: userProfilePopup.bio ? 'normal' : 'italic', whiteSpace: 'pre-wrap', maxHeight: 85, overflowY: 'auto' }}>
+                  {userProfilePopup.bio || 'No bio shared yet.'}
+                </p>
+              </div>
+
+              {/* Ministry & D-Group Badges */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                {/* Ministry Team */}
+                <div style={{ background: '#fff7ed', border: '1.5px solid #ffedd5', borderRadius: 14, padding: '10px 12px', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', color: '#c2410c', marginBottom: 3 }}>
+                    <HeartHandshake size={13} color="#c2410c" />
+                    <span>Ministry</span>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userProfilePopup.ministry_name || 'None yet'}>
+                    {userProfilePopup.ministry_name || 'None yet'}
+                  </div>
+                </div>
+
+                {/* D-Group */}
+                <div style={{ background: '#eef2ff', border: '1.5px solid #e0e7ff', borderRadius: 14, padding: '10px 12px', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', color: '#4338ca', marginBottom: 3 }}>
+                    <Users size={13} color="#4338ca" />
+                    <span>D-Group</span>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userProfilePopup.dgroup_name || 'None yet'}>
+                    {userProfilePopup.dgroup_name || 'None yet'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Details Section (Clean, spacious, non-squished format) */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* Age & Gender Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Cake size={14} color="#ea580c" style={{ flexShrink: 0 }} />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Age</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{userProfilePopup.age ? `${userProfilePopup.age} yrs old` : 'Not set'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <UserIcon size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Gender</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{userProfilePopup.gender || 'Not set'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location Row (Full width, wrapping cleanly) */}
+                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8, textAlign: 'left' }}>
+                  <MapPin size={14} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Location</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', lineHeight: 1.35, wordBreak: 'break-word' }}>
+                      {userProfilePopup.address || 'Location not specified'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animation Style */}
+      <style>{`
+        @keyframes profilePop {
+          from { opacity: 0; transform: scale(0.92); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .chat-avatar-hover:hover {
+          transform: scale(1.1);
+        }
+        .chat-name-hover:hover {
+          color: #ff5a0a !important;
+          text-decoration: underline !important;
+        }
+      `}</style>
+
       {/* Responsive Styles Helper */}
       <style>{`
         @media (max-width: 768px) {
           .chat-room-sidebar {
             width: 100% !important;
           }
-          .chat-back-mobile {
-            display: inline-flex !important;
+          .chat-room-sidebar.is-mobile-chat-open {
+            display: none !important;
+          }
+          .chat-main-pane.is-mobile-rooms-open {
+            display: none !important;
           }
           .hidden-mobile {
+            display: none !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .chat-room-sidebar.is-collapsed {
             display: none !important;
           }
         }
@@ -1124,3 +1440,4 @@ export default function Chat() {
     </div>
   )
 }
+

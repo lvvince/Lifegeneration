@@ -143,6 +143,11 @@ class Members extends Controller
             $sets[] = 'address = ?';
             $params[] = trim((string) $input['address']);
         }
+        if (array_key_exists('bio', $input)) {
+            $bioVal = trim((string) $input['bio']);
+            $sets[] = 'bio = ?';
+            $params[] = $bioVal !== '' ? $bioVal : null;
+        }
 
         if ($sets) {
             // Walang updated_at column sa members ng lgy_db
@@ -167,6 +172,10 @@ class Members extends Controller
             if (array_key_exists('address', $input)) {
                 $uSets[] = 'address = ?';
                 $uParams[] = trim((string) $input['address']);
+            }
+            if (array_key_exists('bio', $input)) {
+                $uSets[] = 'bio = ?';
+                $uParams[] = $bioVal !== '' ? $bioVal : null;
             }
             if ($uSets) {
                 $uParams[] = $targetUserId;

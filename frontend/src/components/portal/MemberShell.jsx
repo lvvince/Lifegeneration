@@ -70,7 +70,7 @@ function Shell({ children }) {
       ? user?.role === 'secretary' ? 'Secretary' : 'Officer'
       : user?.role === 'moderator' ? 'Moderator' : 'Member'
   const memberId = user?.member_id || user?.member?.member_id
-  const home = isAdmin ? '/admin' : isStaff ? '/officer' : '/dashboard'
+  const home = '/dashboard'
   const isOn = (n) =>
     n.match
       ? n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`))
@@ -236,7 +236,7 @@ function Shell({ children }) {
         <button type="button" className="sk-bar-btn" onClick={(e) => pick('menu', e.currentTarget)} aria-label="Open menu" aria-expanded={panel === 'menu'}>
           <Menu size={22} strokeWidth={2} />
         </button>
-        <Link to={home} className="sk-bar-brand" aria-label="Life Generation home">
+        <Link to={home} className="sk-bar-brand" aria-label="Life Generation home" onClick={close}>
           <Logo className="sk-logo" />
           <span>
             LIFE <b>GEN</b>
@@ -251,7 +251,7 @@ function Shell({ children }) {
 
       {/* ===== laptop/tablet: icon rail ===== */}
       <aside className="sk-rail" aria-label="Quick menu">
-        <Link to={home} className="sk-brand" aria-label="Life Generation home">
+        <Link to={home} className="sk-brand" aria-label="Life Generation home" onClick={close}>
           <Logo className="sk-logo" />
         </Link>
 

@@ -232,7 +232,7 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
-  const [editForm, setEditForm] = useState({ full_name: '', age: '', address: '' })
+  const [editForm, setEditForm] = useState({ full_name: '', age: '', address: '', bio: '' })
   const [saveMsg, setSaveMsg] = useState('')
   const fileInputRef = useRef(null)
 
@@ -247,7 +247,8 @@ export default function Dashboard() {
           full_name: res.user.full_name || '',
           gender: res.user.gender || res.user.member?.gender || '',
           age: res.user.age || res.user.member?.age || '',
-          address: res.user.address || res.user.member?.address || ''
+          address: res.user.address || res.user.member?.address || '',
+          bio: res.user.bio || res.user.member?.bio || ''
         })
       }
 
@@ -338,7 +339,8 @@ export default function Dashboard() {
         full_name: editForm.full_name,
         gender: editForm.gender,
         age: editForm.age,
-        address: editForm.address
+        address: editForm.address,
+        bio: editForm.bio
       })
       setSaveMsg('Profile saved successfully!')
       setEditMode(false)
@@ -397,7 +399,34 @@ export default function Dashboard() {
             <h1 style={{ marginTop: 22 }}>
               hey, <em className="hl">{first}</em>!
             </h1>
-            <p style={{ fontSize: '1.15rem', maxWidth: '34ch' }}>Welcome to your Life Generation space.</p>
+            <p style={{ fontSize: '1.15rem', maxWidth: '34ch', margin: '4px 0 14px' }}>Welcome to your Life Generation space.</p>
+            {/* Prominent Bio Box right in Hero */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.75)',
+                border: '1.5px solid rgba(0, 0, 0, 0.1)',
+                borderRadius: 14,
+                padding: '12px 16px',
+                maxWidth: 480,
+                marginBottom: 16
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c2410c' }}>
+                  About Me &bull; Bio
+                </span>
+                <a
+                  href="#details"
+                  onClick={() => setEditMode(true)}
+                  style={{ fontSize: 12, fontWeight: 700, color: '#ff5a0a', textDecoration: 'none' }}
+                >
+                  Edit Bio
+                </a>
+              </div>
+              <p style={{ margin: 0, fontSize: 13.5, color: '#1a1f2e', lineHeight: 1.5, fontStyle: profile?.bio || member?.bio ? 'normal' : 'italic' }}>
+                {profile?.bio || member?.bio || 'You haven\'t added a bio yet. Click "Edit Bio" below to write about yourself, share your favorite verse, or say hello!'}
+              </p>
+            </div>
             <div className="fb-row">
               <button type="button" className="fb-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                 <Upload size={17} /> {uploading ? 'Uploading…' : 'Change photo'}
@@ -560,6 +589,25 @@ export default function Dashboard() {
               Address
               <input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
             </label>
+            <label className="is-wide">
+              Bio / About Me
+              <textarea
+                rows={3}
+                value={editForm.bio}
+                onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                placeholder="Share a short bio, your testimony, favorite Bible verse, or what you love about LifeGen..."
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  border: '1.5px solid var(--mp-border, #e5e8f1)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.95rem',
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </label>
             <div className="fb-row is-wide" style={{ marginTop: 4 }}>
               <button type="submit" className="fb-btn">
                 Save changes
@@ -586,15 +634,23 @@ export default function Dashboard() {
               </div>
               <div>
                 <dt>
+                  <CalendarDays size={15} /> Joined
+                </dt>
+                <dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd>
+              </div>
+              <div className="is-wide" style={{ gridColumn: '1 / -1' }}>
+                <dt>
                   <MapPin size={15} /> Address
                 </dt>
                 <dd>{profile?.address || member?.address || 'Not set'}</dd>
               </div>
-              <div>
+              <div className="is-wide" style={{ gridColumn: '1 / -1' }}>
                 <dt>
-                  <CalendarDays size={15} /> Joined
+                  <User size={15} /> Bio / About Me
                 </dt>
-                <dd>{new Date(profile?.created_at || member?.joined_at || Date.now()).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd>
+                <dd style={{ fontStyle: profile?.bio || member?.bio ? 'normal' : 'italic', color: profile?.bio || member?.bio ? 'inherit' : 'var(--p-text-2, #586079)', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
+                  {profile?.bio || member?.bio || 'No bio added yet. Click "Edit details" below to share a little about yourself!'}
+                </dd>
               </div>
             </dl>
             <div className="fb-row">

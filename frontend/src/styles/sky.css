@@ -215,12 +215,14 @@ html.sk-loading .portal.px.lgx .hm-in { animation-play-state: paused; }
 .portal.px.lgx .sk-bar-page { flex: 1; min-width: 0; overflow: hidden; color: var(--sk-ink-3); font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-align: right; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 @media (min-width: 768px) { .portal.px.lgx .sk-bar { display: none; } }
 
-.portal.px.lgx .sk-rail { position: fixed; inset: 0 auto 0 0; z-index: 60; display: none; flex-direction: column; align-items: center; gap: 10px; width: var(--rail); padding: max(14px, env(safe-area-inset-top)) 0 max(14px, env(safe-area-inset-bottom)); overflow: visible; border-right: 2px solid var(--sk-ink); background: var(--sk-surface); }
+.portal.px.lgx .sk-rail { position: fixed; inset: 0 auto 0 0; z-index: 60; display: none; flex-direction: column; align-items: center; gap: 8px; width: var(--rail); padding: max(14px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom)); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; border-right: 2px solid var(--sk-ink); background: var(--sk-surface); }
+.portal.px.lgx .sk-rail::-webkit-scrollbar { display: none; }
 @media (min-width: 768px) { .portal.px.lgx .sk-rail { display: flex; } }
 .portal.px.lgx .sk-brand { display: grid; place-items: center; flex: none; width: var(--btn); height: var(--btn); margin-bottom: 2px; transition: transform 0.4s var(--sk-ease); }
 .portal.px.lgx .sk-brand:hover { transform: rotate(-6deg) scale(1.06); }
 .portal.px.lgx .sk-logo { display: grid; place-items: center; width: 38px; height: 38px; object-fit: contain; background: var(--sk-ink); color: var(--sk-surface); font-size: 13px; font-weight: 900; }
 .portal.px.lgx .sk-rg { position: relative; display: flex; flex-direction: column; gap: 6px; --step: calc(var(--btn) + 6px); }
+.portal.px.lgx .sk-rnav { padding-bottom: 24px; }
 .portal.px.lgx .sk-sep { flex: none; width: 28px; height: 2px; background: var(--sk-ink); }
 .portal.px.lgx .sk-rb { position: relative; z-index: 1; display: grid; place-items: center; flex: none; width: var(--btn); height: var(--btn); padding: 0; border: 0; background: transparent; color: var(--sk-ink-2); cursor: pointer; transition: color 0.2s, background 0.25s var(--sk-ease), transform 0.3s var(--sk-ease); }
 .portal.px.lgx .sk-rb svg { transition: transform 0.35s var(--sk-ease); }
@@ -806,7 +808,9 @@ html.sk-loading .portal.px.lgx .hm-in { animation-play-state: paused; }
 .portal.px.lgx .fb-empty { padding: 22px; border: 2px dashed var(--sk-tint-3); color: var(--sk-ink-2); }
 .portal.px.lgx .fb-link { display: inline-flex; align-items: center; min-height: 42px; padding: 0 18px; border: 2px solid var(--sk-on); background: #fff; color: #111; font-weight: 800; }
 .portal.px.lgx .fb-facts { display: grid; gap: 10px; margin: 0; }
-@media (min-width: 760px) { .portal.px.lgx .fb-facts { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 760px) { .portal.px.lgx .fb-facts { grid-template-columns: repeat(3, 1fr); } .portal.px.lgx .fb-facts .is-wide { grid-column: 1 / -1; } }
+.portal.px.lgx .fb-form textarea { min-height: 96px; padding: 12px 14px; border: 2px solid var(--sk-ink); background: var(--sk-surface); color: var(--sk-ink); font: inherit; font-size: 15px; font-weight: 500; letter-spacing: 0; text-transform: none; border-radius: var(--rd-m); resize: vertical; box-sizing: border-box; }
+.portal.px.lgx .fb-form textarea:focus { outline: 2px solid var(--sk-or); outline-offset: 2px; }
 .portal.px.lgx .fb-facts div { padding: 18px; border: 2px solid var(--sk-ink); background: var(--sk-surface); }
 .portal.px.lgx .fb-facts dt { display: flex; align-items: center; gap: 8px; color: var(--sk-or-d); font-size: 11.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
 .portal.px.lgx .fb-facts dd { margin: 6px 0 0; font-size: 1.05rem; font-weight: 800; }

@@ -97,10 +97,11 @@ export async function apiGet(path) {
 }
 
 export async function apiPost(path, data = {}) {
+  const isFormData = typeof FormData !== 'undefined' && data instanceof FormData
   return apiRequest(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+    body: isFormData ? data : JSON.stringify(data),
   })
 }
 
