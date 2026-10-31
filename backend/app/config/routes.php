@@ -110,18 +110,6 @@ $router->get('/api/devotional/today',  'Devotionals::today');
 $router->get('/api/devotional/random', 'Devotionals::random');
 $router->get('/api/bible/lookup',      'Devotionals::lookup');
 $router->get('/api/bible/search',      'Devotionals::lookup');
-// 11. Spiritual Gifts & Community Matcher
-$router->get('/api/matcher/config',    'Matcher::config');
-$router->post('/api/matcher/suggest',  'Matcher::suggest');
 
-// 12. Fellowship & Ministry Chatrooms
-$router->get('/api/chat/rooms',                'Chat::rooms');
-$router->get('/api/chat/rooms/{id}/messages',  'Chat::messages');
-$router->post('/api/chat/messages',            'Chat::send');
-$router->post('/api/chat/messages/{id}/edit',   'Chat::edit');
-$router->post('/api/chat/messages/{id}/delete', 'Chat::delete');
-$router->post('/api/chat/messages/{id}/pin',    'Chat::pin');
-$router->post('/api/chat/messages/{id}/react',  'Chat::react');
-$router->post('/api/chat/presence/ping',        'Chat::presence');
-$router->get('/api/chat/members',              'Chat::members');
-$router->get('/api/chat/user-profile/{id}',    'Chat::user_profile');
+// Fellowship Chat routes
+require __DIR__ . '/routes_chat.php';

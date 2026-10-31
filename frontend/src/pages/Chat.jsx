@@ -1,1443 +1,1165 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import {
-  MessageSquare, Send, Image as ImageIcon, Smile, Pin, Trash2,
-  Edit2, CornerUpLeft, Search, X, Check, CheckCheck, Loader2,
-  Users, Megaphone, Sparkles, Heart, Lock, AlertCircle, ArrowLeft,
-  ChevronDown, RefreshCw, ThumbsUp, Flame, ShieldAlert, AtSign, HeartHandshake, MapPin, Cake, Shield, User as UserIcon
+  Hash, Megaphone, Users, Lock, Send, ImagePlus, Reply, Pencil, Trash2, Pin, PinOff, Search, X,
+  Heart, HandHeart, ThumbsUp, Flame, SmilePlus, ChevronLeft, ArrowDown, Check, Activity, ShieldCheck,
+  VolumeX, Volume2, Network, HeartHandshake, AtSign, Trophy, CircleAlert, Clock, BellRing,
+  Video, CalendarPlus, CalendarDays, ExternalLink, UserCheck, Plus, Link2, Copy, BookOpen,
 } from 'lucide-react'
-import { apiGet, apiPost, getUser } from '../api.js'
-import { resolveImageUrl } from '../lib/format.js'
-import '../styles/pages.css'
+import { apiGet, apiPost, apiRequest, getUser } from '../api.js'
+import { initials, resolveImageUrl } from '../lib/format.js'
+import { useToast } from '../components/portal/ui.jsx'
+import '../styles/chat.css'
 
-// Quick reaction map
 const REACTIONS = [
-  { key: 'heart', label: 'Heart', icon: Heart, color: '#ef4444' },
-  { key: 'pray', label: 'Pray / Amen', icon: Sparkles, color: '#f59e0b' },
-  { key: 'thumbs_up', label: 'Thumbs Up', icon: ThumbsUp, color: '#3b82f6' },
-  { key: 'praise', label: 'Praise', icon: Flame, color: '#ff5a0a' },
+  { key: 'heart', label: 'Heart', Icon: Heart },
+  { key: 'pray', label: 'Praying', Icon: HandHeart },
+  { key: 'thumbs_up', label: 'Agree', Icon: ThumbsUp },
+  { key: 'praise', label: 'Praise', Icon: Flame },
 ]
+const MUTES = [[15, '15 minutes'], [60, '1 hour'], [1440, '1 day'], [10080, '7 days']]
+const POLL_MS = 5000
 
+/* ---------- small helpers ---------- */
+const parse = (d) => new Date(String(d).replace(' ', 'T'))
+const hhmm = (d) => parse(d).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+const dayKey = (d) => parse(d).toDateString()
+function dayLabel(d) {
+  const t = parse(d)
+  const today = new Date()
+  const y = new Date(); y.setDate(today.getDate() - 1)
+  if (t.toDateString() === today.toDateString()) return 'Today'
+  if (t.toDateString() === y.toDateString()) return 'Yesterday'
+  return t.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })
+}
+function ago(d) {
+  if (!d) return 'a while ago'
+  const s = Math.max(0, (Date.now() - parse(d).getTime()) / 1000)
+  if (s < 90) return 'just now'
+  if (s < 3600) return `${Math.round(s / 60)} min ago`
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`
+  return `${Math.round(s / 86400)} d ago`
+}
+const roleName = (r) => ({ admin: 'Admin', officer: 'Officer', secretary: 'Secretary', moderator: 'Moderator' }[r] || null)
+const LEVEL = { active: 'Active', casual: 'Casual', quiet: 'Quiet' }
+
+function Avatar({ name, src, size = 36, online }) {
+  return (
+    <span className="fc-av" style={{ '--s': `${size}px` }} aria-hidden="true">
+      {src ? <img src={resolveImageUrl(src)} alt="" draggable="false" loading="lazy" /> : <b>{initials(name)}</b>}
+      {online !== undefined && <i className={online ? 'is-on' : ''} />}
+    </span>
+  )
+}
+
+/* text -> links and @mentions (React escapes everything, nothing is injected as HTML) */
+function RichText({ text, mentions = [] }) {
+  const names = mentions.map((m) => m.name).filter(Boolean)
+  const parts = []
+  const re = new RegExp(`(https?:\\/\\/[^\\s<]+)${names.length ? `|(@(?:${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}))` : ''}`, 'g')
+  let last = 0
+  let m
+  while ((m = re.exec(text))) {
+    if (m.index > last) parts.push(text.slice(last, m.index))
+    if (m[1]) parts.push(<a key={m.index} href={m[1]} target="_blank" rel="noopener noreferrer nofollow">{m[1]}</a>)
+    else parts.push(<mark key={m.index} className="fc-mention">{m[2]}</mark>)
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push(text.slice(last))
+  return <>{parts}</>
+}
+
+/* ====================================================================== */
 export default function Chat() {
-  const currentUser = getUser()
-  const [rooms, setRooms] = useState([])
-  const [activeRoomId, setActiveRoomId] = useState(null)
+  const user = getUser()
+  const toast = useToast()
+
+  const [boot, setBoot] = useState(null)
+  const [bootErr, setBootErr] = useState('')
+  const [activeId, setActiveId] = useState(null)
+  const [view, setView] = useState('list') // phone: 'list' | 'room'
   const [messages, setMessages] = useState([])
   const [pinned, setPinned] = useState([])
-  const [typingUsers, setTypingUsers] = useState([])
-  const [membersList, setMembersList] = useState([])
-
-  // UI States
-  const [loadingRooms, setLoadingRooms] = useState(true)
-  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [lastRead, setLastRead] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [side, setSide] = useState(null) // 'members' | 'activity' | null
+  const [showPins, setShowPins] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState(null)
+  const [profileId, setProfileId] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
+  const [picked, setPicked] = useState(null) // message whose toolbar is open (touch)
+  const [pendingNew, setPendingNew] = useState(0)
+  const [members, setMembers] = useState([])
+  const [draft, setDraft] = useState({ text: '', title: '', announce: false, important: false, mentions: [], image: null, preview: '', reply: null, edit: null })
   const [sending, setSending] = useState(false)
-  const [inputText, setInputText] = useState('')
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [replyingTo, setReplyingTo] = useState(null)
-  const [editingMsg, setEditingMsg] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showSearch, setShowSearch] = useState(false)
-  const [lightboxImage, setLightboxImage] = useState(null)
-  const [mobileShowChat, setMobileShowChat] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(true)
-  const [showMentionMenu, setShowMentionMenu] = useState(false)
-  const [mentionFilter, setMentionFilter] = useState('')
-  const [userProfilePopup, setUserProfilePopup] = useState(null)
-  const [loadingProfile, setLoadingProfile] = useState(false)
+  const [joinDismissed, setJoinDismissed] = useState([])
+  const [sessions, setSessions] = useState({ upcoming: [], past: [] })
 
-  const messagesEndRef = useRef(null)
-  const fileInputRef = useRef(null)
-  const inputRef = useRef(null)
-  const pollTimerRef = useRef(null)
+  const list = useRef(null)
+  const stick = useRef(true)
+  const activeRef = useRef(null)
+  const msgsRef = useRef([])
+  const area = useRef(null)
+  msgsRef.current = messages
+  activeRef.current = activeId
 
-  const isStaff = currentUser && ['admin', 'officer', 'moderator'].includes(currentUser.role)
+  const channels = boot?.channels || []
+  const me = boot?.me
+  const channel = channels.find((c) => c.id === activeId)
 
-  const handleOpenUserProfile = async (userId, e) => {
-    e?.stopPropagation()
-    if (!userId) return
-    setLoadingProfile(true)
-    setUserProfilePopup({ id: userId, loading: true })
+  /* ---------- load channels ---------- */
+  const loadBoot = useCallback(async () => {
     try {
-      const res = await apiGet(`/api/chat/user-profile/${userId}`)
-      if (res?.profile) {
-        setUserProfilePopup(res.profile)
-      }
-    } catch (err) {
-      console.error('Failed to load user profile card:', err)
-      setUserProfilePopup(null)
-    } finally {
-      setLoadingProfile(false)
-    }
-  }
-
-  // 1. Load Rooms & Member Directory on mount
-  useEffect(() => {
-    loadRooms(true)
-    apiGet('/api/chat/members')
-      .then(res => setMembersList(Array.isArray(res) ? res : []))
-      .catch(() => {})
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+      const b = await apiGet('/api/chat/bootstrap')
+      setBoot(b)
+      setBootErr('')
+      return b
+    } catch (e) {
+      setBootErr(e.message || 'Could not open the chat.')
+      return null
     }
   }, [])
 
-  // 2. Poll messages & presence
+  const loadSessions = useCallback(() => apiGet('/api/chat/sessions').then((d) => setSessions({ upcoming: d.upcoming || [], past: d.past || [] })).catch(() => {}), [])
+
   useEffect(() => {
-    if (!activeRoomId) return
-    loadMessages(activeRoomId, false)
+    const g = new URLSearchParams(window.location.search).get('google')
+    if (!g) return
+    toast(g === 'connected' ? 'Google connected. Meet links are now created automatically.' : 'Google connection failed. Please try again.', g === 'connected' ? undefined : 'bad')
+    window.history.replaceState({}, '', window.location.pathname)
+    if (g === 'connected') setSide('sessions')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Clear previous poll timer
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+  useEffect(() => {
+    if (!user) return undefined
+    loadBoot().then((b) => {
+      if (b && window.matchMedia('(min-width: 768px)').matches) setActiveId((id) => id || (b.channels.find((c) => c.kind === 'general') || b.channels[0])?.id || null)
+    })
+    apiGet('/api/chat/members').then((m) => setMembers(Array.isArray(m) ? m : [])).catch(() => {})
+    loadSessions()
+    const t = setInterval(() => { if (document.visibilityState === 'visible') { loadBoot(); loadSessions() } }, 15000)
+    return () => clearInterval(t)
+  }, [loadBoot]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Short poll every 3 seconds for active, real-time feel
-    pollTimerRef.current = setInterval(() => {
-      loadMessages(activeRoomId, false)
-      // Send heartbeat
-      apiPost('/api/chat/presence/ping', {
-        typing_room_id: activeRoomId,
-        is_typing: false
-      }).catch(() => {})
-    }, 3000)
+  /* ---------- load the room ---------- */
+  const scrollDown = useCallback((smooth) => {
+    const el = list.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+  }, [])
 
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-    }
-  }, [activeRoomId])
+  useEffect(() => {
+    if (!activeId) return undefined
+    let alive = true
+    setLoading(true)
+    setMessages([]); setPinned([]); setResults(null); setQ(''); setSearching(false); setShowPins(false); setPendingNew(0)
+    setDraft((d) => ({ ...d, reply: null, edit: null }))
+    apiGet(`/api/chat/channels/${activeId}/messages`)
+      .then((r) => {
+        if (!alive) return
+        setMessages(r.messages || [])
+        setPinned(r.pinned || [])
+        setLastRead(r.last_read || 0)
+        setHasMore(!!r.has_more)
+        stick.current = true
+        requestAnimationFrame(() => scrollDown(false))
+      })
+      .catch((e) => alive && toast(e.message || 'Could not load messages.', 'bad'))
+      .finally(() => alive && setLoading(false))
+    return () => { alive = false }
+  }, [activeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom when messages update
-  const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' })
-  }
-
-  const loadRooms = async (initial = false) => {
+  /* ---------- live sync: new messages, edits, reactions, deletions ---------- */
+  const sync = useCallback(async () => {
+    const id = activeRef.current
+    if (!id) return
     try {
-      if (initial) setLoadingRooms(true)
-      const data = await apiGet('/api/chat/rooms')
-      const roomList = Array.isArray(data) ? data : []
-      setRooms(roomList)
-      if (initial && roomList.length > 0 && !activeRoomId) {
-        setActiveRoomId(roomList[0].id)
-      }
-    } catch (e) {
-      console.error('Failed to load rooms:', e)
-    } finally {
-      if (initial) setLoadingRooms(false)
-    }
+      const r = await apiGet(`/api/chat/channels/${id}/messages`)
+      if (id !== activeRef.current) return
+      const fresh = r.messages || []
+      setMessages((old) => {
+        const first = fresh[0]?.id ?? Infinity
+        const keep = old.filter((m) => m.id < first)
+        const next = [...keep, ...fresh]
+        const added = next.filter((m) => !old.some((o) => o.id === m.id) && m.user_id !== me?.id).length
+        if (added && !stick.current) setPendingNew((n) => n + added)
+        return next
+      })
+      setPinned(r.pinned || [])
+    } catch { /* offline: try again next tick */ }
+  }, [me?.id])
+
+  useEffect(() => {
+    if (!activeId) return undefined
+    const t = setInterval(() => document.visibilityState === 'visible' && !results && sync(), POLL_MS)
+    const vis = () => document.visibilityState === 'visible' && sync()
+    document.addEventListener('visibilitychange', vis)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis) }
+  }, [activeId, results, sync])
+
+  useEffect(() => { if (stick.current) requestAnimationFrame(() => scrollDown(false)) }, [messages, scrollDown])
+
+  /* mark as read once the newest message is on screen */
+  useEffect(() => {
+    if (!activeId || !messages.length || !me?.can_post && me?.reason === 'no_profile') return
+    const lastId = messages[messages.length - 1].id
+    const t = setTimeout(() => {
+      if (document.visibilityState !== 'visible' || !stick.current) return
+      apiPost(`/api/chat/channels/${activeId}/read`, { last_id: lastId }).catch(() => {})
+      setBoot((b) => b && { ...b, channels: b.channels.map((c) => (c.id === activeId ? { ...c, unread: 0, mentions: 0 } : c)) })
+    }, 600)
+    return () => clearTimeout(t)
+  }, [messages, activeId, pendingNew]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onScroll = () => {
+    const el = list.current
+    if (!el) return
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    stick.current = near
+    if (near && pendingNew) setPendingNew(0)
   }
 
-  const loadMessages = async (roomId, showLoader = true) => {
+  async function loadOlder() {
+    const firstId = messages[0]?.id
+    if (!firstId) return
+    const el = list.current
+    const prevH = el.scrollHeight
     try {
-      if (showLoader) setLoadingMessages(true)
-      const res = await apiGet(`/api/chat/rooms/${roomId}/messages`)
-      if (res && res.messages) {
-        setMessages(res.messages)
-        setPinned(res.pinned || [])
-        setTypingUsers(res.typing || [])
-        if (showLoader) {
-          setTimeout(() => scrollToBottom(false), 80)
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load messages:', e)
-    } finally {
-      if (showLoader) setLoadingMessages(false)
-    }
+      const r = await apiGet(`/api/chat/channels/${activeId}/messages?before=${firstId}`)
+      setMessages((old) => [...(r.messages || []), ...old])
+      setHasMore(!!r.has_more)
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight - prevH })
+    } catch (e) { toast(e.message, 'bad') }
   }
 
-  const activeRoom = useMemo(() => {
-    return rooms.find(r => r.id === activeRoomId) || null
-  }, [rooms, activeRoomId])
+  /* ---------- search ---------- */
+  useEffect(() => {
+    if (!searching || q.trim().length < 2) { setResults(null); return undefined }
+    const t = setTimeout(() => {
+      apiGet(`/api/chat/channels/${activeId}/messages?q=${encodeURIComponent(q.trim())}`)
+        .then((r) => setResults(r.messages || []))
+        .catch(() => setResults([]))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [q, searching, activeId])
 
-  // Image file select & preview
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  /* ---------- composer ---------- */
+  const set = (patch) => setDraft((d) => ({ ...d, ...patch }))
+  const canPost = me?.can_post
+  const readonlyForMe = channel?.readonly && !me?.staff
+  const mentionQuery = useMemo(() => {
+    const m = /(?:^|\s)@([\p{L}.' -]{0,30})$/u.exec(draft.text)
+    return m ? m[1].toLowerCase() : null
+  }, [draft.text])
+  const suggestions = useMemo(() => {
+    if (mentionQuery === null) return []
+    return members.filter((m) => m.id !== me?.id && m.name.toLowerCase().includes(mentionQuery.trim())).slice(0, 6)
+  }, [mentionQuery, members, me?.id])
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Only JPG, PNG, and WEBP images are supported.')
-      return
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      alert('File size exceeds the 50MB limit.')
-      return
-    }
-
-    setSelectedImage(file)
-    const reader = new FileReader()
-    reader.onload = (ev) => setImagePreview(ev.target.result)
-    reader.readAsDataURL(file)
+  function pickMention(m) {
+    const text = draft.text.replace(/@([\p{L}.' -]{0,30})$/u, `@${m.name} `)
+    set({ text, mentions: draft.mentions.some((x) => x.id === m.id) ? draft.mentions : [...draft.mentions, { id: m.id, name: m.name }] })
+    area.current?.focus()
   }
-
-  const removeSelectedImage = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  function mention(m) {
+    setProfileId(null)
+    set({ text: `${draft.text}${draft.text && !/\s$/.test(draft.text) ? ' ' : ''}@${m.name} `, mentions: [...draft.mentions, { id: m.id, name: m.name }] })
+    setView('room')
+    setTimeout(() => area.current?.focus(), 50)
   }
-
-  // Handle typing presence with debounce
-  const handleInputChange = (e) => {
-    const val = e.target.value
-    setInputText(val)
-
-    // Check for @mention trigger
-    const words = val.split(' ')
-    const lastWord = words[words.length - 1]
-    if (lastWord.startsWith('@') && lastWord.length > 1) {
-      setShowMentionMenu(true)
-      setMentionFilter(lastWord.slice(1).toLowerCase())
-    } else {
-      setShowMentionMenu(false)
-    }
-
-    // Ping typing status
-    if (activeRoomId && val.length > 0) {
-      apiPost('/api/chat/presence/ping', {
-        typing_room_id: activeRoomId,
-        is_typing: true
-      }).catch(() => {})
-    }
+  function chooseImage(e) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) return toast('Please attach a JPG, PNG, WEBP or GIF photo.', 'bad')
+    if (f.size > 8 * 1024 * 1024) return toast('That photo is over 8 MB.', 'bad')
+    if (draft.preview) URL.revokeObjectURL(draft.preview)
+    set({ image: f, preview: URL.createObjectURL(f) })
   }
+  const clearImage = () => { if (draft.preview) URL.revokeObjectURL(draft.preview); set({ image: null, preview: '' }) }
+  const resetDraft = () => setDraft((d) => ({ text: '', title: '', announce: d.announce && !!channel?.readonly, important: false, mentions: [], image: null, preview: '', reply: null, edit: null }))
 
-  const insertMention = (username) => {
-    const words = inputText.split(' ')
-    words[words.length - 1] = `@${username} `
-    setInputText(words.join(' '))
-    setShowMentionMenu(false)
-    inputRef.current?.focus()
-  }
-
-  // Send message
-  const handleSend = async (e) => {
+  async function send(e) {
     e?.preventDefault()
-    if (!inputText.trim() && !selectedImage) return
-    if (!activeRoomId) return
-
-    // Check announcement permission
-    if (activeRoom?.type === 'announcement' && !isStaff) {
-      alert('Only Pastors and Officers can post in the Announcements channel.')
-      return
-    }
-
-    // Editing mode
-    if (editingMsg) {
-      try {
-        setSending(true)
-        await apiPost(`/api/chat/messages/${editingMsg.id}/edit`, {
-          content: inputText.trim()
-        })
-        setMessages(prev => prev.map(m => m.id === editingMsg.id ? { ...m, content: inputText.trim(), is_edited: 1 } : m))
-        setEditingMsg(null)
-        setInputText('')
-      } catch (err) {
-        alert(err.message || 'Failed to edit message.')
-      } finally {
-        setSending(false)
-      }
-      return
-    }
-
-    // Send new message
-    try {
+    if (sending || !canPost) return
+    const text = draft.text.trim()
+    const announce = channel?.readonly || draft.announce
+    if (draft.edit) {
+      if (!text) return
       setSending(true)
-      let payload
-      if (selectedImage) {
-        const formData = new FormData()
-        formData.append('room_id', activeRoomId)
-        formData.append('content', inputText.trim())
-        if (replyingTo) formData.append('reply_to_id', replyingTo.id)
-        formData.append('image', selectedImage)
-        payload = formData
-      } else {
-        payload = {
-          room_id: activeRoomId,
-          content: inputText.trim(),
-          reply_to_id: replyingTo ? replyingTo.id : null
-        }
-      }
-
-      const res = await apiPost('/api/chat/messages', payload)
-      if (res && res.data) {
-        setMessages(prev => [...prev, res.data])
-        setInputText('')
-        removeSelectedImage()
-        setReplyingTo(null)
-        scrollToBottom(true)
-        loadRooms(false) // update last message snippet in room list
-      }
+      try {
+        await apiPost(`/api/chat/messages/${draft.edit.id}/edit`, { body: text })
+        resetDraft(); sync()
+      } catch (err) { toast(err.message, 'bad') } finally { setSending(false) }
+      return
+    }
+    if (!text && !draft.image) return
+    if (announce && !draft.title.trim()) return toast('Give the announcement a short title.', 'bad')
+    setSending(true)
+    try {
+      const fd = new FormData()
+      fd.append('body', text)
+      fd.append('kind', announce ? 'announcement' : 'message')
+      if (announce) { fd.append('title', draft.title.trim()); fd.append('important', draft.important ? '1' : '0') }
+      if (draft.reply) fd.append('reply_to', draft.reply.id)
+      if (draft.image) fd.append('image', draft.image)
+      fd.append('mentions', JSON.stringify(draft.mentions.filter((m) => text.includes(`@${m.name}`)).map((m) => m.id)))
+      const r = await apiRequest(`/api/chat/channels/${activeId}/messages`, { method: 'POST', body: fd })
+      stick.current = true
+      setMessages((old) => (old.some((m) => m.id === r.message.id) ? old : [...old, r.message]))
+      resetDraft()
+      requestAnimationFrame(() => scrollDown(true))
     } catch (err) {
-      alert(err.message || 'Could not send message.')
-    } finally {
-      setSending(false)
-    }
+      toast(err.message || 'Could not send.', 'bad')
+    } finally { setSending(false) }
   }
 
-  // Reactions
-  const handleReact = async (messageId, reactionCode) => {
-    try {
-      await apiPost(`/api/chat/messages/${messageId}/react`, { reaction: reactionCode })
-      // Refresh current messages
-      loadMessages(activeRoomId, false)
-    } catch (e) {
-      console.error(e)
-    }
+  const onKey = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send() }
+    if (e.key === 'Escape') { set({ reply: null, edit: null, text: draft.edit ? '' : draft.text }) }
+  }
+  useEffect(() => {
+    const el = area.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 150)}px`
+  }, [draft.text, activeId])
+
+  /* ---------- message actions ---------- */
+  const patch = (id, fn) => setMessages((old) => old.map((m) => (m.id === id ? fn(m) : m)))
+  async function react(m, key) {
+    if (!canPost) return toast(me?.reason === 'muted' ? 'You are muted right now.' : 'Sign in with a member account to react.', 'bad')
+    patch(m.id, (x) => {
+      const cur = x.reactions[key] || { n: 0, mine: false }
+      const next = { n: Math.max(0, cur.n + (cur.mine ? -1 : 1)), mine: !cur.mine }
+      const r = { ...x.reactions }
+      if (next.n) r[key] = next; else delete r[key]
+      return { ...x, reactions: r }
+    })
+    setPicked(null)
+    try { await apiPost(`/api/chat/messages/${m.id}/react`, { reaction: key }) } catch (e) { toast(e.message, 'bad'); sync() }
+  }
+  async function pin(m) {
+    try { const r = await apiPost(`/api/chat/messages/${m.id}/pin`); toast(r.pinned ? 'Pinned.' : 'Unpinned.'); setPicked(null); sync() } catch (e) { toast(e.message, 'bad') }
+  }
+  async function remove(m) {
+    if (!window.confirm('Delete this message?')) return
+    try { await apiPost(`/api/chat/messages/${m.id}/delete`); setPicked(null); sync() } catch (e) { toast(e.message, 'bad') }
+  }
+  async function ack(m) {
+    patch(m.id, (x) => ({ ...x, acks: { n: x.acks.n + 1, mine: true } }))
+    try { await apiPost(`/api/chat/messages/${m.id}/ack`) } catch (e) { toast(e.message, 'bad'); sync() }
+  }
+  function startEdit(m) { setPicked(null); set({ edit: m, reply: null, text: m.body }); setTimeout(() => area.current?.focus(), 30) }
+  function startReply(m) { setPicked(null); set({ reply: m, edit: null }); setTimeout(() => area.current?.focus(), 30) }
+  function jump(id) {
+    const el = list.current?.querySelector(`[data-mid="${id}"]`)
+    if (!el) return toast('That message is further up. Scroll up to load it.')
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('is-flash')
+    setTimeout(() => el.classList.remove('is-flash'), 1400)
   }
 
-  // Pin message
-  const handlePin = async (messageId) => {
-    if (!isStaff) return
-    try {
-      await apiPost(`/api/chat/messages/${messageId}/pin`)
-      loadMessages(activeRoomId, false)
-    } catch (e) {
-      alert(e.message || 'Pin action failed.')
-    }
+  const openRoom = (id) => { setActiveId(id); setView('room'); setSide(null) }
+
+  /* ---------- guard rails ---------- */
+  if (!user) {
+    return (
+      <div className="fc-gate">
+        <Hash size={28} aria-hidden="true" />
+        <h1>Fellowship Chat</h1>
+        <p>Sign in to chat with the youth, officers and admins of Life Generation.</p>
+        <Link to="/login" className="fc-btn">Sign in</Link>
+      </div>
+    )
+  }
+  if (bootErr && !boot) {
+    return (
+      <div className="fc-gate">
+        <CircleAlert size={28} aria-hidden="true" />
+        <h1>The chat is not available</h1>
+        <p>{bootErr}</p>
+        <button type="button" className="fc-btn" onClick={loadBoot}>Try again</button>
+      </div>
+    )
   }
 
-  // Delete message
-  const handleDelete = async (messageId) => {
-    if (!confirm('Are you sure you want to delete this message?')) return
-    try {
-      await apiPost(`/api/chat/messages/${messageId}/delete`)
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_deleted: 1, content: 'This message was deleted.', image_url: null } : m))
-    } catch (e) {
-      alert(e.message || 'Delete failed.')
+  const shown = results || messages
+  const groups = []
+  let prevDay = ''
+  let dividerDone = false
+  shown.forEach((m, i) => {
+    const k = dayKey(m.created_at)
+    if (k !== prevDay) { groups.push({ type: 'day', key: `d${m.id}`, label: dayLabel(m.created_at) }); prevDay = k }
+    if (!results && !dividerDone && lastRead && m.id > lastRead && m.user_id !== me?.id) {
+      groups.push({ type: 'new', key: 'new' }); dividerDone = true
     }
-  }
+    const prev = shown[i - 1]
+    const joined = prev && !groups[groups.length - 1].type && prev.user_id === m.user_id && prev.kind === 'message' && m.kind === 'message' && !m.reply && (parse(m.created_at) - parse(prev.created_at)) < 5 * 60000 && dayKey(prev.created_at) === k
+    groups.push({ type: 'msg', key: m.id, m, joined })
+  })
 
-  // Filtered messages by search
-  const filteredMessages = useMemo(() => {
-    if (!searchQuery.trim()) return messages
-    const q = searchQuery.toLowerCase()
-    return messages.filter(m => (m.content || '').toLowerCase().includes(q) || (m.sender_name || '').toLowerCase().includes(q))
-  }, [messages, searchQuery])
-
-  // Filtered mentions list
-  const filteredMentions = useMemo(() => {
-    if (!mentionFilter) return membersList.slice(0, 5)
-    return membersList.filter(m =>
-      (m.username || '').toLowerCase().includes(mentionFilter) ||
-      (m.full_name || '').toLowerCase().includes(mentionFilter)
-    ).slice(0, 5)
-  }, [membersList, mentionFilter])
+  const unreadTotal = channels.reduce((n, c) => n + (c.id === activeId ? 0 : c.unread), 0)
+  const online = members.filter((m) => m.online)
+  const soon = sessions.upcoming.filter((x) => x.live || x.can_join)
+  const liveCount = soon.filter((x) => x.live).length
+  const nextLive = soon[0] || null
 
   return (
-    <div className="pg-root" style={{ padding: '16px 20px', maxWidth: 1200, margin: '0 auto' }}>
-      
-      {/* Outer Card Container */}
-      <div
-        style={{
-          height: 'calc(100vh - 120px)',
-          minHeight: 580,
-          background: '#fff',
-          borderRadius: 20,
-          border: '1px solid var(--p-border, #e5e8f1)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-          display: 'flex',
-          overflow: 'hidden',
-          position: 'relative'
-        }}
-      >
-
-        {/* ─── LEFT: ROOM LIST ────────────────────────────────────────── */}
-        <div
-          style={{
-            width: 320,
-            borderRight: '1px solid var(--p-border, #e5e8f1)',
-            display: 'flex',
-            flexDirection: 'column',
-            background: '#fafbfd',
-            flexShrink: 0
-          }}
-          className={`chat-room-sidebar ${mobileShowChat ? 'is-mobile-chat-open' : ''} ${!showSidebar ? 'is-collapsed' : ''}`}
-        >
-          {/* Header */}
-          <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--p-border, #e5e8f1)', background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'rgba(255,90,10,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}
-              >
-                <MessageSquare size={18} color="#ff5a0a" />
+    <div className={`fc fc-view-${view}${side ? ' has-side' : ''}`} onClick={() => picked && setPicked(null)}>
+      {/* ---------- channels ---------- */}
+      <aside className="fc-rooms" aria-label="Chat rooms">
+        <header className="fc-rooms-head">
+          <h1>Fellowship</h1>
+          <span className="fc-online" title={`${online.length} ${online.length === 1 ? 'person is' : 'people are'} online right now`}><i aria-hidden="true" />{online.length} online</span>
+        </header>
+        <div className="fc-nav" role="navigation" aria-label="Rooms">
+          {[
+            ['Announcements', (c) => c.kind === 'announcement'],
+            ['Rooms', (c) => c.kind === 'general'],
+            ['My groups', (c) => c.kind === 'dgroup' || c.kind === 'ministry'],
+            ['Staff', (c) => c.kind === 'staff'],
+          ].map(([label, test]) => {
+            const items = channels.filter(test)
+            if (!items.length) return null
+            return (
+              <div className="fc-sec" key={label}>
+                <small>{label}</small>
+                {items.map((c) => {
+                  const Icon = c.kind === 'announcement' ? Megaphone : c.kind === 'dgroup' ? Network : c.kind === 'ministry' ? HeartHandshake : c.kind === 'staff' ? Lock : Hash
+                  return (
+                    <button key={c.id} type="button" className={`fc-room${c.id === activeId ? ' is-on' : ''}${c.unread && c.id !== activeId ? ' has-new' : ''}`} onClick={() => openRoom(c.id)} aria-current={c.id === activeId ? 'true' : undefined}>
+                      <Icon size={17} strokeWidth={2} aria-hidden="true" />
+                      <span>{c.name}</span>
+                      {c.id !== activeId && c.mentions > 0 && <i className="fc-pill is-hot" aria-label={`${c.mentions} mentions`}>@{c.mentions}</i>}
+                      {c.id !== activeId && !c.mentions && c.unread > 0 && <i className="fc-pill">{c.unread > 99 ? '99+' : c.unread}</i>}
+                    </button>
+                  )
+                })}
               </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1a1f2e' }}>
-                  Fellowship Chat
-                </h2>
-                <span style={{ fontSize: 11.5, color: 'var(--p-text-2, #586079)' }}>
-                  Channels &amp; Community
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Room Items */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px' }}>
-            {loadingRooms ? (
-              <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--p-text-2)' }}>
-                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                <p style={{ fontSize: 12, marginTop: 8 }}>Loading channels…</p>
-              </div>
-            ) : rooms.map(room => {
-              const active = room.id === activeRoomId
-              const isAnnouncement = room.type === 'announcement'
-              return (
-                <div
-                  key={room.id}
-                  onClick={() => {
-                    setActiveRoomId(room.id)
-                    setMobileShowChat(true)
-                  }}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 14,
-                    marginBottom: 6,
-                    cursor: 'pointer',
-                    background: active ? '#fff' : 'transparent',
-                    boxShadow: active ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
-                    border: active ? '1.5px solid #ff5a0a' : '1px solid transparent',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                      <div
-                        style={{
-                          width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                          background: isAnnouncement ? 'rgba(239,68,68,0.1)' : 'rgba(255,90,10,0.08)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                      >
-                        {isAnnouncement ? <Megaphone size={14} color="#ef4444" /> : <Sparkles size={14} color="#ff5a0a" />}
-                      </div>
-                      <span style={{ fontWeight: active ? 800 : 700, fontSize: 13.5, color: '#1a1f2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {room.name}
-                      </span>
-                    </div>
-
-                    {/* Unread badge */}
-                    {parseInt(room.unread_count || 0) > 0 && (
-                      <span
-                        style={{
-                          background: '#ff5a0a', color: '#fff', fontSize: 11,
-                          fontWeight: 800, padding: '2px 7px', borderRadius: 999
-                        }}
-                      >
-                        {room.unread_count}
-                      </span>
-                    )}
-                  </div>
-
-                  <p style={{ margin: 0, fontSize: 12, color: 'var(--p-text-2, #586079)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {room.last_message || (room.last_message_image ? '📷 Shared a photo' : room.description || 'Join the conversation…')}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* User Status Bar */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--p-border, #e5e8f1)', background: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ position: 'relative' }}>
-              <div
-                style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: '#ff5a0a', color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 13
-                }}
-              >
-                {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <span
-                style={{
-                  width: 9, height: 9, borderRadius: '50%', background: '#22c55e',
-                  border: '2px solid #fff', position: 'absolute', bottom: 0, right: 0
-                }}
-              />
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1a1f2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {currentUser?.username || 'You'}
-              </div>
-              <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>
-                Online &bull; {currentUser?.role || 'member'}
-              </div>
-            </div>
-          </div>
+            )
+          })}
         </div>
+        <div className="fc-rooms-foot">
+          <button type="button" className="fc-link" onClick={() => { if (!activeId && channels[0]) setActiveId(channels[0].id); setView('room'); setSide('activity') }}>
+            <Trophy size={16} aria-hidden="true" /> Who is active
+          </button>
+        </div>
+      </aside>
 
-        {/* ─── RIGHT: CHAT ROOM MAIN PANE ─────────────────────────────── */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            background: '#ffffff',
-            minWidth: 0
-          }}
-          className={`chat-main-pane ${!mobileShowChat ? 'is-mobile-rooms-open' : ''}`}
-        >
-          {/* Header */}
-          {activeRoom ? (
-            <div
-              style={{
-                padding: '14px 20px',
-                borderBottom: '1px solid var(--p-border, #e5e8f1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#fff'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                {/* Back to All Rooms Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileShowChat(false)
-                    setShowSidebar(prev => !prev)
-                  }}
-                  className="chat-back-btn"
-                  title="Back to all chat rooms"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '7px 13px',
-                    borderRadius: 12,
-                    background: '#fff1e6',
-                    border: '1.5px solid #ffd8bf',
-                    color: '#c2410c',
-                    fontSize: 12.5,
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    flexShrink: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#ffe5d0'
-                    e.currentTarget.style.borderColor = '#fb923c'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#fff1e6'
-                    e.currentTarget.style.borderColor = '#ffd8bf'
-                  }}
-                >
-                  <ArrowLeft size={16} strokeWidth={2.8} color="#c2410c" />
-                  <span>All Rooms</span>
-                </button>
-
-                <div
-                  style={{
-                    width: 38, height: 38, borderRadius: 12,
-                    background: activeRoom.type === 'announcement' ? 'rgba(239,68,68,0.1)' : 'rgba(255,90,10,0.1)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                  }}
-                >
-                  {activeRoom.type === 'announcement' ? <Megaphone size={18} color="#ef4444" /> : <Sparkles size={18} color="#ff5a0a" />}
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1a1f2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {activeRoom.name}
-                    </h3>
-                    {activeRoom.type === 'announcement' && (
-                      <span
-                        style={{
-                          fontSize: 10, fontWeight: 800, background: 'rgba(239,68,68,0.1)',
-                          color: '#ef4444', padding: '2px 6px', borderRadius: 6, textTransform: 'uppercase'
-                        }}
-                      >
-                        Announcement Only
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 11.5, color: 'var(--p-text-2, #586079)' }}>
-                    {typingUsers.length > 0 ? (
-                      <em style={{ color: '#ff5a0a' }}>
-                        {typingUsers.map(u => u.username).join(', ')} typing…
-                      </em>
-                    ) : (
-                      activeRoom.description || 'Active Fellowship Room'
-                    )}
-                  </span>
-                </div>
+      {/* ---------- conversation ---------- */}
+      <section className="fc-main" aria-label={channel ? `#${channel.name}` : 'Conversation'}>
+        {!channel ? (
+          <div className="fc-empty"><Hash size={30} aria-hidden="true" /><b>Pick a room</b><p>Choose a room on the left to start.</p></div>
+        ) : (
+          <>
+            <header className="fc-bar">
+              <button type="button" className="fc-iconbtn fc-back" onClick={() => setView('list')} aria-label="Back to rooms">
+                <ChevronLeft size={20} />
+                {unreadTotal > 0 && <i className="fc-pill">{unreadTotal > 9 ? '9+' : unreadTotal}</i>}
+              </button>
+              <div className="fc-bar-t">
+                <h2>{channel.kind === 'announcement' ? <Megaphone size={17} aria-hidden="true" /> : channel.staff_only ? <Lock size={16} aria-hidden="true" /> : <Hash size={17} aria-hidden="true" />}{channel.name}</h2>
+                <p>{channel.description}</p>
               </div>
-
-              {/* Header Right Actions */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowSearch(!showSearch)}
-                  style={{
-                    border: '1px solid var(--p-border, #e5e8f1)',
-                    background: showSearch ? 'rgba(255,90,10,0.08)' : '#fff',
-                    borderRadius: 9, padding: '7px 10px', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600,
-                    color: showSearch ? '#ff5a0a' : '#586079'
-                  }}
-                >
-                  <Search size={14} />
-                  <span className="hidden-mobile">Search</span>
+              <div className="fc-bar-a">
+                <button type="button" className={`fc-iconbtn${searching ? ' is-on' : ''}`} onClick={() => { setSearching((s) => !s); setQ('') }} aria-label="Search this room" aria-pressed={searching}><Search size={18} /></button>
+                <button type="button" className={`fc-iconbtn${showPins ? ' is-on' : ''}`} onClick={() => setShowPins((s) => !s)} aria-label={`Pinned messages (${pinned.length})`} aria-pressed={showPins}>
+                  <Pin size={18} />{pinned.length > 0 && <i className="fc-pill">{pinned.length}</i>}
                 </button>
+                <button type="button" className={`fc-iconbtn${side === 'sessions' ? ' is-on' : ''}`} onClick={() => setSide(side === 'sessions' ? null : 'sessions')} aria-label={`Online sessions${nextLive ? ' (live now)' : ''}`} aria-pressed={side === 'sessions'}>
+                  <Video size={18} />{liveCount > 0 && <i className="fc-livedot" aria-hidden="true" />}
+                </button>
+                <button type="button" className={`fc-iconbtn${side === 'members' || side === 'activity' ? ' is-on' : ''}`} onClick={() => setSide(side === 'members' || side === 'activity' ? null : 'members')} aria-label="People and activity" aria-pressed={side === 'members' || side === 'activity'}><Users size={18} /></button>
               </div>
-            </div>
-          ) : (
-            <div style={{ padding: 20 }}>Select a channel</div>
-          )}
+            </header>
 
-          {/* Search Bar Input (toggled) */}
-          {showSearch && (
-            <div style={{ padding: '10px 18px', background: '#f8fafc', borderBottom: '1px solid var(--p-border, #e5e8f1)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Search size={15} color="#586079" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search messages in this channel…"
-                style={{
-                  flex: 1, border: 'none', background: 'transparent',
-                  outline: 'none', fontSize: 13, color: '#1a1f2e'
-                }}
-              />
-              {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                  <X size={14} color="#586079" />
-                </button>
+            {nextLive && !joinDismissed.includes(nextLive.id) && (
+              <SessionStrip s={nextLive} onOpen={() => setSide('sessions')} onClose={() => setJoinDismissed((a) => [...a, nextLive.id])} />
+            )}
+
+            {searching && (
+              <div className="fc-search">
+                <Search size={16} aria-hidden="true" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search #${channel.name}`} aria-label="Search messages" autoFocus />
+                {q && <button type="button" onClick={() => setQ('')} aria-label="Clear"><X size={15} /></button>}
+                <span>{results ? `${results.length} found` : q.trim().length === 1 ? 'Keep typing' : ''}</span>
+              </div>
+            )}
+
+            {showPins && (
+              <div className="fc-pins">
+                {pinned.length === 0 ? <p>No pinned messages yet. Admins and officers can pin important ones.</p> : pinned.map((p) => (
+                  <button type="button" key={p.id} onClick={() => { setShowPins(false); jump(p.id) }}>
+                    <Pin size={14} aria-hidden="true" /><b>{p.title || p.name}</b><span>{p.body.slice(0, 90) || 'Photo'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="fc-list" ref={list} onScroll={onScroll} role="log" aria-live="polite">
+              {hasMore && !results && <button type="button" className="fc-more" onClick={loadOlder}>Load earlier messages</button>}
+              {loading && <div className="fc-skel" aria-busy="true">{[70, 45, 85, 55].map((w, i) => <i key={i} style={{ width: `${w}%` }} />)}</div>}
+              {!loading && shown.length === 0 && (
+                <div className="fc-empty">
+                  {results ? <><Search size={28} /><b>No matches</b><p>Try another word.</p></> : <><Hash size={28} /><b>Start of #{channel.name}</b><p>{readonlyForMe ? 'Nothing has been announced yet.' : 'Be the first to say something.'}</p></>}
+                </div>
               )}
+              {groups.map((g) => {
+                if (g.type === 'day') return <div className="fc-day" key={g.key}><span>{g.label}</span></div>
+                if (g.type === 'new') return <div className="fc-new" key={g.key}><span>New messages</span></div>
+                return (
+                  <Message
+                    key={g.key} m={g.m} joined={g.joined} mine={g.m.user_id === me?.id} me={me} canPost={canPost}
+                    picked={picked === g.m.id} onPick={() => setPicked(picked === g.m.id ? null : g.m.id)}
+                    onProfile={() => setProfileId(g.m.user_id)} onReact={react} onReply={startReply} onEdit={startEdit}
+                    onPin={pin} onDelete={remove} onAck={ack} onJump={jump} onImage={setLightbox}
+                  />
+                )
+              })}
             </div>
-          )}
 
-          {/* Pinned Messages Header Tray */}
-          {pinned.length > 0 && (
-            <div
-              style={{
-                padding: '8px 18px',
-                background: 'rgba(255,90,10,0.06)',
-                borderBottom: '1px solid rgba(255,90,10,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                fontSize: 12
-              }}
-            >
-              <Pin size={13} color="#ff5a0a" />
-              <strong style={{ color: '#ff5a0a', flexShrink: 0 }}>Pinned:</strong>
-              <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#1a1f2e' }}>
-                {pinned[0].content}
-              </div>
-              <span style={{ fontSize: 11, color: '#586079', flexShrink: 0 }}>
-                by {pinned[0].sender_name}
-              </span>
-            </div>
-          )}
+            {pendingNew > 0 && (
+              <button type="button" className="fc-jump" onClick={() => { stick.current = true; setPendingNew(0); scrollDown(true) }}>
+                <ArrowDown size={16} aria-hidden="true" /> {pendingNew} new message{pendingNew > 1 ? 's' : ''}
+              </button>
+            )}
 
-          {/* ─── MESSAGE LIST SCROLLER ───────────────────────────────── */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '20px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16
-            }}
-          >
-            {loadingMessages ? (
-              <div style={{ textAlign: 'center', margin: 'auto', color: 'var(--p-text-2)' }}>
-                <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: '#ff5a0a' }} />
-                <p style={{ fontSize: 13, marginTop: 8 }}>Loading fellowship messages…</p>
-              </div>
-            ) : filteredMessages.length === 0 ? (
-              <div style={{ textAlign: 'center', margin: 'auto', maxWidth: 320, color: 'var(--p-text-2)' }}>
-                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,90,10,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                  <MessageSquare size={22} color="#ff5a0a" />
-                </div>
-                <h4 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 800, color: '#1a1f2e' }}>
-                  No messages yet
-                </h4>
-                <p style={{ margin: 0, fontSize: 13 }}>
-                  Start the conversation! Share a prayer note, encouraging scripture, or say hi.
-                </p>
+            {/* ---------- composer ---------- */}
+            {readonlyForMe ? (
+              <div className="fc-note"><Megaphone size={16} aria-hidden="true" /> Only admins and officers post here. You can react and tap “Got it”.</div>
+            ) : !canPost ? (
+              <div className="fc-note is-warn"><VolumeX size={16} aria-hidden="true" />
+                {me?.reason === 'muted' ? `You are muted until ${parse(me.muted_until).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}. You can still read.` : 'This admin login has no member profile. Sign in with your member account or Google to chat.'}
               </div>
             ) : (
-              filteredMessages.map(msg => {
-                const isMine = currentUser && msg.sender_id === currentUser.id
-                const isMsgStaff = ['admin', 'officer', 'moderator'].includes(msg.sender_role)
-
-                return (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: isMine ? 'row-reverse' : 'row',
-                      alignItems: 'flex-start',
-                      gap: 10,
-                      position: 'relative'
-                    }}
-                  >
-                    {/* Avatar with tap/click card trigger */}
-                    <div
-                      onClick={(e) => handleOpenUserProfile(msg.sender_id, e)}
-                      title="View member card & bio"
-                      style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        background: isMine ? '#ff5a0a' : isMsgStaff ? '#6366f1' : '#e5e7eb',
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 800, fontSize: 13, flexShrink: 0,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                        transition: 'transform 0.15s ease',
-                      }}
-                      className="chat-avatar-hover"
-                    >
-                      {msg.sender_avatar ? (
-                        <img
-                          src={resolveImageUrl(msg.sender_avatar)}
-                          alt="avatar"
-                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        msg.sender_name?.charAt(0).toUpperCase() || 'U'
-                      )}
-                    </div>
-
-                    {/* Message Bubble + Actions Wrap */}
-                    <div style={{ maxWidth: '75%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
-                      {/* Name & Role */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 11 }}>
-                        <span
-                          onClick={(e) => handleOpenUserProfile(msg.sender_id, e)}
-                          title="View member card & bio"
-                          style={{ fontWeight: 700, color: '#1a1f2e', cursor: 'pointer', textDecoration: 'underline text-decoration-color: transparent', transition: 'color 0.15s' }}
-                          className="chat-name-hover"
-                        >
-                          {isMine ? 'You' : msg.sender_full_name || msg.sender_name}
-                        </span>
-                        {isMsgStaff && (
-                          <span style={{ background: '#ede9fe', color: '#6366f1', padding: '1px 5px', borderRadius: 4, fontWeight: 800, fontSize: 9.5 }}>
-                            {msg.sender_role.toUpperCase()}
-                          </span>
-                        )}
-                        <span style={{ color: '#9ca3af' }}>
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-
-                      {/* Replying Context Banner */}
-                      {msg.reply_content && (
-                        <div
-                          style={{
-                            padding: '4px 10px',
-                            background: 'rgba(0,0,0,0.04)',
-                            borderLeft: '3px solid #ff5a0a',
-                            borderRadius: 6,
-                            fontSize: 11,
-                            color: '#586079',
-                            marginBottom: 4,
-                            maxWidth: '100%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          <strong>{msg.reply_sender_name}:</strong> {msg.reply_content}
-                        </div>
-                      )}
-
-                      {/* Message Body */}
-                      <div
-                        style={{
-                          padding: '10px 14px',
-                          borderRadius: 16,
-                          ...(isMine
-                            ? { background: '#ff5a0a', color: '#fff', borderBottomRightRadius: 4 }
-                            : { background: '#f1f3f7', color: '#1a1f2e', borderBottomLeftRadius: 4 }),
-                          fontSize: 13.5,
-                          lineHeight: 1.45,
-                          wordBreak: 'break-word',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        {msg.is_deleted ? (
-                          <em style={{ opacity: 0.7 }}>This message was deleted.</em>
-                        ) : (
-                          <>
-                            {msg.content}
-                            {msg.is_edited ? (
-                              <span style={{ fontSize: 10, opacity: 0.65, marginLeft: 6 }}>(edited)</span>
-                            ) : null}
-                          </>
-                        )}
-
-                        {/* Image Attachment */}
-                        {msg.image_url && !msg.is_deleted && (
-                          <div style={{ marginTop: 8 }}>
-                            <img
-                              src={resolveImageUrl(msg.image_url)}
-                              alt="attached"
-                              onClick={() => setLightboxImage(resolveImageUrl(msg.image_url))}
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: 240,
-                                borderRadius: 10,
-                                cursor: 'zoom-in',
-                                display: 'block',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Reaction Badges */}
-                      {msg.grouped_reactions && msg.grouped_reactions.length > 0 && (
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                          {msg.grouped_reactions.map(gr => {
-                            const foundReaction = REACTIONS.find(r => r.key === gr.reaction) || REACTIONS[0]
-                            const IconComponent = foundReaction.icon
-                            return (
-                              <button
-                                key={gr.reaction}
-                                type="button"
-                                onClick={() => handleReact(msg.id, gr.reaction)}
-                                style={{
-                                  border: gr.has_reacted ? '1.5px solid #ff5a0a' : '1px solid #e5e8f1',
-                                  background: gr.has_reacted ? 'rgba(255,90,10,0.08)' : '#fff',
-                                  borderRadius: 999,
-                                  padding: '2px 7px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  cursor: 'pointer',
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  color: gr.has_reacted ? '#ff5a0a' : '#586079'
-                                }}
-                              >
-                                <IconComponent size={12} color={foundReaction.color} />
-                                <span>{gr.count}</span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-
-                      {/* Hover / Actions Row */}
-                      {!msg.is_deleted && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          {/* Quick Reactions */}
-                          {REACTIONS.map(r => (
-                            <button
-                              key={r.key}
-                              type="button"
-                              onClick={() => handleReact(msg.id, r.key)}
-                              title={r.label}
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, opacity: 0.7 }}
-                            >
-                              <r.icon size={12} color={r.color} />
-                            </button>
-                          ))}
-
-                          {/* Reply */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReplyingTo(msg)
-                              inputRef.current?.focus()
-                            }}
-                            title="Reply"
-                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: '#586079' }}
-                          >
-                            <CornerUpLeft size={12} />
-                          </button>
-
-                          {/* Pin (Staff only) */}
-                          {isStaff && (
-                            <button
-                              type="button"
-                              onClick={() => handlePin(msg.id)}
-                              title={msg.is_pinned ? 'Unpin message' : 'Pin message'}
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: msg.is_pinned ? '#ff5a0a' : '#586079' }}
-                            >
-                              <Pin size={12} />
-                            </button>
-                          )}
-
-                          {/* Edit / Delete (Owner or staff) */}
-                          {isMine && !msg.image_url && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingMsg(msg)
-                                setInputText(msg.content)
-                                inputRef.current?.focus()
-                              }}
-                              title="Edit message"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: '#586079' }}
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                          )}
-
-                          {(isMine || isStaff) && (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(msg.id)}
-                              title="Delete message"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: '#ef4444' }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+              <form className="fc-compose" onSubmit={send}>
+                {(draft.reply || draft.edit) && (
+                  <div className="fc-ctx">
+                    {draft.edit ? <Pencil size={14} aria-hidden="true" /> : <Reply size={14} aria-hidden="true" />}
+                    <span>{draft.edit ? 'Editing your message' : <>Replying to <b>{draft.reply.name}</b></>}</span>
+                    <button type="button" onClick={() => set({ reply: null, edit: null, text: draft.edit ? '' : draft.text })} aria-label="Cancel"><X size={15} /></button>
                   </div>
-                )
-              })
+                )}
+                {me?.staff && !draft.edit && !channel.readonly && (
+                  <label className="fc-toggle">
+                    <input type="checkbox" checked={draft.announce} onChange={(e) => set({ announce: e.target.checked })} />
+                    <span><Megaphone size={14} aria-hidden="true" /> Post as announcement</span>
+                  </label>
+                )}
+                {(channel.readonly || draft.announce) && !draft.edit && (
+                  <div className="fc-ann-fields">
+                    <input value={draft.title} onChange={(e) => set({ title: e.target.value })} placeholder="Announcement title" maxLength={160} aria-label="Announcement title" />
+                    <label className="fc-toggle"><input type="checkbox" checked={draft.important} onChange={(e) => set({ important: e.target.checked })} /><span><BellRing size={14} aria-hidden="true" /> Mark as important</span></label>
+                  </div>
+                )}
+                {draft.preview && (
+                  <div className="fc-prev"><img src={draft.preview} alt="Selected photo" /><button type="button" onClick={clearImage} aria-label="Remove photo"><X size={14} /></button></div>
+                )}
+                {suggestions.length > 0 && (
+                  <ul className="fc-suggest" role="listbox" aria-label="Mention someone">
+                    {suggestions.map((m) => (
+                      <li key={m.id}><button type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => pickMention(m)}>
+                        <Avatar name={m.name} src={m.avatar} size={26} online={m.online} /><span>{m.name}</span><small>{[m.ministry, m.dgroup].filter(Boolean).join(' · ')}</small>
+                      </button></li>
+                    ))}
+                  </ul>
+                )}
+                <div className="fc-row">
+                  {!draft.edit && (
+                    <label className="fc-iconbtn" aria-label="Attach a photo" title="Attach a photo">
+                      <ImagePlus size={20} />
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseImage} />
+                    </label>
+                  )}
+                  <button type="button" className="fc-iconbtn" aria-label="Mention someone" onClick={() => { set({ text: `${draft.text}${draft.text && !/\s$/.test(draft.text) ? ' ' : ''}@` }); area.current?.focus() }}><AtSign size={19} /></button>
+                  <textarea ref={area} rows={1} value={draft.text} maxLength={2000} onChange={(e) => set({ text: e.target.value })} onKeyDown={onKey}
+                    placeholder={channel.readonly || draft.announce ? 'Write the announcement…' : `Message #${channel.name}`} aria-label="Message" />
+                  <button type="submit" className="fc-send" disabled={sending || (!draft.text.trim() && !draft.image)} aria-label={draft.edit ? 'Save edit' : 'Send'}>
+                    {draft.edit ? <Check size={19} /> : <Send size={19} />}
+                  </button>
+                </div>
+              </form>
             )}
-            <div ref={messagesEndRef} />
-          </div>
+          </>
+        )}
+      </section>
 
-          {/* Replying Context Bar */}
-          {replyingTo && (
-            <div style={{ padding: '8px 18px', background: '#f8fafc', borderTop: '1px solid var(--p-border, #e5e8f1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#586079' }}>
-                <CornerUpLeft size={14} color="#ff5a0a" />
-                <span>Replying to <strong>{replyingTo.sender_name}</strong>: <em>{replyingTo.content?.slice(0, 50)}</em></span>
+      {/* ---------- members / activity ---------- */}
+      {side && channel && (
+        <>
+          <div className="fc-scrim" onClick={() => setSide(null)} aria-hidden="true" />
+          <aside className="fc-side" aria-label={side === 'sessions' ? 'Online sessions' : side === 'members' ? 'Members' : 'Activity'}>
+            <header>
+              <div className="fc-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected={side === 'sessions'} className={side === 'sessions' ? 'is-on' : ''} onClick={() => setSide('sessions')}><Video size={15} /> Sessions</button>
+                <button type="button" role="tab" aria-selected={side === 'members'} className={side === 'members' ? 'is-on' : ''} onClick={() => setSide('members')}><Users size={15} /> Members</button>
+                <button type="button" role="tab" aria-selected={side === 'activity'} className={side === 'activity' ? 'is-on' : ''} onClick={() => setSide('activity')}><Activity size={15} /> Activity</button>
               </div>
-              <button type="button" onClick={() => setReplyingTo(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                <X size={14} color="#586079" />
-              </button>
-            </div>
-          )}
-
-          {/* Editing Context Bar */}
-          {editingMsg && (
-            <div style={{ padding: '8px 18px', background: '#fef3c7', borderTop: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#92400e' }}>
-                <Edit2 size={14} />
-                <span>Editing your message</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingMsg(null)
-                  setInputText('')
-                }}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-              >
-                <X size={14} color="#92400e" />
-              </button>
-            </div>
-          )}
-
-          {/* Image Preview Bar Before Sending */}
-          {imagePreview && (
-            <div style={{ padding: '10px 18px', background: '#f8fafc', borderTop: '1px solid var(--p-border, #e5e8f1)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ position: 'relative', width: 56, height: 56, borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e8f1' }}>
-                <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button
-                  type="button"
-                  onClick={removeSelectedImage}
-                  style={{
-                    position: 'absolute', top: 2, right: 2, width: 18, height: 18,
-                    borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                  }}
-                >
-                  <X size={11} color="#fff" />
-                </button>
-              </div>
-              <div style={{ fontSize: 12, color: '#586079' }}>
-                <div><strong>{selectedImage?.name}</strong></div>
-                <div>{Math.round((selectedImage?.size || 0) / 1024)} KB &bull; Click send to attach</div>
-              </div>
-            </div>
-          )}
-
-          {/* Mention Autocomplete Popup */}
-          {showMentionMenu && filteredMentions.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 74,
-                left: 340,
-                background: '#fff',
-                border: '1px solid var(--p-border, #e5e8f1)',
-                borderRadius: 12,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                padding: '6px 0',
-                zIndex: 40,
-                minWidth: 200
-              }}
-            >
-              <div style={{ padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#ff5a0a', textTransform: 'uppercase' }}>
-                Mention Member
-              </div>
-              {filteredMentions.map(m => (
-                <div
-                  key={m.id}
-                  onClick={() => insertMention(m.username)}
-                  style={{
-                    padding: '8px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    hover: { background: '#f8fafc' }
-                  }}
-                >
-                  <AtSign size={13} color="#586079" />
-                  <span style={{ fontWeight: 700, color: '#1a1f2e' }}>{m.username}</span>
-                  {m.full_name && <span style={{ fontSize: 11, color: '#586079' }}>({m.full_name})</span>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ─── CHAT INPUT ROW ─────────────────────────────────────── */}
-          {activeRoom?.type === 'announcement' && !isStaff ? (
-            <div
-              style={{
-                padding: '16px 20px',
-                borderTop: '1px solid var(--p-border, #e5e8f1)',
-                background: '#f8fafc',
-                textAlign: 'center',
-                fontSize: 13,
-                color: '#586079',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <Lock size={15} color="#ef4444" />
-              <span>Only Pastors and Officers can post in the Church Announcements channel.</span>
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSend}
-              style={{
-                padding: '14px 20px',
-                borderTop: '1px solid var(--p-border, #e5e8f1)',
-                background: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10
-              }}
-            >
-              {/* Image upload trigger */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/jpeg,image/png,image/webp"
-                style={{ display: 'none' }}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Attach photo (JPG, PNG, WEBP max 50MB)"
-                style={{
-                  border: '1px solid var(--p-border, #e5e8f1)',
-                  background: '#fafbfd',
-                  borderRadius: 10,
-                  width: 38,
-                  height: 38,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                <ImageIcon size={18} color="#586079" />
-              </button>
-
-              {/* Text Input */}
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={
-                  editingMsg
-                    ? 'Update your message…'
-                    : `Message #${activeRoom?.name || 'chat'}… (@ to mention)`
-                }
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  border: '1.5px solid var(--p-border, #e5e8f1)',
-                  outline: 'none',
-                  fontSize: 13.5,
-                  color: '#1a1f2e',
-                  background: '#fafbfd',
-                  transition: 'border-color 0.15s'
-                }}
-              />
-
-              {/* Send Button */}
-              <button
-                type="submit"
-                disabled={sending || (!inputText.trim() && !selectedImage)}
-                style={{
-                  border: 'none',
-                  background: sending || (!inputText.trim() && !selectedImage) ? '#d1d5db' : '#ff5a0a',
-                  color: '#fff',
-                  borderRadius: 12,
-                  padding: '10px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontWeight: 700,
-                  fontSize: 13.5,
-                  cursor: sending || (!inputText.trim() && !selectedImage) ? 'not-allowed' : 'pointer',
-                  flexShrink: 0,
-                  transition: 'background 0.15s'
-                }}
-              >
-                {sending ? (
-                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                ) : (
-                  <>
-                    <span>Send</span>
-                    <Send size={14} />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-        </div>
-
-      </div>
-
-      {/* ─── LIGHTBOX MODAL FOR IMAGES ──────────────────────────────── */}
-      {lightboxImage && (
-        <div
-          onClick={() => setLightboxImage(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.85)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setLightboxImage(null)}
-            style={{
-              position: 'absolute', top: 20, right: 20,
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)', border: 'none',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            <X size={20} color="#fff" />
-          </button>
-          <img
-            src={lightboxImage}
-            alt="enlarged"
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: '92vw',
-              maxHeight: '90vh',
-              borderRadius: 14,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-              objectFit: 'contain'
-            }}
-          />
-        </div>
+              <button type="button" className="fc-iconbtn" onClick={() => setSide(null)} aria-label="Close panel"><X size={18} /></button>
+            </header>
+            {side === 'sessions' ? <SessionsPanel me={me} channels={channels} data={sessions} reload={loadSessions} toast={toast} /> : side === 'members' ? <MemberList members={members} setMembers={setMembers} onOpen={setProfileId} /> : <ActivityPanel me={me} onOpen={setProfileId} />}
+          </aside>
+        </>
       )}
 
-      
-      {/* ─── REDESIGNED MEMBER PROFILE & BIO CARD MODAL ───────────── */}
-      {userProfilePopup && (
-        <div
-          onClick={() => setUserProfilePopup(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-            backdropFilter: 'blur(4px)'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#ffffff',
-              borderRadius: 24,
-              maxWidth: 420,
-              width: '100%',
-              overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid var(--p-border, #e2e8f0)',
-              animation: 'profilePop 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          >
-            {/* Elegant Header Banner */}
-            <div
-              style={{
-                background: userProfilePopup.role === 'admin'
-                  ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-                  : userProfilePopup.role === 'officer'
-                    ? 'linear-gradient(135deg, #3730a3 0%, #4f46e5 100%)'
-                    : 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)',
-                height: 100,
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                boxSizing: 'border-box'
-              }}
-            >
-              {/* Role Pill */}
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(255, 255, 255, 0.22)',
-                  backdropFilter: 'blur(8px)',
-                  color: '#ffffff',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em'
-                }}
-              >
-                {userProfilePopup.role === 'admin' ? (
-                  <><Shield size={12} /> Administrator</>
-                ) : userProfilePopup.role === 'officer' ? (
-                  <><Sparkles size={12} /> Church Officer</>
-                ) : (
-                  <><UserIcon size={12} /> LifeGen Member</>
-                )}
-              </div>
-
-              {/* Close Button - Explicit styling to never shrink or render as dot */}
-              <button
-                type="button"
-                onClick={() => setUserProfilePopup(null)}
-                aria-label="Close"
-                style={{
-                  width: 32,
-                  height: 32,
-                  minWidth: 32,
-                  minHeight: 32,
-                  padding: 0,
-                  borderRadius: '50%',
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  border: '1px solid rgba(255, 255, 255, 0.35)',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', width: 14, height: 14 }}>
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Avatar & Identity */}
-            <div style={{ padding: '0 22px 22px', textAlign: 'center' }}>
-              {/* Circular Avatar - Larger and positioned center top */}
-              <div
-                style={{
-                  width: 92,
-                  height: 92,
-                  borderRadius: '50%',
-                  margin: '-46px auto 12px',
-                  border: '4px solid #ffffff',
-                  background: '#ff5a0a',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 34,
-                  fontWeight: 900,
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  zIndex: 3
-                }}
-              >
-                {userProfilePopup.avatar ? (
-                  <img
-                    src={resolveImageUrl(userProfilePopup.avatar)}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
-                  />
-                ) : (
-                  (userProfilePopup.username || 'U').charAt(0).toUpperCase()
-                )}
-              </div>
-
-              {/* Name & Username */}
-              <h3 style={{ margin: '0 0 4px', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
-                {userProfilePopup.full_name || userProfilePopup.username}
-              </h3>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', marginBottom: 14 }}>
-                <span>@{userProfilePopup.username}</span>
-                {userProfilePopup.member_id && (
-                  <>
-                    <span>&bull;</span>
-                    <span style={{ padding: '2px 8px', borderRadius: 6, background: '#f1f5f9', fontFamily: 'monospace', fontWeight: 700, fontSize: 11.5, color: '#334155' }}>
-                      {userProfilePopup.member_id}
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {/* Bio Box */}
-              <div
-                style={{
-                  background: '#f8fafc',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: 16,
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  marginBottom: 14
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#ea580c', marginBottom: 5 }}>
-                  <Heart size={13} color="#ea580c" />
-                  <span>About &bull; Bio</span>
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.5, fontStyle: userProfilePopup.bio ? 'normal' : 'italic', whiteSpace: 'pre-wrap', maxHeight: 85, overflowY: 'auto' }}>
-                  {userProfilePopup.bio || 'No bio shared yet.'}
-                </p>
-              </div>
-
-              {/* Ministry & D-Group Badges */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                {/* Ministry Team */}
-                <div style={{ background: '#fff7ed', border: '1.5px solid #ffedd5', borderRadius: 14, padding: '10px 12px', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', color: '#c2410c', marginBottom: 3 }}>
-                    <HeartHandshake size={13} color="#c2410c" />
-                    <span>Ministry</span>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userProfilePopup.ministry_name || 'None yet'}>
-                    {userProfilePopup.ministry_name || 'None yet'}
-                  </div>
-                </div>
-
-                {/* D-Group */}
-                <div style={{ background: '#eef2ff', border: '1.5px solid #e0e7ff', borderRadius: 14, padding: '10px 12px', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', color: '#4338ca', marginBottom: 3 }}>
-                    <Users size={13} color="#4338ca" />
-                    <span>D-Group</span>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userProfilePopup.dgroup_name || 'None yet'}>
-                    {userProfilePopup.dgroup_name || 'None yet'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Personal Details Section (Clean, spacious, non-squished format) */}
-              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {/* Age & Gender Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Cake size={14} color="#ea580c" style={{ flexShrink: 0 }} />
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Age</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{userProfilePopup.age ? `${userProfilePopup.age} yrs old` : 'Not set'}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <UserIcon size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Gender</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{userProfilePopup.gender || 'Not set'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location Row (Full width, wrapping cleanly) */}
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8, textAlign: 'left' }}>
-                  <MapPin size={14} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }}>Location</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', lineHeight: 1.35, wordBreak: 'break-word' }}>
-                      {userProfilePopup.address || 'Location not specified'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Animation Style */}
-      <style>{`
-        @keyframes profilePop {
-          from { opacity: 0; transform: scale(0.92); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .chat-avatar-hover:hover {
-          transform: scale(1.1);
-        }
-        .chat-name-hover:hover {
-          color: #ff5a0a !important;
-          text-decoration: underline !important;
-        }
-      `}</style>
-
-      {/* Responsive Styles Helper */}
-      <style>{`
-        @media (max-width: 768px) {
-          .chat-room-sidebar {
-            width: 100% !important;
-          }
-          .chat-room-sidebar.is-mobile-chat-open {
-            display: none !important;
-          }
-          .chat-main-pane.is-mobile-rooms-open {
-            display: none !important;
-          }
-          .hidden-mobile {
-            display: none !important;
-          }
-        }
-        @media (min-width: 769px) {
-          .chat-room-sidebar.is-collapsed {
-            display: none !important;
-          }
-        }
-      `}</style>
-
+      {profileId && <Profile id={profileId} me={me} onClose={() => setProfileId(null)} onMention={mention} canMention={canPost && !readonlyForMe} toast={toast} />}
+      {lightbox && createPortal(
+        <div className="fc-lightbox" role="dialog" aria-modal="true" aria-label="Photo" onClick={() => setLightbox(null)}>
+          <button type="button" aria-label="Close" onClick={() => setLightbox(null)}><X size={22} /></button>
+          <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
+        </div>, document.body)}
     </div>
   )
 }
 
+/* ====================================================================== */
+function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onReact, onReply, onEdit, onPin, onDelete, onAck, onJump, onImage }) {
+  const [who, setWho] = useState(null)
+  const rn = roleName(m.role)
+
+  if (m.deleted) {
+    return <div className="fc-msg is-gone" data-mid={m.id}><span /><p><X size={13} aria-hidden="true" /> This message was deleted.</p></div>
+  }
+
+  async function showWho() {
+    if (who) return setWho(null)
+    try { setWho(await apiGet(`/api/chat/messages/${m.id}/acks`)) } catch { setWho([]) }
+  }
+
+  const tools = (
+    <div className="fc-tools" onClick={(e) => e.stopPropagation()}>
+      {REACTIONS.map(({ key, label, Icon }) => (
+        <button key={key} type="button" className={m.reactions[key]?.mine ? 'is-on' : ''} onClick={() => onReact(m, key)} aria-label={label} title={label}><Icon size={16} /></button>
+      ))}
+      <i aria-hidden="true" />
+      {canPost && <button type="button" onClick={() => onReply(m)} aria-label="Reply" title="Reply"><Reply size={16} /></button>}
+      {mine && canPost && <button type="button" onClick={() => onEdit(m)} aria-label="Edit" title="Edit"><Pencil size={16} /></button>}
+      {me?.staff && <button type="button" onClick={() => onPin(m)} aria-label={m.pinned ? 'Unpin' : 'Pin'} title={m.pinned ? 'Unpin' : 'Pin'}>{m.pinned ? <PinOff size={16} /> : <Pin size={16} />}</button>}
+      {(mine || me?.staff) && <button type="button" className="is-danger" onClick={() => onDelete(m)} aria-label="Delete" title="Delete"><Trash2 size={16} /></button>}
+    </div>
+  )
+
+  const reactions = Object.entries(m.reactions || {})
+  const rx = reactions.length > 0 && (
+    <div className="fc-rx">
+      {reactions.map(([k, v]) => {
+        const R = REACTIONS.find((x) => x.key === k)
+        if (!R) return null
+        return <button key={k} type="button" className={v.mine ? 'is-on' : ''} onClick={(e) => { e.stopPropagation(); onReact(m, k) }} aria-label={`${R.label}, ${v.n}`} aria-pressed={v.mine}><R.Icon size={13} />{v.n}</button>
+      })}
+    </div>
+  )
+
+  if (m.kind === 'announcement') {
+    return (
+      <article className={`fc-ann${m.important ? ' is-important' : ''}${picked ? ' is-picked' : ''}`} data-mid={m.id} onClick={onPick}>
+        <header>
+          <span className="fc-ann-tag"><Megaphone size={14} aria-hidden="true" /> {m.important ? 'Important announcement' : 'Announcement'}</span>
+          {m.pinned && <span className="fc-ann-pin"><Pin size={13} aria-hidden="true" /> Pinned</span>}
+        </header>
+        <h3>{m.title}</h3>
+        {m.body && <p><RichText text={m.body} mentions={m.mentions} /></p>}
+        {m.image && <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}><img src={resolveImageUrl(m.image)} alt="Announcement photo" loading="lazy" decoding="async" /></button>}
+        <footer onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="fc-by" onClick={onProfile}>{m.name}{rn && <small>{rn}</small>}</button>
+          <time>{hhmm(m.created_at)}</time>
+          <span className="fc-grow" />
+          {me?.staff && <button type="button" className="fc-link" onClick={showWho}><ShieldCheck size={14} /> {m.acks.n} read</button>}
+          <button type="button" className={`fc-got${m.acks?.mine ? ' is-done' : ''}`} disabled={m.acks?.mine || !canPost} onClick={() => onAck(m)}>
+            <Check size={15} aria-hidden="true" /> {m.acks?.mine ? 'Got it' : 'Got it?'}
+          </button>
+        </footer>
+        {who && <p className="fc-who">{who.length ? who.map((w) => w.name).join(', ') : 'Nobody has acknowledged yet.'}</p>}
+        {rx}
+        {tools}
+      </article>
+    )
+  }
+
+  const mentioned = m.mentions?.some((x) => x.id === me?.id)
+  return (
+    <div className={`fc-msg${joined ? ' is-joined' : ''}${mine ? ' is-mine' : ''}${mentioned ? ' is-mentioned' : ''}${picked ? ' is-picked' : ''}`} data-mid={m.id} onClick={onPick}>
+      {joined ? <time className="fc-t" aria-hidden="true">{hhmm(m.created_at)}</time> : (
+        <button type="button" className="fc-av-btn" onClick={(e) => { e.stopPropagation(); onProfile() }} aria-label={`Open ${m.name}'s profile`}><Avatar name={m.name} src={m.avatar} size={38} /></button>
+      )}
+      <div className="fc-body">
+        {!joined && (
+          <div className="fc-head">
+            <button type="button" className="fc-name" onClick={(e) => { e.stopPropagation(); onProfile() }}>{m.name}</button>
+            {rn && <span className={`fc-role is-${m.role}`}>{rn}</span>}
+            {m.ministry && <span className="fc-chip"><HeartHandshake size={12} aria-hidden="true" />{m.ministry}</span>}
+            {m.dgroup && <span className="fc-chip"><Network size={12} aria-hidden="true" />{m.dgroup}</span>}
+            <time>{hhmm(m.created_at)}</time>
+          </div>
+        )}
+        {m.reply && (
+          <button type="button" className="fc-quote" onClick={(e) => { e.stopPropagation(); onJump(m.reply.id) }}><Reply size={12} aria-hidden="true" /><b>{m.reply.name}</b><span>{m.reply.snippet}</span></button>
+        )}
+        {m.body && <p className="fc-text"><RichText text={m.body} mentions={m.mentions} />{m.edited && <small className="fc-edited"> (edited)</small>}</p>}
+        {m.image && <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}><img src={resolveImageUrl(m.image)} alt={`Photo from ${m.name}`} loading="lazy" decoding="async" /></button>}
+        {m.pinned && <span className="fc-pinned"><Pin size={12} aria-hidden="true" /> Pinned</span>}
+        {rx}
+      </div>
+      {tools}
+    </div>
+  )
+}
+
+/* ---------- members ---------- */
+function MemberList({ members, setMembers, onOpen }) {
+  const [q, setQ] = useState('')
+  useEffect(() => {
+    const t = setInterval(() => document.visibilityState === 'visible' && apiGet('/api/chat/members').then((m) => Array.isArray(m) && setMembers(m)).catch(() => {}), 30000)
+    return () => clearInterval(t)
+  }, [setMembers])
+  const f = members.filter((m) => m.name.toLowerCase().includes(q.trim().toLowerCase()))
+  const on = f.filter((m) => m.online)
+  const off = f.filter((m) => !m.online)
+  const row = (m) => (
+    <li key={m.id}>
+      <button type="button" onClick={() => onOpen(m.id)}>
+        <Avatar name={m.name} src={m.avatar} size={34} online={m.online} />
+        <span><b>{m.name}</b>{roleName(m.role) && <em className={`fc-role is-${m.role}`}>{roleName(m.role)}</em>}
+          <small>{[m.ministry, m.dgroup].filter(Boolean).join(' · ') || 'No ministry or D-Group yet'}</small></span>
+      </button>
+    </li>
+  )
+  return (
+    <div className="fc-pane">
+      <label className="fc-find"><Search size={15} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a member" aria-label="Find a member" /></label>
+      {on.length > 0 && <><h4>Online · {on.length}</h4><ul className="fc-people">{on.map(row)}</ul></>}
+      <h4>Offline · {off.length}</h4>
+      <ul className="fc-people">{off.map(row)}</ul>
+      {f.length === 0 && <p className="fc-muted">No one matches “{q}”.</p>}
+    </div>
+  )
+}
+
+/* ---------- engagement ---------- */
+function ActivityPanel({ me, onOpen }) {
+  const [data, setData] = useState(null)
+  const [err, setErr] = useState('')
+  const [level, setLevel] = useState('all')
+  useEffect(() => { apiGet('/api/chat/activity').then(setData).catch((e) => setErr(e.message)) }, [])
+  if (err) return <div className="fc-pane"><p className="fc-muted">{err}</p></div>
+  if (!data) return <div className="fc-pane"><div className="fc-skel"><i style={{ width: '80%' }} /><i style={{ width: '60%' }} /><i style={{ width: '70%' }} /></div></div>
+  const everyone = (data.everyone || []).filter((x) => level === 'all' || x.level === level)
+  return (
+    <div className="fc-pane">
+      <h4><Trophy size={14} aria-hidden="true" /> Most active this month</h4>
+      {data.top.length === 0 ? <p className="fc-muted">No activity yet. Start a conversation.</p> : (
+        <ol className="fc-top">
+          {data.top.map((p, i) => (
+            <li key={p.id}><button type="button" onClick={() => onOpen(p.id)}>
+              <span className="fc-rank">{i + 1}</span><Avatar name={p.name} src={p.avatar} size={32} />
+              <span><b>{p.name}</b><small>{p.messages} messages · {p.active_days} active days</small></span>
+            </button></li>
+          ))}
+        </ol>
+      )}
+      {me?.staff && data.summary && (
+        <>
+          <h4>Engagement overview</h4>
+          <div className="fc-sum">
+            {['active', 'casual', 'quiet'].map((k) => (
+              <button type="button" key={k} className={level === k ? 'is-on' : ''} onClick={() => setLevel(level === k ? 'all' : k)}>
+                <strong>{data.summary[k]}</strong><span>{LEVEL[k]}</span>
+              </button>
+            ))}
+          </div>
+          <p className="fc-muted">Active: 4+ days or 12+ messages in 30 days. Quiet: no messages. Tap a card to filter.</p>
+          <ul className="fc-people">
+            {everyone.slice(0, 80).map((p) => (
+              <li key={p.id}><button type="button" onClick={() => onOpen(p.id)}>
+                <Avatar name={p.name} src={p.avatar} size={34} />
+                <span><b>{p.name}</b><em className={`fc-level is-${p.level}`}>{LEVEL[p.level]}</em>
+                  <small>{p.messages} msgs · {p.reactions_received} reactions · {p.last_message ? `last ${ago(p.last_message)}` : 'no messages'}</small>
+                  <small>{[p.ministry, p.dgroup].filter(Boolean).join(' · ') || 'No ministry or D-Group'}</small></span>
+              </button></li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ---------- profile ---------- */
+function Profile({ id, me, onClose, onMention, canMention, toast }) {
+  const [p, setP] = useState(null)
+  const [err, setErr] = useState('')
+  const [mins, setMins] = useState(60)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const load = useCallback(() => apiGet(`/api/chat/profile/${id}`).then(setP).catch((e) => setErr(e.message)), [id])
+  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const k = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [onClose])
+
+  async function mute(minutes) {
+    setBusy(true)
+    try { const r = await apiPost('/api/chat/mute', { user_id: id, minutes, reason }); toast(r.message); setReason(''); await load() } catch (e) { toast(e.message, 'bad') } finally { setBusy(false) }
+  }
+
+  return createPortal(
+    <div className="fc-modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="fc-card" role="dialog" aria-modal="true" aria-label="Member profile">
+        <button type="button" className="fc-iconbtn fc-card-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        {err ? <p className="fc-muted">{err}</p> : !p ? <div className="fc-skel"><i style={{ width: '60%' }} /><i style={{ width: '40%' }} /></div> : (
+          <>
+            <div className="fc-card-top">
+              <Avatar name={p.name} src={p.avatar} size={76} online={p.online} />
+              <div>
+                <h3>{p.name}</h3>
+                <p>{roleName(p.role) ? <span className={`fc-role is-${p.role}`}>{roleName(p.role)}</span> : <span className="fc-role">Member</span>}
+                  <span className="fc-seen"><Clock size={12} aria-hidden="true" /> {p.online ? 'Online now' : `Seen ${ago(p.last_seen)}`}</span></p>
+              </div>
+            </div>
+            <dl className="fc-facts">
+              <div><dt><HeartHandshake size={14} aria-hidden="true" /> Ministry</dt><dd>{p.ministry || 'Not in a ministry yet'}</dd></div>
+              <div><dt><Network size={14} aria-hidden="true" /> D-Group</dt><dd>{p.dgroup || 'Not in a D-Group yet'}</dd></div>
+              {p.joined_at && <div><dt>Joined</dt><dd>{new Date(String(p.joined_at).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })}</dd></div>}
+            </dl>
+            <div className="fc-stats">
+              <div><strong>{p.stats.messages}</strong><span>Messages</span></div>
+              <div><strong>{p.stats.active_days}</strong><span>Active days</span></div>
+              <div><strong>{p.stats.reactions_received}</strong><span>Reactions</span></div>
+              <div><strong className={`fc-level is-${p.stats.level}`}>{LEVEL[p.stats.level]}</strong><span>30 days</span></div>
+            </div>
+            {canMention && p.id !== me?.id && <button type="button" className="fc-btn" onClick={() => onMention({ id: p.id, name: p.name })}><AtSign size={16} aria-hidden="true" /> Mention in chat</button>}
+            {p.can_mute && (
+              <div className="fc-mod">
+                <h4><ShieldCheck size={14} aria-hidden="true" /> Moderation</h4>
+                {p.muted_until ? (
+                  <>
+                    <p className="fc-muted">Muted until {new Date(String(p.muted_until).replace(' ', 'T')).toLocaleString('en-PH')}.</p>
+                    <button type="button" className="fc-btn is-line" disabled={busy} onClick={() => mute(0)}><Volume2 size={16} aria-hidden="true" /> Lift mute</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="fc-mod-row">
+                      <select value={mins} onChange={(e) => setMins(Number(e.target.value))} aria-label="Mute length">{MUTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+                      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" maxLength={120} aria-label="Reason" />
+                    </div>
+                    <button type="button" className="fc-btn is-danger" disabled={busy} onClick={() => mute(mins)}><VolumeX size={16} aria-hidden="true" /> Mute</button>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>, document.body)
+}
+
+/* ====================================================================== */
+/* Online sessions (Google Meet)                                           */
+/* ====================================================================== */
+const SESSION_KINDS = [
+  ['fellowship', 'Fellowship', Users],
+  ['bible_study', 'Bible study', BookOpen],
+  ['prayer', 'Prayer', HandHeart],
+  ['meeting', 'Meeting', CalendarDays],
+]
+const kindOf = (k) => SESSION_KINDS.find((x) => x[0] === k) || SESSION_KINDS[0]
+const MEET_RE = /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}(\?[A-Za-z0-9=&_%.-]*)?$/
+const pad = (n) => String(n).padStart(2, '0')
+const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const stamp = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
+
+function whenText(s) {
+  const a = parse(s.starts_at)
+  return `${a.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })} · ${hhmm(s.starts_at)} – ${hhmm(s.ends_at)}`
+}
+function countdown(s) {
+  if (s.cancelled) return 'Cancelled'
+  if (s.over) return 'Ended'
+  if (s.live) return 'Live now'
+  const m = s.starts_in
+  if (m <= 1) return 'Starting now'
+  if (m < 60) return `Starts in ${m} min`
+  if (m < 1440) return `Starts in ${Math.floor(m / 60)} h ${m % 60 ? `${m % 60} min` : ''}`.trim()
+  return `In ${Math.round(m / 1440)} d`
+}
+function calendarUrl(s) {
+  const a = parse(s.starts_at), b = parse(s.ends_at)
+  const q = new URLSearchParams({
+    action: 'TEMPLATE', text: `${s.title} (Life Generation)`, dates: `${stamp(a)}/${stamp(b)}`,
+    details: `${kindOf(s.kind)[1]} on Google Meet.\nOpen Fellowship Chat > Sessions to join.${s.description ? `\n\n${s.description}` : ''}`,
+    location: 'Google Meet', ctz: 'Asia/Manila',
+  })
+  return `https://calendar.google.com/calendar/render?${q.toString()}`
+}
+
+/** Appears over the conversation when a session is live or about to start, in any room. */
+function SessionStrip({ s, onOpen, onClose }) {
+  return (
+    <div className={`fc-strip${s.live ? ' is-live' : ''}`} role="status">
+      <Video size={18} aria-hidden="true" />
+      <button type="button" className="fc-strip-main" onClick={onOpen}>
+        <b>{s.title}</b>
+        <span>{countdown(s)}{s.my_rsvp === 'going' ? ' · You are going' : ''}</span>
+      </button>
+      <button type="button" className="fc-strip-join" onClick={onOpen}>Open</button>
+      <button type="button" className="fc-iconbtn fc-strip-x" onClick={onClose} aria-label="Dismiss"><X size={16} /></button>
+    </div>
+  )
+}
+
+function SessionsPanel({ me, channels, data, reload, toast }) {
+  const [form, setForm] = useState(false)
+  const [tab, setTab] = useState('upcoming')
+  const [busy, setBusy] = useState(null)
+  const [open, setOpen] = useState(null)
+  const [g, setG] = useState(null)
+  const loadG = useCallback(() => { if (me?.staff) apiGet('/api/chat/google/status').then(setG).catch(() => setG(null)) }, [me?.staff])
+  useEffect(() => { loadG() }, [loadG])
+  const connectG = async () => {
+    try { const r = await apiGet('/api/chat/google/connect'); window.location.href = r.url } catch (e) { toast(e.message || 'Could not start the Google connection.', 'bad') }
+  }
+  const disconnectG = async () => {
+    if (!window.confirm('Disconnect Google? New sessions will need a pasted Meet link.')) return
+    try { await apiPost('/api/chat/google/disconnect', {}); await loadG(); toast('Google disconnected.') } catch (e) { toast(e.message || 'Could not disconnect.', 'bad') }
+  }
+  const list = tab === 'upcoming' ? data.upcoming : data.past
+
+  const rsvp = async (s, value) => {
+    setBusy(s.id)
+    try { await apiPost(`/api/chat/sessions/${s.id}/rsvp`, { rsvp: value }); await reload(); toast(value === 'none' ? 'RSVP removed.' : value === 'going' ? 'You are going.' : 'Marked as maybe.') }
+    catch (e) { toast(e.message || 'Could not save your RSVP.', 'bad') } finally { setBusy(null) }
+  }
+  const join = async (s) => {
+    setBusy(s.id)
+    try {
+      const r = await apiPost(`/api/chat/sessions/${s.id}/join`, {})
+      window.open(r.url, '_blank', 'noopener,noreferrer')
+      toast('Opening Google Meet. Your attendance is logged.')
+      reload()
+    } catch (e) { toast(e.message || 'Could not join.', 'bad') } finally { setBusy(null) }
+  }
+  const cancel = async (s) => {
+    if (!window.confirm(`Cancel "${s.title}"? Everyone in the room will be notified.`)) return
+    setBusy(s.id)
+    try { await apiPost(`/api/chat/sessions/${s.id}/cancel`, {}); await reload(); toast('Session cancelled.') }
+    catch (e) { toast(e.message || 'Could not cancel.', 'bad') } finally { setBusy(null) }
+  }
+  const copy = async (s) => {
+    try { await navigator.clipboard.writeText(s.meet_url); toast('Meet link copied.') } catch { toast('Copy failed. Select the link instead.', 'bad') }
+  }
+
+  return (
+    <div className="fc-pane fc-sessions">
+      {me?.staff && me.id > 0 && !form && (
+        <button type="button" className="fc-newsess" onClick={() => setForm(true)}><Plus size={18} aria-hidden="true" /> Schedule an online session</button>
+      )}
+      {me?.staff && g && !form && (
+        <div className={`fc-gcard${g.connected ? ' is-on' : ''}`}>
+          <Video size={18} aria-hidden="true" />
+          <div>
+            {g.connected ? <><b>Google Meet is connected</b><small>{g.email || 'Meet links are created automatically.'}</small></>
+              : !g.configured ? <><b>One step left on the server</b><small>Add {g.missing.join(', ')} to backend/.env.</small></>
+              : <><b>Create Meet links automatically</b><small>{g.can_connect ? 'Connect the ministry Google account once.' : 'Ask an admin to connect Google once.'}</small>{g.can_connect && <small className="fc-uri">Redirect URI: {g.redirect_uri}</small>}</>}
+          </div>
+          {g.can_connect && g.configured && (g.connected
+            ? <button type="button" onClick={disconnectG}>Disconnect</button>
+            : <button type="button" className="is-primary" onClick={connectG}>Connect</button>)}
+        </div>
+      )}
+      {form && <SessionForm google={g} channels={channels} onCancel={() => setForm(false)} onDone={async () => { setForm(false); setTab('upcoming'); await reload(); toast('Session scheduled and announced.') }} toast={toast} />}
+
+      <div className="fc-seg" role="tablist" aria-label="Sessions">
+        <button type="button" role="tab" aria-selected={tab === 'upcoming'} className={tab === 'upcoming' ? 'is-on' : ''} onClick={() => setTab('upcoming')}>Upcoming{data.upcoming.length > 0 && <i>{data.upcoming.length}</i>}</button>
+        <button type="button" role="tab" aria-selected={tab === 'past'} className={tab === 'past' ? 'is-on' : ''} onClick={() => setTab('past')}>Past</button>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="fc-nosess">
+          <Video size={26} aria-hidden="true" />
+          <b>{tab === 'upcoming' ? 'No online sessions yet' : 'Nothing in the last 2 weeks'}</b>
+          <p>{tab === 'upcoming' ? (me?.staff ? 'Schedule a Google Meet fellowship or Bible study and it shows up here for everyone.' : 'When an officer schedules an online fellowship or Bible study, it appears here.') : 'Finished sessions and their notes show up here.'}</p>
+        </div>
+      ) : (
+        <ul className="fc-sesslist">
+          {list.map((s) => {
+            const [, kindLabel, KindIcon] = kindOf(s.kind)
+            const isOpen = open === s.id
+            return (
+              <li key={s.id} className={`fc-sess${s.live ? ' is-live' : ''}${s.cancelled ? ' is-off' : ''}`}>
+                <div className="fc-sess-top">
+                  <span className="fc-sess-ico"><KindIcon size={18} aria-hidden="true" /></span>
+                  <div>
+                    <b>{s.title}</b>
+                    <small>{kindLabel}{s.channel_name ? ` · #${s.channel_name}` : ' · Everyone'}</small>
+                  </div>
+                  <span className={`fc-badge${s.live ? ' is-live' : s.cancelled ? ' is-off' : ''}`}>{countdown(s)}</span>
+                </div>
+                <p className="fc-sess-when"><Clock size={14} aria-hidden="true" /> {whenText(s)}</p>
+                <p className="fc-sess-meta"><UserCheck size={14} aria-hidden="true" /> Hosted by {s.host_name || 'an officer'} · {s.going} going{s.joined > 0 ? ` · ${s.joined} joined` : ''}</p>
+                {s.description && <p className="fc-sess-desc">{s.description}</p>}
+                {s.notes && <div className="fc-sess-notes"><b>Notes</b><p>{s.notes}</p></div>}
+
+                {!s.cancelled && !s.over && (
+                  <div className="fc-sess-actions">
+                    {s.can_join ? (
+                      <button type="button" className="fc-btn is-join" disabled={busy === s.id} onClick={() => join(s)}><Video size={16} aria-hidden="true" /> {s.my_joined ? 'Rejoin Meet' : 'Join on Google Meet'}</button>
+                    ) : (
+                      <>
+                        <button type="button" className={`fc-btn${s.my_rsvp === 'going' ? ' is-on' : ''}`} disabled={busy === s.id || me?.id <= 0} aria-pressed={s.my_rsvp === 'going'} onClick={() => rsvp(s, s.my_rsvp === 'going' ? 'none' : 'going')}>
+                          {s.my_rsvp === 'going' ? <><Check size={16} aria-hidden="true" /> Going</> : 'I will join'}
+                        </button>
+                        <button type="button" className={`fc-btn${s.my_rsvp === 'maybe' ? ' is-on' : ''}`} disabled={busy === s.id || me?.id <= 0} aria-pressed={s.my_rsvp === 'maybe'} onClick={() => rsvp(s, s.my_rsvp === 'maybe' ? 'none' : 'maybe')}>Maybe</button>
+                      </>
+                    )}
+                    <a className="fc-btn is-ghost" href={calendarUrl(s)} target="_blank" rel="noopener noreferrer"><CalendarPlus size={16} aria-hidden="true" /> Calendar</a>
+                  </div>
+                )}
+                {!s.can_join && !s.cancelled && !s.over && <p className="fc-sess-hint">The Join button opens 15 minutes before the start.</p>}
+
+                {s.can_manage && (
+                  <div className="fc-sess-host">
+                    {s.meet_url && !s.cancelled && <button type="button" onClick={() => copy(s)}><Copy size={14} aria-hidden="true" /> Copy link</button>}
+                    <button type="button" onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen}><UserCheck size={14} aria-hidden="true" /> Attendance</button>
+                    {!s.over && !s.cancelled && <button type="button" className="is-danger" disabled={busy === s.id} onClick={() => cancel(s)}><X size={14} aria-hidden="true" /> Cancel</button>}
+                  </div>
+                )}
+                {s.can_manage && s.over && <NotesEditor s={s} reload={reload} toast={toast} />}
+                {isOpen && <SessionPeople id={s.id} />}
+                {!s.can_manage && me?.staff && <button type="button" className="fc-sess-peoplebtn" onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen}><UserCheck size={14} aria-hidden="true" /> Attendance</button>}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function SessionPeople({ id }) {
+  const [rows, setRows] = useState(null)
+  useEffect(() => { apiGet(`/api/chat/sessions/${id}/people`).then(setRows).catch(() => setRows([])) }, [id])
+  if (!rows) return <div className="fc-skel"><i style={{ width: '70%' }} /><i style={{ width: '50%' }} /></div>
+  if (!rows.length) return <p className="fc-muted">Nobody has RSVPed yet.</p>
+  return (
+    <ul className="fc-attend">
+      {rows.map((r) => (
+        <li key={r.id}>
+          <span>{r.name}{r.dgroup ? <small> · {r.dgroup}</small> : null}</span>
+          <em className={r.joined_at ? 'is-in' : ''}>{r.joined_at ? `Joined ${hhmm(r.joined_at)}` : r.rsvp === 'maybe' ? 'Maybe' : 'Going'}</em>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function NotesEditor({ s, reload, toast }) {
+  const [v, setV] = useState(s.notes || '')
+  const [busy, setBusy] = useState(false)
+  const save = async () => {
+    setBusy(true)
+    try { await apiPost(`/api/chat/sessions/${s.id}/notes`, { notes: v }); await reload(); toast('Notes saved.') }
+    catch (e) { toast(e.message || 'Could not save.', 'bad') } finally { setBusy(false) }
+  }
+  return (
+    <div className="fc-notes">
+      <label htmlFor={`n${s.id}`}>Recap, passage or takeaways</label>
+      <textarea id={`n${s.id}`} rows={3} maxLength={3000} value={v} onChange={(e) => setV(e.target.value)} placeholder="What did you cover? Members can read this afterwards." />
+      <button type="button" className="fc-btn" disabled={busy || v === (s.notes || '')} onClick={save}>{busy ? 'Saving' : 'Save notes'}</button>
+    </div>
+  )
+}
+
+function SessionForm({ google, channels, onCancel, onDone, toast }) {
+  const soon = new Date(Date.now() + 60 * 60000)
+  soon.setMinutes(0, 0, 0)
+  const [f, setF] = useState({ title: '', kind: 'fellowship', date: toLocalInput(soon), time: `${pad(soon.getHours())}:00`, duration: 60, channel_id: '', meet_url: '', description: '', announce: true, auto: !!google?.connected })
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const set = (p) => setF((x) => ({ ...x, ...p }))
+  const urlOk = MEET_RE.test(f.meet_url.trim())
+  const rooms = channels.filter((c) => c.kind !== 'announcement' && !c.staff_only)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setErr('')
+    if (!f.title.trim()) return setErr('Give the session a title.')
+    if (!f.auto && !urlOk) return setErr('Paste a Google Meet link, like https://meet.google.com/abc-defg-hij')
+    setBusy(true)
+    try {
+      await apiPost('/api/chat/sessions', {
+        title: f.title.trim(), kind: f.kind, description: f.description.trim(), meet_url: f.auto ? '' : f.meet_url.trim(), auto_meet: f.auto,
+        starts_at: `${f.date} ${f.time}:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
+      })
+      onDone()
+    } catch (e2) { setErr(e2.message || 'Could not schedule the session.'); toast(e2.message || 'Could not schedule the session.', 'bad') } finally { setBusy(false) }
+  }
+
+  return (
+    <form className="fc-form" onSubmit={submit} noValidate>
+      <div className="fc-form-head"><h4><Video size={15} aria-hidden="true" /> New online session</h4><button type="button" className="fc-iconbtn" onClick={onCancel} aria-label="Close form"><X size={18} /></button></div>
+
+      <div className="fc-chips" role="radiogroup" aria-label="Session type">
+        {SESSION_KINDS.map(([k, label, Icon]) => (
+          <button type="button" role="radio" aria-checked={f.kind === k} key={k} className={f.kind === k ? 'is-on' : ''} onClick={() => set({ kind: k })}><Icon size={15} aria-hidden="true" /> {label}</button>
+        ))}
+      </div>
+
+      <label className="fc-field"><span>Title</span>
+        <input value={f.title} maxLength={160} onChange={(e) => set({ title: e.target.value })} placeholder="Friday night Bible study" autoComplete="off" />
+      </label>
+
+      <div className="fc-row2">
+        <label className="fc-field"><span>Date</span><input type="date" value={f.date} min={toLocalInput(new Date())} onChange={(e) => set({ date: e.target.value })} /></label>
+        <label className="fc-field"><span>Time</span><input type="time" value={f.time} onChange={(e) => set({ time: e.target.value })} /></label>
+      </div>
+      <div className="fc-row2">
+        <label className="fc-field"><span>Length</span>
+          <select value={f.duration} onChange={(e) => set({ duration: e.target.value })}>
+            {[[30, '30 minutes'], [60, '1 hour'], [90, '1.5 hours'], [120, '2 hours'], [180, '3 hours']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        <label className="fc-field"><span>Who can see it</span>
+          <select value={f.channel_id} onChange={(e) => set({ channel_id: e.target.value })}>
+            <option value="">Everyone</option>
+            {rooms.map((c) => <option key={c.id} value={c.id}>#{c.name}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {google?.connected && (
+        <label className="fc-check"><input type="checkbox" checked={f.auto} onChange={(e) => set({ auto: e.target.checked })} /><span>Create the Meet link automatically</span></label>
+      )}
+      {f.auto ? (
+        <p className="fc-autonote"><Video size={15} aria-hidden="true" /> Google will generate the Meet link when you schedule. It is also added to the ministry calendar.</p>
+      ) : (
+        <div className="fc-field">
+          <span>Google Meet link</span>
+          <div className={`fc-meet${f.meet_url && (urlOk ? ' is-ok' : ' is-bad')}`}>
+            <Link2 size={16} aria-hidden="true" />
+            <input value={f.meet_url} onChange={(e) => set({ meet_url: e.target.value })} placeholder="https://meet.google.com/abc-defg-hij" inputMode="url" autoComplete="off" spellCheck={false} aria-label="Google Meet link" />
+            {urlOk && <Check size={16} aria-hidden="true" />}
+          </div>
+          <a className="fc-createmeet" href="https://meet.google.com/new" target="_blank" rel="noopener noreferrer"><ExternalLink size={14} aria-hidden="true" /> Create a new Meet, then paste its link here</a>
+        </div>
+      )}
+
+      <label className="fc-field"><span>Agenda or passage <em>(optional)</em></span>
+        <textarea rows={3} maxLength={1500} value={f.description} onChange={(e) => set({ description: e.target.value })} placeholder="Reading: John 15:1-8. Bring one question." />
+      </label>
+
+      <label className="fc-check"><input type="checkbox" checked={f.announce} onChange={(e) => set({ announce: e.target.checked })} /><span>Post an announcement in the room</span></label>
+
+      {err && <p className="fc-err" role="alert"><CircleAlert size={14} aria-hidden="true" /> {err}</p>}
+      <div className="fc-form-actions">
+        <button type="button" className="fc-btn is-ghost" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="fc-btn is-join" disabled={busy}>{busy ? 'Scheduling' : 'Schedule session'}</button>
+      </div>
+    </form>
+  )
+}

@@ -332,7 +332,7 @@ function Shell({ children }) {
         </div>
       </aside>
 
-      <div role="main" className={`sk-main${isAdmin ? ' is-admin' : ''}`} id="sk-main">
+      <div role="main" className={`sk-main${isAdmin || isStaff ? ' is-admin' : ''}`} id="sk-main">
         <div className="sk-page" key={pathname}>
           {children}
         </div>

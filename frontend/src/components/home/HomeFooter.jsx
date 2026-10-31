@@ -19,7 +19,7 @@ export default function HomeFooter() {
                   Life<b>Gen</b>
                 </span>
               </Link>
-              <p>A Christ-centered youth organization in Calapan, growing together with the church.</p>
+              <p>A Christ-centered youth organization in Calapan, a church-related ministry for the next generation.</p>
               <div className="lg-foot-social">
                 <a href={SOCIALS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                   <FacebookIcon />
@@ -75,14 +75,14 @@ export default function HomeFooter() {
             </div>
           </div>
 
+          <span className="lg-foot-mark" aria-hidden="true" data-parallax="-0.05">LIFEGEN</span>
           <div className="lg-foot-bottom">
-            <span>© {new Date().getFullYear()} Life Generation Calapan</span>
-            <nav className="lg-foot-legal" aria-label="Legal">
+            <span>© {new Date().getFullYear()} Life Generation Calapan. Calapan, Oriental Mindoro.</span>
+            <div className="lg-foot-legal" role="navigation" aria-label="Legal">
               <Link to="/privacy">Privacy policy</Link>
               <Link to="/terms">Terms of use</Link>
               <Link to="/giving-policy">Giving policy</Link>
-            </nav>
-            <span>Calapan, Oriental Mindoro</span>
+            </div>
           </div>
         </div>
       </div>

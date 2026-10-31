@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck, FileText, HandCoins } from 'lucide-react'
+import { ArrowLeft, ShieldCheck, FileText, HandCoins, Mail } from 'lucide-react'
 import '../styles/legal.css'
 
 const UPDATED = 'October 2026'
@@ -36,10 +36,10 @@ const DOCS = {
   },
   giving: {
     icon: HandCoins,
-    title: 'Giving and Refund Policy',
+    title: 'Giving Policy',
     intro: 'How gifts are received, verified and used.',
     sections: [
-      ['Voluntary gifts', 'All giving is voluntary and is a gift to the ministry. Choose a fund (such as tithes and offerings or a youth camp) and the amount you wish to give.'],
+      ['Voluntary gifts', 'All giving is voluntary and comes from the heart. There is no required or suggested amount. Choose where it should go (such as general offering or a youth camp) and give what you have decided to give.'],
       ['How to give', 'Send your gift through the official GCash, Maya or bank account shown on the Give page, then submit the form with your reference number and a screenshot of the receipt. We never ask for your password, PIN or OTP.'],
       ['Verification', 'Gifts are checked by our officers against the official account. Your giving record shows Pending, Verified or Rejected. If rejected, a note explains why and you may submit it again with the correct details.'],
       ['Acknowledgement', 'Each submission gets a tracking code. Verified gifts appear in your giving history.'],
@@ -50,41 +50,90 @@ const DOCS = {
   },
 }
 
+const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const LINKS = [['privacy', '/privacy', 'Privacy Policy'], ['terms', '/terms', 'Terms of Use'], ['giving', '/giving-policy', 'Giving Policy']]
+
 export default function Legal({ doc = 'privacy' }) {
   const d = DOCS[doc] || DOCS.privacy
   const Icon = d.icon
+  const [active, setActive] = useState(slug(d.sections[0][0]))
+  const root = useRef(null)
+  const words = d.title.split(' ')
+  const last = words.pop()
 
   useEffect(() => {
     const prev = document.title
     document.title = `${d.title} · Life Generation`
     window.scrollTo(0, 0)
+    setActive(slug(d.sections[0][0]))
     return () => { document.title = prev }
-  }, [d.title])
+  }, [d])
+
+  /* highlight the section being read */
+  useEffect(() => {
+    const els = [...root.current.querySelectorAll('[data-sec]')]
+    const io = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
+        if (hit) setActive(hit.target.id)
+      },
+      { rootMargin: '-96px 0px -60% 0px', threshold: 0 }
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [d])
+
+  const go = (e, id) => {
+    e.preventDefault()
+    const el = document.getElementById(id)
+    if (!el) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+    setActive(id)
+  }
 
   return (
-    <article className="legal">
-      <Link to="/" className="legal-back"><ArrowLeft size={16} aria-hidden="true" /> Back to home</Link>
-      <header className="legal-head">
-        <span className="legal-ico"><Icon size={26} strokeWidth={1.8} aria-hidden="true" /></span>
-        <h1>{d.title}</h1>
+    <article className="lgl" ref={root}>
+      <div className="lgl-glow" aria-hidden="true" />
+      <header className="lgl-hero">
+        <Link to="/" className="lgl-back"><ArrowLeft size={15} aria-hidden="true" /> Home</Link>
+        <span className="lgl-ico"><Icon size={22} strokeWidth={1.8} aria-hidden="true" /></span>
+        <h1>{words.join(' ')} <span>{last}</span></h1>
         <p>{d.intro}</p>
         <small>Last updated {UPDATED}</small>
       </header>
 
-      <nav className="legal-tabs" aria-label="Policies">
-        <Link to="/privacy" aria-current={doc === 'privacy' ? 'page' : undefined}>Privacy</Link>
-        <Link to="/terms" aria-current={doc === 'terms' ? 'page' : undefined}>Terms</Link>
-        <Link to="/giving-policy" aria-current={doc === 'giving' ? 'page' : undefined}>Giving</Link>
-      </nav>
+      <div className="lgl-grid">
+        <div className="lgl-toc" role="navigation" aria-label={`${d.title} sections`}>
+          <ul>
+            {d.sections.map(([h]) => (
+              <li key={h}>
+                <a href={`#${slug(h)}`} onClick={(e) => go(e, slug(h))} aria-current={active === slug(h) ? 'true' : undefined}>{h}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      <ol className="legal-body">
-        {d.sections.map(([h, t]) => (
-          <li key={h}>
-            <h2>{h}</h2>
-            <p>{t}</p>
-          </li>
-        ))}
-      </ol>
+        <div className="lgl-body">
+          {d.sections.map(([h, t]) => (
+            <section key={h} id={slug(h)} data-sec>
+              <h2>{h}</h2>
+              <p>{t}</p>
+            </section>
+          ))}
+
+          <aside className="lgl-more" aria-label="Related pages">
+            <h3>Related policies</h3>
+            <div>
+              {LINKS.filter(([k]) => k !== doc).map(([k, to, label]) => (
+                <Link key={k} to={to}>{label}</Link>
+              ))}
+              <Link to="/give">Give online</Link>
+            </div>
+            <p><Mail size={15} aria-hidden="true" /> Questions or requests about your data? Talk to an officer or message our official Facebook page.</p>
+          </aside>
+        </div>
+      </div>
     </article>
   )
 }

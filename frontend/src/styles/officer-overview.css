@@ -1,0 +1,5 @@
+/* Officer overview: keep single-column stacks from growing past the viewport (1fr = minmax(auto,1fr)). */
+@media (max-width: 860px) { .portal.px.lgx .ao .ao-cols { grid-template-columns: minmax(0, 1fr); } }
+.portal.px.lgx .ao .ao-card { min-width: 0; }
+.portal.px.lgx .ao .p-table-wrap { overflow-x: auto; max-width: 100%; }
+.portal.px.lgx .ao .p-table th, .portal.px.lgx .ao .p-table td { white-space: nowrap; }

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -37,18 +37,17 @@ import OfficerAttendance from './pages/officer/OfficerAttendance.jsx'
 import OfficerApplications from './pages/officer/OfficerApplications.jsx'
 import OfficerMembers from './pages/officer/OfficerMembers.jsx'
 import OfficerInsights from './pages/officer/OfficerInsights.jsx'
-import OfficerSideLayout from './pages/officer/OfficerSideLayout.jsx'
 
 // Auth pages: full-screen, walang navbar at walang portal layout
 const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password']
 
 // Officer/secretary at admin lang ang pwedeng pumasok sa /officer.
-// Nakabalot sa dashboard sidebar (OfficerSideLayout, may <Outlet /> sa loob).
+// Walang sariling sidebar: ang compact rail ng portal ang gamit, katulad ng admin.
 function StaffRoute() {
   const user = getUser()
   if (!user) return <Navigate to="/login" replace />
   if (!['officer', 'secretary', 'admin'].includes(user.role)) return <Navigate to="/" replace />
-  return <OfficerSideLayout />
+  return <Outlet />
 }
 
 function PageRoutes() {

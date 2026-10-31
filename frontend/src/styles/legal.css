@@ -1,18 +1,52 @@
-/* Legal pages: gumagana sa public (dark/light) at sa portal (flat skin). */
-.legal { --l-ink: var(--sk-ink, var(--lg-text, var(--text, #111))); --l-ink2: var(--sk-ink-2, var(--lg-text-2, var(--text-muted, #555))); --l-line: var(--sk-line, var(--lg-line, rgba(128, 128, 128, 0.3))); --l-or: var(--sk-or-d, var(--lg-accent, #c2410c)); --l-tint: var(--sk-tint, var(--lg-bg-2, rgba(128, 128, 128, 0.1)));
-  max-width: 760px; margin: 0 auto; padding: clamp(8px, 3vw, 32px) 0 48px; color: var(--l-ink); }
-.legal-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--l-or); }
-.legal-head { padding: 14px 0 22px; }
-.legal-ico { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 16px; background: var(--l-tint); color: var(--l-or); }
-.legal-head h1 { margin: 0 0 10px; color: var(--l-ink); font-size: clamp(1.9rem, 7vw, 3rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; }
-.legal-head p { margin: 0 0 8px; max-width: 58ch; color: var(--l-ink2); font-size: 1.02rem; line-height: 1.6; }
-.legal-head small { color: var(--l-ink2); font-size: 12.5px; }
-.legal-tabs { display: flex; gap: 6px; margin-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
-.legal-tabs::-webkit-scrollbar { display: none; }
-.legal-tabs a { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 2px solid var(--l-ink); color: var(--l-ink); font-size: 12.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; transition: background 0.2s, color 0.2s; }
-.legal-tabs a[aria-current='page'] { background: var(--l-ink); color: var(--sk-surface, var(--lg-bg, #fff)); }
-.legal-body { display: grid; margin: 0; padding: 0; list-style: none; counter-reset: s; }
-.legal-body li { position: relative; padding: 22px 0 22px 46px; border-bottom: 1px solid var(--l-line); counter-increment: s; }
-.legal-body li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 24px; color: var(--l-or); font-size: 13px; font-weight: 900; letter-spacing: 0.06em; }
-.legal-body h2 { margin: 0 0 6px; color: var(--l-ink); font-size: 1.1rem; font-weight: 800; }
-.legal-body p { margin: 0; color: var(--l-ink2); font-size: 15.5px; line-height: 1.7; user-select: text; -webkit-user-select: text; }
+/* Policy pages: black, editorial layout with a sticky section index. Works for guests and inside the portal. */
+.lgl { --l-bg: #0a0a0c; --l-ink: #f4f2ee; --l-ink2: #a9a49b; --l-line: rgba(255, 255, 255, 0.12); --l-or: #ff7a35;
+  position: relative; isolation: isolate; margin: 0 auto; border-radius: 22px; background: var(--l-bg); color: var(--l-ink); overflow: clip; font-family: var(--sk-font, 'Archivo', 'Inter', system-ui, sans-serif); }
+.lgl *, .lgl *::before, .lgl *::after { box-sizing: border-box; }
+.lgl h1, .lgl h2, .lgl h3, .lgl p, .lgl ul { margin: 0; padding: 0; }
+.lgl ul { list-style: none; }
+.lgl a { color: inherit; text-decoration: none; }
+.lgl :focus-visible { outline: 3px solid var(--l-or); outline-offset: 3px; }
+.lgl-glow { position: absolute; z-index: -1; inset: 0; background: radial-gradient(60% 38% at 50% 0%, rgba(255, 90, 10, 0.3), transparent 70%), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 56px); mask-image: linear-gradient(#000 40%, transparent); -webkit-mask-image: linear-gradient(#000 40%, transparent); pointer-events: none; }
+
+.lgl-hero { display: grid; justify-items: center; gap: 14px; padding: clamp(22px, 5vw, 40px) 20px clamp(36px, 7vw, 72px); text-align: center; }
+.lgl-back { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--l-ink2) !important; font-size: 12.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
+@media (hover: hover) { .lgl-back:hover { color: #fff !important; } }
+.lgl-ico { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--l-line); border-radius: 14px; background: rgba(255, 255, 255, 0.04); color: var(--l-or); }
+.lgl-hero h1 { color: #fff; font-size: clamp(2.4rem, 9vw, 4.8rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; animation: lgl-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.lgl-hero h1 span { background: linear-gradient(90deg, #ff9a4d, #ff5a0a 55%, #ff3d6e); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lgl-hero p { max-width: 54ch; color: var(--l-ink2); font-size: clamp(0.98rem, 2.6vw, 1.1rem); line-height: 1.6; }
+.lgl-hero small { color: #7d786f; font-size: 13px; font-weight: 600; }
+@keyframes lgl-in { from { opacity: 0; transform: translateY(14px); } }
+
+.lgl-grid { display: grid; gap: 0; padding: 0 20px clamp(32px, 6vw, 72px); max-width: 1040px; margin: 0 auto; }
+.lgl-toc { position: sticky; z-index: 5; top: calc(var(--bar, 0px) + env(safe-area-inset-top, 0px)); margin: 0 -20px 8px; padding: 10px 20px; background: rgba(10, 10, 12, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--l-line); }
+.lgl-toc ul { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.lgl-toc ul::-webkit-scrollbar { display: none; }
+.lgl-toc a { display: inline-flex; align-items: center; flex: none; min-height: 40px; padding: 0 14px; border: 1px solid var(--l-line); border-radius: 99px; color: var(--l-ink2); font-size: 13px; font-weight: 700; white-space: nowrap; transition: color 0.2s, background 0.2s, border-color 0.2s; }
+.lgl-toc a[aria-current='true'] { border-color: var(--l-or); background: rgba(255, 90, 10, 0.14); color: #fff; }
+.lgl-body section { padding: 26px 0; border-bottom: 1px solid var(--l-line); scroll-margin-top: 120px; }
+.lgl-body h2 { margin-bottom: 10px; color: #fff; font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em; }
+.lgl-body p { color: var(--l-ink2); font-size: 15.5px; line-height: 1.75; user-select: text; -webkit-user-select: text; }
+.lgl-more { display: grid; gap: 12px; margin-top: 30px; padding: 20px; border: 1px solid var(--l-line); border-radius: 18px; background: rgba(255, 255, 255, 0.03); }
+.lgl-more h3 { color: #fff; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.lgl-more div { display: flex; flex-wrap: wrap; gap: 8px; }
+.lgl-more div a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 99px; color: #fff; font-size: 13.5px; font-weight: 700; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+@media (hover: hover) { .lgl-more div a:hover { border-color: var(--l-or); background: var(--l-or); color: #111; } }
+.lgl-more p { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.55; }
+.lgl-more svg { flex: none; margin-top: 3px; color: var(--l-or); }
+
+@media (min-width: 880px) {
+  .lgl-grid { grid-template-columns: 240px minmax(0, 1fr); gap: 0 56px; }
+  .lgl-toc { top: 24px; align-self: start; margin: 0; padding: 4px 0; border: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .lgl-toc ul { display: grid; gap: 2px; border-left: 1px solid var(--l-line); overflow: visible; }
+  .lgl-toc a { min-height: 40px; padding: 0 16px; margin-left: -1px; border: 0; border-left: 2px solid transparent; border-radius: 0; white-space: normal; font-size: 14px; }
+  .lgl-toc a[aria-current='true'] { border-left-color: var(--l-or); background: none; color: var(--l-or); }
+  @media (hover: hover) { .lgl-toc a:hover { color: #fff; } }
+  .lgl-body section:first-child { padding-top: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .lgl-hero h1 { animation: none; } }
+
+/* Mobile: single column must not grow to the chip row's min-content width. */
+.lgl-grid { grid-template-columns: minmax(0, 1fr); }
+.lgl-grid > * { min-width: 0; }
+@media (min-width: 880px) { .lgl-grid { grid-template-columns: 240px minmax(0, 1fr); } }
