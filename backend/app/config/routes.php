@@ -111,5 +111,9 @@ $router->get('/api/devotional/random', 'Devotionals::random');
 $router->get('/api/bible/lookup',      'Devotionals::lookup');
 $router->get('/api/bible/search',      'Devotionals::lookup');
 
+// Find My Place (Spiritual Gifts Matcher)
+$router->get('/api/matcher/config',   'Matcher::config');
+$router->post('/api/matcher/suggest', 'Matcher::suggest');
+
 // Fellowship Chat routes
 require __DIR__ . '/routes_chat.php';
