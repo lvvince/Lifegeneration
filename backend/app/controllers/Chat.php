@@ -537,13 +537,13 @@ class Chat extends Controller
         $r = (string) (api_input()['reaction'] ?? '');
         if (!in_array($r, $this->reactionKinds, true)) api_response(['error' => 'Unknown reaction.'], 422);
         if ($m['deleted_at']) api_response(['error' => 'That message was deleted.'], 422);
+        // One reaction per user per message (Instagram/Messenger style): same kind toggles off, a different kind replaces.
         $has = $this->db->raw("SELECT 1 FROM chat_reactions WHERE message_id = ? AND user_id = ? AND reaction = ?", [(int) $id, $me['id'], $r])->fetch();
-        if ($has) {
-            $this->db->raw("DELETE FROM chat_reactions WHERE message_id = ? AND user_id = ? AND reaction = ?", [(int) $id, $me['id'], $r]);
-        } else {
+        $this->db->raw("DELETE FROM chat_reactions WHERE message_id = ? AND user_id = ?", [(int) $id, $me['id']]);
+        if (!$has) {
             $this->db->raw("INSERT INTO chat_reactions (message_id, user_id, reaction) VALUES (?, ?, ?)", [(int) $id, $me['id'], $r]);
         }
-        api_response(['success' => true, 'on' => !$has]);
+        api_response(['success' => true, 'on' => !$has, 'reaction' => $has ? null : $r]);
     }
 
     /** POST /api/chat/messages/{id}/ack  announcement "Got it" */

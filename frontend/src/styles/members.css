@@ -1,0 +1,67 @@
+/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+:root .mb-bar{display:grid;gap:12px;margin-bottom:14px}
+:root .mb-search{position:relative}
+:root .mb-search svg{position:absolute;left:16px;top:50%;translate:0 -50%;color:#8a7f70;pointer-events:none}
+:root .mb-search input{width:100%;min-height:50px;padding:0 18px 0 46px;border:0;border-radius:999px;background:#fffdf9;font:inherit;font-size:15px;font-weight:600;box-shadow:0 2px 3px #fff inset,0 -4px 8px rgba(120,80,40,.1) inset,0 10px 18px -12px rgba(70,40,10,.34)}
+:root .mb-search input:focus{outline:0;box-shadow:0 2px 3px #fff inset,0 0 0 3px rgba(255,90,10,.35)}
+:root .mb-tabs{display:flex;gap:6px;padding:5px;border-radius:999px;background:#f1e9dd;box-shadow:0 3px 8px rgba(70,40,10,.14) inset;overflow-x:auto;scrollbar-width:none}
+:root .mb-tabs::-webkit-scrollbar{display:none}
+:root .mb-tabs button{flex:1 0 auto;display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:40px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:#5b5143;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s,color .2s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+:root .mb-tabs button em{font-style:normal;font-size:12px;font-weight:800;min-width:22px;padding:1px 6px;border-radius:99px;background:rgba(60,40,20,.08)}
+:root .mb-tabs button.is-on{background:#fffdf9;color:#1c1812;box-shadow:0 2px 3px #fff inset,0 6px 12px -6px rgba(70,40,10,.4)}
+:root .mb-tabs button.is-on em{background:#ff5a0a;color:#fff}
+:root .mb-tabs button:active{transform:scale(.95)}
+:root .mb-tabs button:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(255,90,10,.4)}
+:root .mb-tabs.is-small button{min-height:36px;font-size:13px}
+@media(min-width:900px){:root .mb-bar{grid-template-columns:1fr auto auto;align-items:center}
+:root .mb-tabs{overflow:visible}
+}
+:root .mb-list{display:grid;gap:12px}
+:root .mb-head{display:none}
+:root .mb-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px;border-radius:24px;background:#fffdf9;box-shadow:0 2px 3px #fff inset,0 -5px 10px rgba(120,80,40,.07) inset,0 14px 24px -16px rgba(70,40,10,.35);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s}
+:root .mb-row.is-off .mb-who>div,:root .mb-row.is-off .mb-grp{opacity:.6}
+:root .mb-who{grid-column:1/-1;display:flex;gap:14px;align-items:center;min-width:0}
+:root .mb-who>div{min-width:0}
+:root .mb-who h3{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+:root .mb-who p{margin:2px 0 0;color:#6f6558;font-size:13px;overflow-wrap:anywhere}
+:root .mb-who code{display:inline-block;margin-top:4px;color:#8a7f70;font-size:12px;font-weight:700;letter-spacing:.03em}
+:root .mb-av{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#f4ede3;color:#5b5143;font-size:15px;font-weight:800;box-shadow:0 2px 3px #fff inset,0 5px 10px -5px rgba(70,40,10,.4)}
+:root .mb-av.is-officer{background:#ffe9d6;color:#b93a05}
+:root .mb-av.is-admin{background:#1c1812;color:#fff}
+:root .mb-grp,:root .mb-role,:root .mb-joined{display:grid;gap:3px;align-content:start;min-width:0}
+:root .mb-grp::before,:root .mb-role::before,:root .mb-joined::before{content:attr(data-label);color:#8a7f70;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+:root .mb-grp b{font-size:14px;font-weight:700}
+:root .mb-grp span{font-size:13px;color:#6f6558}
+:root .mb-grp .is-none{color:#a89d8e;font-weight:500}
+:root .mb-joined{font-size:14px;font-weight:600}
+:root .mb-role{grid-column:1/-1}
+:root .mb-role select{width:100%}
+:root .mb-state{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px dashed rgba(60,40,20,.14);font-size:14px;font-weight:700}
+:root .mb-hist{margin-left:auto;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#fff1e4;color:#b93a05;font:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 2px 3px #fff inset,0 5px 10px -6px rgba(255,90,10,.6);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+:root .mb-hist:active{transform:scale(.94)}
+:root .mb-hist:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(255,90,10,.4)}
+:root .mb-count{margin:14px 4px 0;color:#8a7f70;font-size:13px;font-weight:600}
+@media(min-width:560px){:root .mb-row{grid-template-columns:repeat(3,1fr)}
+:root .mb-role{grid-column:auto}
+}
+@media(min-width:1000px){:root .mb-list{gap:8px}
+:root .mb-head,:root .mb-row{grid-template-columns:minmax(240px,2.2fr) minmax(150px,1.2fr) 160px 110px minmax(210px,1.3fr);align-items:center;column-gap:18px}
+:root .mb-head{display:grid;padding:0 22px;color:#8a7f70;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+:root .mb-row{padding:14px 22px;border-radius:22px}
+:root .mb-row:hover{transform:translateY(-2px)}
+:root .mb-who,:root .mb-state{grid-column:auto}
+:root .mb-role{grid-column:auto}
+:root .mb-grp::before,:root .mb-role::before,:root .mb-joined::before{display:none}
+:root .mb-state{padding:0;border:0}
+:root .mb-hist{padding:0;width:44px;justify-content:center}
+:root .mb-hist i{display:none}
+}
+@media(prefers-reduced-motion:reduce){:root .mb-row,:root .mb-tabs button,:root .mb-hist{transition:none}
+}
+:root .fc .fc-chip{max-width:120px;padding:0 8px;background:transparent;box-shadow:none;color:#8a7f70;font-weight:600}
+@media(max-width:640px){:root .fc .fc-chip{display:none}
+}
+:root .fc .fc-msg.is-mentioned{background:transparent;box-shadow:inset 3px 0 0 #ff8a47;border-radius:0 14px 14px 0}
+:root .fc .fc-mention{padding:1px 7px;border-radius:99px;font-weight:700}
+:root .fc .fc-rx{gap:6px;margin-top:6px}
+:root .fc .fc-rx button{min-height:28px;padding:0 10px;gap:5px;font-size:12.5px}

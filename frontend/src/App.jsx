@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { initFx } from './lib/fx.js'
+import { initSelects } from './lib/selectfx.js'
+import './styles/controls.css'
+import './styles/compact.css'
 import './styles/soft.css'
 import Navbar from './components/Navbar.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
@@ -158,7 +161,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  useEffect(() => initFx(), [])
+  useEffect(() => { const a = initFx(); const b = initSelects(); return () => { a(); b() } }, [])
   return (
     <>
       <AppRoutes />

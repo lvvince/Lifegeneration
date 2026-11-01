@@ -8,6 +8,7 @@ import {
 import { apiGet, apiPost, apiRequest, API_URL, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
 import '../styles/prayer.css'
+import '../styles/prayer2.css'
 
 const COLORS = ['yellow', 'lilac', 'peach']
 const PRAYED_KEY = 'lg-prayed'
@@ -231,8 +232,14 @@ export default function PrayerWall() {
         <div className="pw-head-l">
           <span className="pw-kicker-top">Prayer wall</span>
           <h1 className="pw-title">
-            i <span>pray</span> for<em>…</em>
+            Lift <span>one another</span> up<em>.</em>
           </h1>
+          <p className="pw-sub">Pin a request, pray for someone, and celebrate the answers together.</p>
+          <ul className="pw-stats" aria-label="Prayer wall summary">
+            <li><b>{prayers.length}</b> on the wall</li>
+            <li><b>{prayers.filter(answered).length}</b> answered</li>
+            <li><b>{prayed.size}</b> prayed by you</li>
+          </ul>
 
           {/* Verse of the day: pinned to the board */}
           <figure className="pw-vod">
@@ -357,7 +364,7 @@ export default function PrayerWall() {
             {shown.map((p, i) => {
               const l = look(p.id, i)
               return (
-                <div key={p.id} className={`pw-item${p.image ? ' has-photo' : ''}${l.flip ? ' is-flip' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${l.rot}deg` }}>
+                <div key={p.id} className={`pw-item${p.image ? ' has-photo' : ''}${l.flip ? ' is-flip' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${l.rot}deg`, '--z': (i % 3) + 1 }}>
                   <article className={`pw-note k-${l.kind} c-${l.color}${answered(p) ? ' is-answered' : ''}${prayed.has(p.id) ? ' is-prayed' : ''}`} style={{ '--k': (i % 3) + 1 }}>
                     <i className="pw-fix" aria-hidden="true" />
                     <button type="button" className="pw-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer note: ${p.title}`} />
@@ -416,6 +423,7 @@ export default function PrayerWall() {
             <div className="pw-actions">
               <button type="button" className={`pw-pray${prayed.has(current.id) ? ' is-on' : ''}`} onClick={() => togglePrayed(current.id)} key={burst}>
                 <HandHeart size={18} /> {prayed.has(current.id) ? 'You prayed for this' : 'I prayed for this'}
+                {prayed.has(current.id) && [0, 1, 2, 3, 4, 5].map((n) => <i key={n} className="pw-spark" style={{ '--a': `${n * 60}deg` }} aria-hidden="true" />)}
               </button>
               {owner(current) && !answered(current) && (
                 <button type="button" className="pw-ghost" onClick={() => markAnswered(current.id)}>
@@ -492,8 +500,8 @@ function Composer({ initial, onClose, onDone, toast }) {
         <button type="button" className="pw-x" onClick={onClose} aria-label="Close">
           <X size={18} />
         </button>
-        <small className="pw-kicker">Write a note</small>
-        <input className="pw-in pw-in-title" value={form.title} onChange={set('title')} placeholder="I pray for…" maxLength={80} autoFocus aria-label="Title" />
+        <small className="pw-kicker">New prayer note</small>
+        <input className="pw-in pw-in-title" value={form.title} onChange={set('title')} placeholder="Short title, e.g. Healing for Mama" maxLength={80} autoFocus aria-label="Title" />
         <textarea className="pw-in pw-in-body" value={form.body} onChange={set('body')} placeholder="Share what we can pray about" rows={5} maxLength={600} aria-label="Details" />
         <div className="pw-attach">
           {preview ? (

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { apiGet } from '../../api.js'
 import { fmtDate, fmtDateTime } from '../../lib/format.js'
 import '../../styles/insights.css'
+import '../../styles/attend.css'
 
 const ST = {
   attended: { label: 'Attended', icon: CheckCircle2 },
@@ -47,12 +48,17 @@ export default function AttendanceHistory({ endpoint, linkEvents = true }) {
   const s = data.summary
   return (
     <div className="ah">
-      <dl className="ah-sum">
-        <div><dt>Attended</dt><dd>{s.attended}</dd></div>
-        <div><dt>Missed</dt><dd>{s.missed}</dd></div>
-        <div><dt>Show-up rate</dt><dd>{s.rate}%</dd></div>
-        <div><dt>Streak</dt><dd><Flame size={16} strokeWidth={2} aria-hidden="true" /> {s.streak}</dd></div>
-      </dl>
+      <section className="ah-hero" aria-label="Attendance summary">
+        <div className="ah-ring" style={{ '--p': Math.max(0, Math.min(100, Number(s.rate) || 0)) }} role="img" aria-label={`Show-up rate ${s.rate}%`}>
+          <b>{s.rate}<small>%</small></b>
+          <span>show-up</span>
+        </div>
+        <dl className="ah-sum">
+          <div className="is-ok"><CheckCircle2 size={18} aria-hidden="true" /><dd>{s.attended}</dd><dt>Attended</dt></div>
+          <div className="is-miss"><XCircle size={18} aria-hidden="true" /><dd>{s.missed}</dd><dt>Missed</dt></div>
+          <div className="is-streak"><Flame size={18} aria-hidden="true" /><dd>{s.streak}</dd><dt>Streak</dt></div>
+        </dl>
+      </section>
 
       <div className="ah-filters" role="group" aria-label="Filter history">
         {FILTERS.map(([v, l]) => (

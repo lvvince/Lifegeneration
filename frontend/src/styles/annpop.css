@@ -1,0 +1,43 @@
+/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+:root .ap{position:fixed;z-index:70;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;max-width:460px;padding:14px;border-radius:26px;background:#fffdf9;color:#1c1812;font-family:'Plus Jakarta Sans',system-ui,sans-serif;touch-action:pan-y;
+  box-shadow:0 2px 3px #fff inset,0 -5px 10px rgba(120,80,40,.07) inset,0 26px 44px -16px rgba(40,20,0,.5),0 3px 8px rgba(40,20,0,.12);animation:ap-in .6s cubic-bezier(.34,1.4,.64,1) both}
+:root .ap.is-drag{transition:none;animation:none}
+@keyframes ap-in{from{opacity:0;transform:translateY(40px) scale(.96)}
+to{opacity:1;transform:none}
+}
+:root .ap-ico{display:grid;place-items:center;width:44px;height:44px;border-radius:16px;background:#fff1e4;color:#c2410c;box-shadow:0 2px 3px #fff inset,0 6px 12px -6px rgba(255,90,10,.55)}
+:root .ap.is-urgent .ap-ico{background:#ffe3e0;color:#c0281c;animation:ap-pulse 1.8s ease-in-out infinite}
+:root .ap.is-event .ap-ico{background:#e3f5ec;color:#177a54}
+:root .ap.is-ministry .ap-ico{background:#eceefe;color:#4b5bd0}
+@keyframes ap-pulse{50%{box-shadow:0 0 0 7px rgba(192,40,28,.14)}
+}
+:root .ap-body{display:grid;gap:3px;min-width:0}
+:root .ap-meta{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8a7f70}
+:root .ap-meta b{color:#c2410c;font-weight:800}
+:root .ap.is-event .ap-meta b{color:#177a54}
+:root .ap.is-ministry .ap-meta b{color:#4b5bd0}
+:root .ap.is-urgent .ap-meta b{color:#c0281c}
+:root .ap-meta small{font-size:11px;letter-spacing:.04em}
+:root .ap strong{font-size:16px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+:root .ap p{margin:0;color:#5b5143;font-size:13.5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+:root .ap p.is-open{display:block;-webkit-line-clamp:unset}
+:root .ap-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+:root .ap-more{min-height:36px;padding:0 4px;border:0;background:none;color:#5b5143;font:inherit;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+:root .ap-link{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 16px;border-radius:999px;background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 2px 3px rgba(255,255,255,.45) inset,0 8px 14px -6px rgba(255,90,10,.7);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+:root .ap-link:hover{transform:translateY(-2px)}
+:root .ap-link:active{transform:scale(.95)}
+:root .ap-side{display:grid;gap:8px;justify-items:end}
+:root .ap-x,:root .ap-pg button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:#f4ede3;color:#3a3226;cursor:pointer;box-shadow:0 2px 3px #fff inset;transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .2s}
+:root .ap-x:hover,:root .ap-pg button:hover{background:#ece2d3}
+:root .ap-x:active,:root .ap-pg button:active{transform:scale(.88)}
+:root .ap-pg{display:flex;gap:4px}
+:root .ap-pg button{width:32px;height:32px}
+:root .ap button:focus-visible,:root .ap a:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(255,90,10,.45)}
+@media(max-width:480px){:root .ap{grid-template-columns:auto 1fr;border-radius:24px}
+:root .ap-side{position:absolute;top:10px;right:10px;grid-auto-flow:column;align-items:center}
+:root .ap-body{padding-right:40px}
+:root .ap-pg{display:none}
+:root .ap-body strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){:root .ap,:root .ap-ico{animation:none!important}
+}

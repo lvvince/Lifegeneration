@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight, Clock, MapPin, Share2, Users, HeartHandshake, MessageSquare,
   BookOpen, Music, Flame, HandCoins, ShieldCheck, ReceiptText, Smartphone,
+  Tent, Wallet, ClipboardCheck, Bell, Camera, Video, Newspaper, CalendarDays,
 } from 'lucide-react'
 import { apiGet, getUser } from '../api.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
@@ -14,6 +15,7 @@ import HomeFooter from '../components/home/HomeFooter.jsx'
 import { FacebookIcon, InstagramIcon, TikTokIcon, SOCIALS } from '../components/home/SocialIcons.jsx'
 import '../styles/home.css'
 import '../styles/home-extra.css'
+import '../styles/home3.css'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -39,6 +41,19 @@ const GALLERY = [
 ]
 
 const KEY_FROM = 'kindled'
+
+const CHANNELS = [
+  { icon: FacebookIcon, name: 'Facebook', sub: 'Our official page', desc: 'Event posts, photo albums and weekly reminders.', tags: ['Events', 'Albums'], cta: 'Follow us', href: SOCIALS.facebook, tone: 'fb' },
+  { icon: FacebookIcon, name: 'Radical LED Calapan', sub: 'Youth leadership and campus movement', desc: 'Leadership trainings and campus outreach updates.', tags: ['Leadership', 'Campus'], cta: 'Visit page', href: SOCIALS.radical, tone: 'fb' },
+  { icon: InstagramIcon, name: 'Instagram', sub: '@lifegencalapan', desc: 'Photo highlights and stories from our nights together.', tags: ['Photos', 'Stories'], cta: 'Follow us', href: SOCIALS.instagram, tone: 'ig' },
+  { icon: TikTokIcon, name: 'TikTok', sub: '@life.generation7', desc: 'Short clips from worship, games and fellowship.', tags: ['Clips', 'Moments'], cta: 'Watch', href: SOCIALS.tiktok, tone: 'tt' },
+]
+const USES = [
+  { icon: Flame, t: 'Youth nights', d: 'Worship, sound and venue.' },
+  { icon: Tent, t: 'Camps', d: 'Retreats and leadership camps.' },
+  { icon: HeartHandshake, t: 'Outreach', d: 'Serving the community.' },
+  { icon: BookOpen, t: 'Discipleship', d: 'D-Group materials and training.' },
+]
 
 const STRIP = [
   { icon: Music, label: 'Worship' },
@@ -217,56 +232,35 @@ export default function Home() {
                 upcoming.map((ev, i) => {
                   const p = dateParts(ev.event_date)
                   return (
-                    <div className="lg-event" key={ev.id} data-reveal style={{ '--d': `${i * 0.08}s` }}>
-                      <Link to={`/events/${ev.id}`} className="lg-event-main">
-                        <span className="lg-event-date">
+                    <article className={`lg-ev${i === 0 ? ' is-next' : ''}`} key={ev.id} data-reveal style={{ '--d': `${i * 0.08}s` }}>
+                      <Link to={`/events/${ev.id}`} className="lg-ev-main">
+                        <span className="lg-ev-cal" aria-hidden="true">
+                          <i>{p?.mon}</i>
                           <b>{p?.day}</b>
-                          <small>{p ? `${p.mon} · ${p.dow}` : ''}</small>
+                          <em>{p?.dow}</em>
                         </span>
-                        <span>
-                          <span className="lg-event-title">{ev.title}</span>
-                          <span className="lg-event-meta">
-                            {ev.event_time && (
-                              <span><Clock size={15} /> {ev.event_time}</span>
-                            )}
-                            {ev.location && (
-                              <span><MapPin size={15} /> {ev.location}</span>
-                            )}
+                        <span className="lg-ev-info">
+                          {i === 0 && <span className="lg-ev-tag">Next up</span>}
+                          <strong>{ev.title}</strong>
+                          <span className="lg-ev-meta">
+                            {ev.event_time && <span><Clock size={14} aria-hidden="true" /> {ev.event_time}</span>}
+                            {ev.location && <span><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
                           </span>
                         </span>
-                        <span className="lg-event-end" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          {ev.banner_image && (
-                            <img
-                              className="lg-event-thumb"
-                              src={resolveImageUrl(ev.banner_image)}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          )}
-                          <span className="lg-event-go" aria-hidden="true">
-                            <ArrowRight size={20} />
-                          </span>
-                        </span>
+                        {ev.banner_image && (
+                          <img className="lg-ev-thumb" src={resolveImageUrl(ev.banner_image)} alt="" loading="lazy" decoding="async" />
+                        )}
                       </Link>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <AddToCalendarButton
-                          event={ev}
-                          variant="icon"
-                          className="lg-share"
-                          style={{ width: 44, height: 44, borderRadius: '50%', border: 0, background: 'transparent', boxShadow: 'none' }}
-                        />
-                        <button
-                          type="button"
-                          className="lg-share"
-                          onClick={() => shareEventOnFacebook(ev.id, ev.title)}
-                          aria-label={`Share ${ev.title} on Facebook`}
-                          title="Share on Facebook"
-                        >
+                      <div className="lg-ev-acts">
+                        <AddToCalendarButton event={ev} variant="icon" className="lg-ev-btn" />
+                        <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(ev.id, ev.title)} aria-label={`Share ${ev.title} on Facebook`} title="Share on Facebook">
                           <Share2 size={18} />
                         </button>
+                        <Link to={`/events/${ev.id}`} className="lg-ev-go" aria-label={`Open ${ev.title}`}>
+                          Details <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
                       </div>
-                    </div>
+                    </article>
                   )
                 })
               )}
@@ -351,20 +345,22 @@ export default function Home() {
             <p className="lg-lead" style={{ margin: 0 }}>Photos, recaps and announcements from Life Generation.</p>
           </div>
           <div className="lg-channels" data-reveal style={{ '--d': '0.1s' }}>
-            {[
-              { icon: FacebookIcon, name: 'Facebook', sub: 'Our official page', cta: 'Follow us', href: SOCIALS.facebook },
-              { icon: FacebookIcon, name: 'Radical LED Calapan', sub: 'Youth leadership and campus movement', cta: 'Visit page', href: SOCIALS.radical },
-              { icon: InstagramIcon, name: 'Instagram', sub: '@lifegencalapan', cta: 'Follow us', href: SOCIALS.instagram },
-              { icon: TikTokIcon, name: 'TikTok', sub: '@life.generation7', cta: 'Watch', href: SOCIALS.tiktok },
-            ].map(({ icon: Icon, name, sub, cta, href }) => (
-              <a className="lg-channel" key={name} href={href} target="_blank" rel="noopener noreferrer">
+            {CHANNELS.map(({ icon: Icon, name, sub, desc, tags, cta, href, tone }) => (
+              <a className={`lg-channel is-${tone}`} key={name} href={href} target="_blank" rel="noopener noreferrer">
                 <span className="lg-channel-ico"><Icon size={26} /></span>
                 <strong>{name}</strong>
                 <span className="lg-channel-sub">{sub}</span>
+                <span className="lg-channel-desc">{desc}</span>
+                <span className="lg-channel-tags">{tags.map((t) => <i key={t}>{t}</i>)}</span>
                 <span className="lg-channel-cta">{cta} <ArrowRight size={16} /></span>
               </a>
             ))}
           </div>
+          <ul className="lg-tips" data-reveal style={{ '--d': '0.15s' }}>
+            <li><Bell size={20} aria-hidden="true" /><span><b>Turn on notifications</b>We post schedules and changes there first.</span></li>
+            <li><Share2 size={20} aria-hidden="true" /><span><b>Share a post</b>Invite a friend to the next gathering.</span></li>
+            <li><MessageSquare size={20} aria-hidden="true" /><span><b>Send us a message</b>Questions are always welcome.</span></li>
+          </ul>
         </div>
       </section>
 
@@ -376,6 +372,11 @@ export default function Home() {
             <span className="lg-eyebrow">Giving</span>
             <h2 className="lg-h2" id="give-h">Give from<br />the heart</h2>
             <p className="lg-lead">There is no required amount here. Whatever you place in the offering, big or small, helps fund youth nights, camps, outreach and discipleship in Calapan, and it is received with gratitude.</p>
+            <ul className="lg-uses">
+              {USES.map(({ icon: Icon, t, d }) => (
+                <li key={t}><span><Icon size={20} aria-hidden="true" /></span><div><b>{t}</b><small>{d}</small></div></li>
+              ))}
+            </ul>
           </div>
 
           <div className="lg-give-card" data-reveal style={{ '--d': '0.1s' }}>
@@ -384,14 +385,17 @@ export default function Home() {
               <p>“Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.”</p>
               <cite>2 Corinthians 9:7</cite>
             </blockquote>
-            <Link to="/give" className="lg-btn lg-btn-primary lg-give-go">
-              <HandCoins size={18} aria-hidden="true" /> Give as you are led <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <ul className="lg-give-points">
-              <li><Smartphone size={18} aria-hidden="true" /> GCash, Maya or bank transfer</li>
-              <li><ShieldCheck size={18} aria-hidden="true" /> Every gift is checked by our officers</li>
-              <li><ReceiptText size={18} aria-hidden="true" /> A tracking code for each gift</li>
-            </ul>
+            <ol className="lg-give-steps">
+              <li><b>Choose a way</b><span>GCash, Maya or bank transfer.</span></li>
+              <li><b>Send and submit</b><span>Fill the short form with your reference number.</span></li>
+              <li><b>We confirm</b><span>An officer verifies it and your code shows the status.</span></li>
+            </ol>
+            <div className="lg-give-row">
+              <Link to="/give" className="lg-btn lg-btn-primary lg-give-go">
+                <HandCoins size={18} aria-hidden="true" /> Give as you are led
+              </Link>
+              <span className="lg-give-note"><ShieldCheck size={16} aria-hidden="true" /> Checked by our officers</span>
+            </div>
             <p className="lg-give-policy">
               By giving you agree to our <Link to="/giving-policy">Giving policy</Link>. See also our <Link to="/privacy">Privacy policy</Link>.
             </p>

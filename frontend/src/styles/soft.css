@@ -1,10 +1,5 @@
-/* =====================================================================
-   SOFT SURFACE + MOTION LAYER
-   Brutalist na ink outline pa rin ang pagkakakilanlan, pero may lalim: init na ibabaw, malambot na anino,
-   liwanag na sumusunod sa cursor, spring motion. Lahat ng galaw ay transform/opacity lang at naka-off
-   sa prefers-reduced-motion. Nilo-load pagkatapos ng sky.css.
-   ===================================================================== */
-:root {
+/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+:root{
   --fx-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --fx-out: cubic-bezier(0.16, 1, 0.3, 1);
   --fx-paper: #f6f1ea;
@@ -22,178 +17,218 @@
     0 34px 54px -30px rgba(70, 40, 10, 0.3);
   --fx-edge: rgba(22, 16, 8, 0.86);
 }
-@supports (transition-timing-function: linear(0, 1)) {
-  :root { --fx-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067 22.2%, 1.082 25%, 1.071 28.1%, 1.034 31.4%, 1.006 35.3%, 0.992 39.6%, 0.995 49.2%, 1); }
+@supports (transition-timing-function: linear(0, 1)){:root{ --fx-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067 22.2%, 1.082 25%, 1.071 28.1%, 1.034 31.4%, 1.006 35.3%, 0.992 39.6%, 0.995 49.2%, 1); }
 }
-
-/* ---------- canvas: warm paper, one static gradient (no animation, no blend modes) ---------- */
-html:has(.portal.px.lgx), html:has(.portal.px.lgx) body { background: var(--fx-paper); }
-.portal.px.lgx, .portal.px.lgx .sk-main, .portal.px.lgx .sk-main.is-admin { background: transparent; }
-.portal.px.lgx::before {
+html:has(.portal.px.lgx),html:has(.portal.px.lgx) body{ background: var(--fx-paper); }
+:root .portal.px.lgx,:root .portal.px.lgx .sk-main,:root .portal.px.lgx .sk-main.is-admin{ background: transparent; }
+:root .portal.px.lgx::before{
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(40% 36% at 10% 6%, rgba(255, 122, 51, 0.16), transparent 70%),
     radial-gradient(36% 32% at 94% 12%, rgba(36, 70, 255, 0.07), transparent 70%),
     radial-gradient(44% 38% at 80% 100%, rgba(255, 190, 120, 0.18), transparent 72%);
 }
-
-/* ---------- soft surfaces ---------- */
-.portal.px.lgx .sk-main :is(.ao-tile, .ao-card, .p-card, .p-panel, .p-stat, .ad-card, .ad-box, .ad-panel, .mi-card, .p-table-wrap, .ad-table-wrap) {
+:root .portal.px.lgx .sk-main :is(.ao-tile, .ao-card, .p-card, .p-panel, .p-stat, .ad-card, .ad-box, .ad-panel, .mi-card, .p-table-wrap, .ad-table-wrap){
   border-width: 1.5px; border-color: var(--fx-edge);
   background:
     radial-gradient(260px circle at var(--mx, -400px) var(--my, -400px), rgba(255, 122, 51, 0.13), transparent 62%),
     var(--fx-soft);
   box-shadow: var(--fx-shadow);
 }
-.portal.px.lgx .sk-main :is(.ao-card, .p-card, .p-panel, .ad-card) { transition: box-shadow 0.45s var(--fx-out), transform 0.5s var(--fx-spring), border-color 0.3s; }
-@media (hover: hover) {
-  .portal.px.lgx .sk-main :is(.ao-card, .p-card, .ad-card):hover { box-shadow: var(--fx-shadow-up); transform: translateY(-2px); }
+:root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .p-panel, .ad-card){ transition: box-shadow 0.45s var(--fx-out), transform 0.5s var(--fx-spring), border-color 0.3s; }
+@media (hover: hover){:root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .ad-card):hover{ box-shadow: var(--fx-shadow-up); transform: translateY(-2px); }
 }
-
-/* tiles: spotlight + spring lift (no 3D, para hindi blurry) */
-.portal.px.lgx .ao-tile { animation-fill-mode: backwards; transition: transform 0.4s var(--fx-spring), box-shadow 0.35s var(--fx-out); }
-@media (hover: hover) { .portal.px.lgx .ao-tile:hover { transform: translateY(-3px); box-shadow: var(--fx-shadow-up); } }
-.portal.px.lgx .ao-ico { background: linear-gradient(160deg, #ffe9da, #ffc9a6); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 6px 12px -6px rgba(194, 65, 10, 0.5); }
-
-/* kapaki-pakinabang na hilera (todo, events) */
-.portal.px.lgx .ao-todo { background: linear-gradient(180deg, #faf6ee, #f3ede2); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -10px rgba(70, 40, 10, 0.35); transition: transform 0.45s var(--fx-spring), box-shadow 0.3s, background 0.3s; }
-.portal.px.lgx .ao-todo.is-hot { background: linear-gradient(180deg, #fff3e8, #ffe1cc); }
-@media (hover: hover) { .portal.px.lgx .ao-todo:hover { transform: translateY(-2px) scale(1.005); box-shadow: 0 1px 0 #fff inset, 0 14px 22px -12px rgba(194, 65, 10, 0.45); } }
-.portal.px.lgx .ao-date { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 8px 14px -8px rgba(194, 65, 10, 0.7); }
-.portal.px.lgx .ao-pill, .portal.px.lgx .fc-pill.is-hot { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 4px 10px -3px rgba(255, 90, 10, 0.6); }
-
-/* ---------- buttons ---------- */
-.portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary, .fc-newsess, button.fc-send) {
+:root .portal.px.lgx .ao-tile{ animation-fill-mode: backwards; transition: transform 0.4s var(--fx-spring), box-shadow 0.35s var(--fx-out); }
+@media (hover: hover){:root .portal.px.lgx .ao-tile:hover{ transform: translateY(-3px); box-shadow: var(--fx-shadow-up); }
+}
+:root .portal.px.lgx .ao-ico{ background: linear-gradient(160deg, #ffe9da, #ffc9a6); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 6px 12px -6px rgba(194, 65, 10, 0.5); }
+:root .portal.px.lgx .ao-todo{ background: linear-gradient(180deg, #faf6ee, #f3ede2); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -10px rgba(70, 40, 10, 0.35); transition: transform 0.45s var(--fx-spring), box-shadow 0.3s, background 0.3s; }
+:root .portal.px.lgx .ao-todo.is-hot{ background: linear-gradient(180deg, #fff3e8, #ffe1cc); }
+@media (hover: hover){:root .portal.px.lgx .ao-todo:hover{ transform: translateY(-2px) scale(1.005); box-shadow: 0 1px 0 #fff inset, 0 14px 22px -12px rgba(194, 65, 10, 0.45); }
+}
+:root .portal.px.lgx .ao-date{ box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 8px 14px -8px rgba(194, 65, 10, 0.7); }
+:root .portal.px.lgx .ao-pill,:root .portal.px.lgx .fc-pill.is-hot{ box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 4px 10px -3px rgba(255, 90, 10, 0.6); }
+:root .portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary, .fc-newsess, button.fc-send){
   translate: var(--tx, 0px) var(--ty, 0px);
   transition: translate 0.45s var(--fx-spring), box-shadow 0.35s var(--fx-out), filter 0.2s, background-color 0.2s;
 }
-.portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary) { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 -2px 0 rgba(150, 45, 0, 0.25) inset, 0 10px 18px -8px rgba(255, 90, 10, 0.65); }
-@media (hover: hover) { .portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary):hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 -2px 0 rgba(150, 45, 0, 0.25) inset, 0 16px 26px -8px rgba(255, 90, 10, 0.8); filter: saturate(1.08); } }
-.portal.px.lgx .ao .ao-quick a { background: var(--fx-soft); box-shadow: 0 1px 0 #fff inset, 0 6px 12px -8px rgba(70, 40, 10, 0.4); position: relative; overflow: hidden; z-index: 0; }
-.portal.px.lgx .ao .ao-quick a::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--sk-or); transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--fx-out); border-radius: inherit; }
-@media (hover: hover) { .portal.px.lgx .ao .ao-quick a:hover { background: var(--fx-soft); } .portal.px.lgx .ao .ao-quick a:hover::before { transform: scaleX(1); } }
-
-/* ripple */
-.fx-host { position: relative; overflow: hidden; }
-.fx-ripple { position: absolute; z-index: 0; border-radius: 50%; background: currentColor; opacity: 0.2; pointer-events: none; transform: scale(0); animation: fx-rip 0.65s var(--fx-out) forwards; }
-@keyframes fx-rip { to { transform: scale(1); opacity: 0; } }
-
-/* ---------- micro-interactions ---------- */
-.fc-pill.is-hot, .ao-pill { animation: fx-shake 5s ease-in-out 1.2s infinite; transform-origin: 50% 0; }
-@keyframes fx-shake { 0%, 88%, 100% { transform: none; } 90% { transform: rotate(-14deg); } 92% { transform: rotate(12deg); } 94% { transform: rotate(-9deg); } 96% { transform: rotate(6deg); } 98% { transform: rotate(-3deg); } }
-
-@property --fx-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-@keyframes fx-spin { to { --fx-ang: 360deg; } }
-
-/* ---------- footer: marquee + particles ---------- */
-.lg-foot-marquee { position: relative; display: flex; overflow: hidden; margin: 8px calc(50% - 50vw) 0; padding: 6px 0; user-select: none; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
-.lg-foot-marquee .track { display: flex; flex: none; align-items: center; gap: 0.5em; padding-right: 0.5em; font-size: clamp(3.6rem, 13vw, 11rem); font-weight: 900; line-height: 1; letter-spacing: -0.04em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.16); white-space: nowrap; }
-.lg-foot-marquee .track i { display: inline-block; width: 0.16em; height: 0.16em; border-radius: 50%; background: #ff5a0a; -webkit-text-stroke: 0; }
-.lg-foot-marquee .track b { font-weight: inherit; transition: color 0.4s, -webkit-text-stroke-color 0.4s; }
-@media (hover: hover) { .lg-foot-marquee:hover .track b { -webkit-text-stroke-color: rgba(255, 255, 255, 0.5); } }
-@media (prefers-reduced-motion: no-preference) {
-  .lg-foot-marquee .track { animation: fx-marquee 38s linear infinite; }
-  .lg-foot-marquee:hover .track { animation-play-state: paused; }
+:root .portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary){ box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 -2px 0 rgba(150, 45, 0, 0.25) inset, 0 10px 18px -8px rgba(255, 90, 10, 0.65); }
+@media (hover: hover){:root .portal.px.lgx :is(button.p-btn.p-btn-primary, a.p-btn.p-btn-primary):hover{ box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 -2px 0 rgba(150, 45, 0, 0.25) inset, 0 16px 26px -8px rgba(255, 90, 10, 0.8); filter: saturate(1.08); }
 }
-@keyframes fx-marquee { to { transform: translateX(-100%); } }
-
-/* ---------- reduced motion: tahimik ---------- */
-@media (prefers-reduced-motion: reduce) {
-  .fc-pill.is-hot, .ao-pill, .lg-foot-marquee .track { animation: none !important; }
-  .fx-ripple { display: none; }
+:root .portal.px.lgx .ao .ao-quick a{ background: var(--fx-soft); box-shadow: 0 1px 0 #fff inset, 0 6px 12px -8px rgba(70, 40, 10, 0.4); position: relative; overflow: hidden; z-index: 0; }
+:root .portal.px.lgx .ao .ao-quick a::before{ content: ''; position: absolute; inset: 0; z-index: -1; background: var(--sk-or); transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--fx-out); border-radius: inherit; }
+@media (hover: hover){:root .portal.px.lgx .ao .ao-quick a:hover{ background: var(--fx-soft); }
+:root .portal.px.lgx .ao .ao-quick a:hover::before{ transform: scaleX(1); }
 }
-
-.lg-foot-in { position: relative; z-index: 1; }
-.lg-foot .lg-foot-in { background: transparent; }
-
-/* =====================================================================
-   CLAY LAYER: malambot na puffy surfaces, walang matitigas na linya
-   ===================================================================== */
-.portal.px.lgx, .portal.px.lgx .fc {
+:root .fx-host{ position: relative; overflow: hidden; }
+:root .fx-ripple{ position: absolute; z-index: 0; border-radius: 50%; background: currentColor; opacity: 0.2; pointer-events: none; transform: scale(0); animation: fx-rip 0.65s var(--fx-out) forwards; }
+@keyframes fx-rip{ to { transform: scale(1); opacity: 0; } }
+:root .fc-pill.is-hot,:root .ao-pill{ animation: fx-shake 5s ease-in-out 1.2s infinite; transform-origin: 50% 0; }
+@keyframes fx-shake{ 0%, 88%, 100% { transform: none; } 90% { transform: rotate(-14deg); } 92% { transform: rotate(12deg); } 94% { transform: rotate(-9deg); } 96% { transform: rotate(6deg); } 98% { transform: rotate(-3deg); } }
+@property --fx-ang{ syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes fx-spin{ to { --fx-ang: 360deg; } }
+:root .lg-foot-marquee{ position: relative; display: flex; overflow: hidden; margin: 8px calc(50% - 50vw) 0; padding: 6px 0; user-select: none; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+:root .lg-foot-marquee .track{ display: flex; flex: none; align-items: center; gap: 0.5em; padding-right: 0.5em; font-size: clamp(3.6rem, 13vw, 11rem); font-weight: 900; line-height: 1; letter-spacing: -0.04em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.16); white-space: nowrap; }
+:root .lg-foot-marquee .track i{ display: inline-block; width: 0.16em; height: 0.16em; border-radius: 50%; background: #ff5a0a; -webkit-text-stroke: 0; }
+:root .lg-foot-marquee .track b{ font-weight: inherit; transition: color 0.4s, -webkit-text-stroke-color 0.4s; }
+@media (hover: hover){:root .lg-foot-marquee:hover .track b{ -webkit-text-stroke-color: rgba(255, 255, 255, 0.5); }
+}
+@media (prefers-reduced-motion: no-preference){:root .lg-foot-marquee .track{ animation: fx-marquee 38s linear infinite; }
+:root .lg-foot-marquee:hover .track{ animation-play-state: paused; }
+}
+@keyframes fx-marquee{ to { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce){:root .fc-pill.is-hot,:root .ao-pill,:root .lg-foot-marquee .track{ animation: none !important; }
+:root .fx-ripple{ display: none; }
+}
+:root .lg-foot-in{ position: relative; z-index: 1; }
+:root .lg-foot .lg-foot-in{ background: transparent; }
+:root .portal.px.lgx,:root .portal.px.lgx .fc{
   --cl-edge: rgba(60, 40, 20, 0.10);
   --clay: 0 2px 3px rgba(255, 255, 255, 0.95) inset, 0 -4px 8px rgba(120, 80, 40, 0.10) inset, 0 12px 22px -12px rgba(70, 40, 10, 0.34), 0 2px 4px rgba(70, 40, 10, 0.08);
   --clay-or: 0 2px 3px rgba(255, 255, 255, 0.45) inset, 0 -5px 9px rgba(150, 45, 0, 0.28) inset, 0 14px 22px -10px rgba(255, 90, 10, 0.7);
   --clay-press: 0 3px 8px rgba(70, 40, 10, 0.22) inset, 0 1px 0 rgba(255, 255, 255, 0.8);
   --fx-edge: rgba(60, 40, 20, 0.08);
 }
-.portal.px.lgx .sk-main :is(.ao-tile, .ao-card, .p-card, .p-panel, .p-stat, .ad-card, .ad-box, .ad-panel, .mi-card, .p-table-wrap, .ad-table-wrap) { border-radius: 22px; }
-/* buttons / chips / tabs / inputs */
-.portal.px.lgx :is(.fc-btn:not(.is-or), .sk-iconbtn, .fc-iconbtn, .ao-quick a, .pg-tabs, .sk-chips, .sk-search, .p-tabs, .fc-bar-a):not(:disabled) {
+:root .portal.px.lgx .sk-main :is(.ao-tile, .ao-card, .p-card, .p-panel, .p-stat, .ad-card, .ad-box, .ad-panel, .mi-card, .p-table-wrap, .ad-table-wrap){ border-radius: 22px; }
+:root .portal.px.lgx :is(.fc-btn:not(.is-or), .sk-iconbtn, .fc-iconbtn, .ao-quick a, .pg-tabs, .sk-chips, .sk-search, .p-tabs, .fc-bar-a):not(:disabled){
   background-color: #fffdf9; border-color: transparent; border-radius: 999px; box-shadow: var(--clay);
 }
-.portal.px.lgx .pg-root .pg-tabs { border-radius: 999px; padding: 4px; gap: 2px; background: #f3ede4; box-shadow: var(--clay-press); }
-.portal.px.lgx .pg-root .pg-tabs button { border-radius: 999px; border: 0; }
-.portal.px.lgx .pg-root .pg-tabs button.is-on { background: #1d2740; color: #fff; box-shadow: 0 2px 3px rgba(255, 255, 255, 0.25) inset, 0 -4px 7px rgba(0, 0, 0, 0.35) inset, 0 8px 14px -6px rgba(20, 30, 60, 0.6); }
-.portal.px.lgx :is(.sk-btn:not(.is-line):not(.is-white):not(.is-ink), button.p-btn.p-btn-primary, a.p-btn.p-btn-primary, .pg-root .pg-btn, .fc-newsess) { border-color: transparent; border-radius: 999px; box-shadow: var(--clay-or); }
-.portal.px.lgx :is(.sk-btn, .p-btn, .pg-btn, .fc-btn, .fc-iconbtn):not(:disabled):active { box-shadow: var(--clay-press); transform: translateY(1px) scale(0.985); }
-.portal.px.lgx :is(input, textarea, select):not([type=checkbox]):not([type=radio]):not([type=file]) { border-color: transparent; border-radius: 16px; background-color: #f6f0e7; box-shadow: var(--clay-press); }
-.portal.px.lgx :is(input, textarea, select):focus-visible { box-shadow: var(--clay-press), 0 0 0 3px rgba(255, 90, 10, 0.35); outline: 0; }
-/* event / generic cards with their own classes */
-
-/* chat: send never looks dead */
-.fc button.fc-send, .portal.px.lgx .fc button.fc-send { background-color: #ffd7bd; background-image: none; color: #e0540a; box-shadow: var(--clay); cursor: pointer; }
-.fc button.fc-send[aria-disabled="true"]:not(.is-ready) { filter: none; }
-.fc button.fc-send.is-ready:not(:disabled) { background-image: linear-gradient(180deg, #ff8a47, #f24e00); background-color: #ff5a0a; color: #fff; box-shadow: var(--clay-or); }
-.fc button.fc-send:not(:disabled):active, .portal.px.lgx .fc button.fc-send:not(:disabled):active { background-image: linear-gradient(180deg, #e84a00, #ff6a1f); background-color: #e84a00; color: #fff; box-shadow: var(--clay-press); transform: scale(0.92); }
-.fc-row { border-color: transparent; box-shadow: var(--clay-press); background: #f6f0e7; }
-.fc, .fc-side, .fc-rooms { border-color: transparent; }
-.fc-row textarea, .portal.px.lgx .fc-row textarea { background: transparent; box-shadow: none; border-radius: 12px; }
-
-/* ---- clay para sa lahat ng pahina (kapareho ng Officer overview) ---- */
-.portal.px.lgx .sk-main :is(.pg-card, .dg-card, .pf-card, .in-card, .fb-ev) {
+:root .portal.px.lgx .pg-root .pg-tabs{ border-radius: 999px; padding: 4px; gap: 2px; background: #f3ede4; box-shadow: var(--clay-press); }
+:root .portal.px.lgx .pg-root .pg-tabs button{ border-radius: 999px; border: 0; }
+:root .portal.px.lgx .pg-root .pg-tabs button.is-on{ background: #1d2740; color: #fff; box-shadow: 0 2px 3px rgba(255, 255, 255, 0.25) inset, 0 -4px 7px rgba(0, 0, 0, 0.35) inset, 0 8px 14px -6px rgba(20, 30, 60, 0.6); }
+:root .portal.px.lgx :is(.sk-btn:not(.is-line):not(.is-white):not(.is-ink), button.p-btn.p-btn-primary, a.p-btn.p-btn-primary, .pg-root .pg-btn, .fc-newsess){ border-color: transparent; border-radius: 999px; box-shadow: var(--clay-or); }
+:root .portal.px.lgx :is(.sk-btn, .p-btn, .pg-btn, .fc-btn, .fc-iconbtn):not(:disabled):active{ box-shadow: var(--clay-press); transform: translateY(1px) scale(0.985); }
+:root .portal.px.lgx :is(input, textarea, select):not([type=checkbox]):not([type=radio]):not([type=file]){ border-color: transparent; border-radius: 16px; background-color: #f6f0e7; box-shadow: var(--clay-press); }
+:root .portal.px.lgx :is(input, textarea, select):focus-visible{ box-shadow: var(--clay-press), 0 0 0 3px rgba(255, 90, 10, 0.35); outline: 0; }
+:root .fc button.fc-send,:root .portal.px.lgx .fc button.fc-send{ background-color: #ffd7bd; background-image: none; color: #e0540a; box-shadow: var(--clay); cursor: pointer; }
+:root .fc button.fc-send[aria-disabled="true"]:not(.is-ready){ filter: none; }
+:root .fc button.fc-send.is-ready:not(:disabled){ background-image: linear-gradient(180deg, #ff8a47, #f24e00); background-color: #ff5a0a; color: #fff; box-shadow: var(--clay-or); }
+:root .fc button.fc-send:not(:disabled):active,:root .portal.px.lgx .fc button.fc-send:not(:disabled):active{ background-image: linear-gradient(180deg, #e84a00, #ff6a1f); background-color: #e84a00; color: #fff; box-shadow: var(--clay-press); transform: scale(0.92); }
+:root .fc-row{ border-color: transparent; box-shadow: var(--clay-press); background: #f6f0e7; }
+:root .fc,:root .fc-side,:root .fc-rooms{ border-color: transparent; }
+:root .fc-row textarea,:root .portal.px.lgx .fc-row textarea{ background: transparent; box-shadow: none; border-radius: 12px; }
+:root .portal.px.lgx .sk-main :is(.pg-card, .dg-card, .pf-card, .in-card, .fb-ev){
   border: 1.5px solid var(--fx-edge); border-radius: 22px;
   background: radial-gradient(260px circle at var(--mx, -400px) var(--my, -400px), rgba(255, 122, 51, 0.12), transparent 62%), var(--fx-soft);
   box-shadow: var(--fx-shadow);
   transition: box-shadow 0.4s var(--fx-out), transform 0.45s var(--fx-spring);
 }
-@media (hover: hover) { .portal.px.lgx .sk-main :is(.pg-card, .dg-card, .pf-card, .in-card, .fb-ev):hover { box-shadow: var(--fx-shadow-up); transform: translateY(-2px); } }
-.portal.px.lgx .sk-main :is(.p-badge, .pg-pill, [class*="-chip"]) { border-color: transparent; box-shadow: 0 1px 0 #fff inset, 0 4px 8px -4px rgba(70, 40, 10, 0.3); }
-.portal.px.lgx .sk-main :is(.p-row, .pf-status, .gv-row, .ad-row) { border-radius: 16px; }
-
-/* send button: orange palagi */
-.fc button.fc-send, .portal.px.lgx .fc button.fc-send,
-.fc button.fc-send[aria-disabled="true"], .portal.px.lgx .fc button.fc-send[aria-disabled="true"] { background-image: linear-gradient(180deg, #ff8a47, #f24e00); background-color: #ff5a0a; color: #fff; box-shadow: var(--clay-or); }
-.fc button.fc-send[aria-disabled="true"]:not(.is-ready) { opacity: 0.72; }
-
-/* dark cards keep dark text contrast: clay sa dark */
-.portal.px.lgx .sk-main .vd-card { border: 0; border-radius: 26px; background: linear-gradient(160deg, #26262c, #111114); color: #fff; box-shadow: 0 2px 3px rgba(255, 255, 255, 0.12) inset, 0 -6px 12px rgba(0, 0, 0, 0.5) inset, 0 22px 34px -18px rgba(17, 17, 20, 0.7); }
-/* inputs na nasa loob ng pill/wrapper: walang dobleng kahon */
-.portal.px.lgx :is(.sk-search, .fc-row, .sk-chips) :is(input, textarea) { background: transparent; box-shadow: none; border-radius: 12px; }
-.portal.px.lgx .fc-rooms button, .fc-rooms button { max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
-.fc-rooms { overflow-x: hidden; }
-
-/* ---------- round 9: fonts, search, icons, verse ---------- */
-.portal.px.lgx { --sk-font: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; --sk-display: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif; }
-.portal.px.lgx, .portal.px.lgx :is(p, span, li, small, input, textarea, select, label, a, td, th) { font-family: var(--sk-font); }
-.portal.px.lgx :is(h1, h2, h3, h4, .p-title, .sk-btn, .p-btn, .pg-btn, .fb-btn, .fc-btn, button.fc-newsess, .pg-tabs button, .vd-seg button, .ao-pill, .lg-eyebrow) { font-family: var(--sk-display); }
-.portal.px.lgx :is(input, textarea)::placeholder { color: #9a9185; font-weight: 500; }
-.fc-row textarea { font-size: 15px; line-height: 1.45; font-weight: 500; letter-spacing: 0; color: #2a241c; }
-.portal.px.lgx .fc, .portal.px.lgx .fc :is(p, span, small, textarea, input, button, a) { font-family: var(--sk-font); }
-.portal.px.lgx .fc :is(h1, h2, h3, .fc-btn, .fc-newsess, .fc-rooms-head h1) { font-family: var(--sk-display); }
-
-/* search page: isang pill lang, walang kahon sa loob */
-.portal.px.lgx .sk-search { padding: 0 8px 0 16px; }
-.portal.px.lgx .sk-search input:not([type=checkbox]):not([type=radio]):not([type=file]), .portal.px.lgx .sk-search input:focus-visible { background: transparent !important; box-shadow: none !important; border: 0 !important; border-radius: 0; outline: 0; font-size: 16px; font-weight: 500; }
-
-/* round icon buttons (calendar, facebook) = clay circles */
-.portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small) { display: inline-grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: #fffdf9; color: var(--sk-ink); box-shadow: var(--clay); transition: transform 0.35s var(--fx-spring), box-shadow 0.3s; }
-@media (hover: hover) { .portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small):hover { transform: translateY(-2px); box-shadow: var(--clay), 0 12px 18px -10px rgba(255, 90, 10, 0.5); } }
-.portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small):active { box-shadow: var(--clay-press); transform: scale(0.94); }
-
-/* chat message tools: hindi siksikan */
-.fc-tools { gap: 4px; padding: 6px 8px; border-radius: 999px; background: #fffdf9; border-color: transparent; box-shadow: var(--clay); }
-.fc-tools button { width: 40px; height: 40px; border-radius: 50%; }
-.fc-tools i { margin: 0 6px; }
-@media (hover: hover) { .fc-tools button:hover { background: #f6eee3; } }
-.fc-bar-a { gap: 10px; }
-.fc-iconbtn { margin-inline: 1px; }
-.fc-row { gap: 10px; padding: 8px 10px; }
-
-/* verse of the day: laging nababasa sa dark card */
-.portal.px.lgx .vd-label { color: #ffb27a; }
-.portal.px.lgx .vd-label svg { color: #ffb27a; }
-.portal.px.lgx .vd-seg { border: 0; padding: 4px; gap: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset; }
-.portal.px.lgx .vd-seg button { border-radius: 999px; min-height: 36px; }
-.portal.px.lgx .vd-seg button.is-on { background: linear-gradient(180deg, #ff8a47, #f24e00); color: #fff; box-shadow: var(--clay-or); }
-.portal.px.lgx .vd-card :is(.sk-btn, button):not(.is-on) { font-family: var(--sk-display); }
-.portal.px.lgx .fc-row textarea, .fc .fc-row textarea { background: transparent !important; box-shadow: none !important; border: 0 !important; }
+@media (hover: hover){:root .portal.px.lgx .sk-main :is(.pg-card, .dg-card, .pf-card, .in-card, .fb-ev):hover{ box-shadow: var(--fx-shadow-up); transform: translateY(-2px); }
+}
+:root .portal.px.lgx .sk-main :is(.p-badge, .pg-pill, [class*="-chip"]){ border-color: transparent; box-shadow: 0 1px 0 #fff inset, 0 4px 8px -4px rgba(70, 40, 10, 0.3); }
+:root .portal.px.lgx .sk-main :is(.p-row, .pf-status, .gv-row, .ad-row){ border-radius: 16px; }
+:root .fc button.fc-send,:root .portal.px.lgx .fc button.fc-send,:root .fc button.fc-send[aria-disabled="true"],:root .portal.px.lgx .fc button.fc-send[aria-disabled="true"]{ background-image: linear-gradient(180deg, #ff8a47, #f24e00); background-color: #ff5a0a; color: #fff; box-shadow: var(--clay-or); }
+:root .fc button.fc-send[aria-disabled="true"]:not(.is-ready){ opacity: 0.72; }
+:root .portal.px.lgx .sk-main .vd-card{ border: 0; border-radius: 26px; background: linear-gradient(160deg, #26262c, #111114); color: #fff; box-shadow: 0 2px 3px rgba(255, 255, 255, 0.12) inset, 0 -6px 12px rgba(0, 0, 0, 0.5) inset, 0 22px 34px -18px rgba(17, 17, 20, 0.7); }
+:root .portal.px.lgx :is(.sk-search, .fc-row, .sk-chips) :is(input, textarea){ background: transparent; box-shadow: none; border-radius: 12px; }
+:root .portal.px.lgx .fc-rooms button,:root .fc-rooms button{ max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
+:root .fc-rooms{ overflow-x: hidden; }
+:root .portal.px.lgx{ --sk-font: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; --sk-display: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif; }
+:root .portal.px.lgx,:root .portal.px.lgx :is(p, span, li, small, input, textarea, select, label, a, td, th){ font-family: var(--sk-font); }
+:root .portal.px.lgx :is(h1, h2, h3, h4, .p-title, .sk-btn, .p-btn, .pg-btn, .fb-btn, .fc-btn, button.fc-newsess, .pg-tabs button, .vd-seg button, .ao-pill, .lg-eyebrow){ font-family: var(--sk-display); }
+:root .portal.px.lgx :is(input, textarea)::placeholder{ color: #9a9185; font-weight: 500; }
+:root .fc-row textarea{ font-size: 15px; line-height: 1.45; font-weight: 500; letter-spacing: 0; color: #2a241c; }
+:root .portal.px.lgx .fc,:root .portal.px.lgx .fc :is(p, span, small, textarea, input, button, a){ font-family: var(--sk-font); }
+:root .portal.px.lgx .fc :is(h1, h2, h3, .fc-btn, .fc-newsess, .fc-rooms-head h1){ font-family: var(--sk-display); }
+:root .portal.px.lgx .sk-search{ padding: 0 8px 0 16px; }
+:root .portal.px.lgx .sk-search input:not([type=checkbox]):not([type=radio]):not([type=file]),:root .portal.px.lgx .sk-search input:focus-visible{ background: transparent !important; box-shadow: none !important; border: 0 !important; border-radius: 0; outline: 0; font-size: 16px; font-weight: 500; }
+:root .portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small){ display: inline-grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: #fffdf9; color: var(--sk-ink); box-shadow: var(--clay); transition: transform 0.35s var(--fx-spring), box-shadow 0.3s; }
+@media (hover: hover){:root .portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small):hover{ transform: translateY(-2px); box-shadow: var(--clay), 0 12px 18px -10px rgba(255, 90, 10, 0.5); }
+}
+:root .portal.px.lgx :is(.pg-icon-btn, .btn-gcal-icon, .btn-gcal-small):active{ box-shadow: var(--clay-press); transform: scale(0.94); }
+:root .fc-tools{ gap: 4px; padding: 6px 8px; border-radius: 999px; background: #fffdf9; border-color: transparent; box-shadow: var(--clay); }
+:root .fc-tools button{ width: 40px; height: 40px; border-radius: 50%; }
+:root .fc-tools i{ margin: 0 6px; }
+@media (hover: hover){:root .fc-tools button:hover{ background: #f6eee3; }
+}
+:root .fc-bar-a{ gap: 10px; }
+:root .fc-iconbtn{ margin-inline: 1px; }
+:root .fc-row{ gap: 10px; padding: 8px 10px; }
+:root .portal.px.lgx .vd-label{ color: #ffb27a; }
+:root .portal.px.lgx .vd-label svg{ color: #ffb27a; }
+:root .portal.px.lgx .vd-seg{ border: 0; padding: 4px; gap: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset; }
+:root .portal.px.lgx .vd-seg button{ border-radius: 999px; min-height: 36px; }
+:root .portal.px.lgx .vd-seg button.is-on{ background: linear-gradient(180deg, #ff8a47, #f24e00); color: #fff; box-shadow: var(--clay-or); }
+:root .portal.px.lgx .vd-card :is(.sk-btn, button):not(.is-on){ font-family: var(--sk-display); }
+:root .portal.px.lgx .fc-row textarea,:root .fc .fc-row textarea{ background: transparent !important; box-shadow: none !important; border: 0 !important; }
+:root .portal.px.lgx{ --sk-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif; }
+:root .portal.px.lgx :is(h1, h2, h3, .p-title, .ao-tile b, .dg-stat strong, .gv-big){ font-stretch: 100%; letter-spacing: -0.02em; }
+:root .portal.px.lgx :is(h1, .p-title){ font-weight: 800; }
+:root .portal.px.lgx .sk-main{ padding-inline: clamp(8px, 1.5vw, 22px); padding-top: calc(var(--bar) + env(safe-area-inset-top) + 8px); padding-bottom: calc(44px + env(safe-area-inset-bottom)); }
+:root .portal.px.lgx .sk-page{ max-width: 1480px; }
+:root .portal.px.lgx .sk-main.is-admin .sk-page{ max-width: 1560px; }
+:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero){ margin: 0 0 12px; padding: clamp(12px, 2.4vw, 20px) clamp(14px, 2.6vw, 24px); border-radius: 22px; }
+:root .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title){ margin: 8px 0 4px; font-size: clamp(1.45rem, 3.6vw, 2.15rem); line-height: 1.05; }
+:root .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub){ margin: 0; font-size: 0.92rem; line-height: 1.45; }
+:root .portal.px.lgx .pg-root :is(.pg-chip, .dg-hero-badge, .min-vol-hero-badge){ padding: 4px 10px; font-size: 10.5px; }
+:root .portal.px.lgx .pg-root .dg-hero-stats{ margin-top: 12px; padding-top: 10px; gap: 18px; }
+:root .portal.px.lgx .pg-root .dg-stat strong{ font-size: 1.8rem; line-height: 1; }
+:root .portal.px.lgx .pg-root .dg-stat-divider{ width: 1px; height: 34px; background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.55), transparent); }
+:root .portal.px.lgx .p-head,:root .portal.px.lgx .ad-head{ margin-bottom: 12px; gap: 8px; padding: 0; }
+:root .portal.px.lgx .sk-main :is(.p-title, .p-page-title, .ad-head h1){ font-size: clamp(1.45rem, 4vw, 2.1rem); line-height: 1.05; margin: 0; }
+:root .portal.px.lgx .sk-main :is(.p-desc, .ad-head p){ margin-top: 2px; font-size: 0.9rem; }
+:root .portal.px.lgx .sk-main.is-admin :where(.ad-head h1, .p-title, .p-page-title){ font-size: clamp(1.5rem, 4vw, 2.2rem); }
+:root .portal.px.lgx .hm-sh{ margin-bottom: 10px; }
+:root .portal.px.lgx .hm-sh :is(h2, h1){ font-size: clamp(1.5rem, 4.4vw, 2.4rem); line-height: 1; }
+:root .portal.px.lgx .hm-sh p{ margin-top: 2px; }
+:root .portal.px.lgx .pg-root :is(.pw-head, .gv-head, .fv-head){ margin-bottom: 10px; padding-block: 0; }
+:root .portal.px.lgx .sk-iconbtn{ color: #1c1812 !important; background-image: none !important; }
+@media (hover: hover){:root .portal.px.lgx .sk-iconbtn:hover:not(:disabled){ background-color: #fff1e4 !important; color: #c2410c !important; transform: translateY(-1px); }
+}
+:root .portal.px.lgx .sk-iconbtn:disabled{ opacity: 0.45; box-shadow: var(--clay-press); background-color: #f3ede4; }
+:root .portal.px.lgx .sk-media-play span{ width: 68px; height: 68px; border: 0; background: linear-gradient(180deg, #ffffff, #f6eee3); color: #1c1812; box-shadow: 0 3px 4px #fff inset, 0 -7px 12px rgba(120, 80, 40, 0.14) inset, 0 18px 28px -10px rgba(40, 20, 0, 0.55); transition: transform 0.4s var(--fx-spring), box-shadow 0.3s, background 0.3s, color 0.3s; }
+:root .portal.px.lgx .sk-media-play span svg{ fill: currentColor; stroke-width: 0; width: 24px; height: 24px; }
+@media (hover: hover){:root .portal.px.lgx .sk-media-play:hover span{ transform: scale(1.08); background: linear-gradient(180deg, #ff8a47, #f24e00); color: #fff; box-shadow: var(--clay-or); }
+}
+:root .portal.px.lgx .sk-media-play:active span{ transform: scale(0.94); box-shadow: var(--clay-press); }
+:root .pw .pw-chip,:root .portal.px.lgx .pw-chip{ min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #fffdf9; color: #1c1812; box-shadow: var(--clay); font-family: var(--sk-display); font-weight: 700; transition: transform 0.35s var(--fx-spring), box-shadow 0.3s; }
+@media (hover: hover){:root .pw .pw-chip:hover{ transform: translateY(-2px); }
+}
+:root .pw .pw-chip:active{ box-shadow: var(--clay-press); transform: scale(0.97); }
+:root .pw .pw-search,:root .pw .pw-tabs{ border: 0 !important; border-radius: 999px; background: #f6f0e7; box-shadow: var(--clay-press); }
+:root .pw .pw-tabs button{ border-radius: 999px; }
+:root .pw .pw-tabs button.is-on{ background: #1d2740; color: #fff; box-shadow: 0 2px 3px rgba(255, 255, 255, 0.2) inset, 0 -4px 7px rgba(0, 0, 0, 0.35) inset; }
+:root .pw .pw-search input{ background: transparent !important; box-shadow: none !important; border: 0 !important; }
+:root .portal.px.lgx .hm-ann{ border: 0; border-radius: 24px; background: var(--fx-soft); box-shadow: var(--fx-shadow); overflow: hidden; }
+:root .portal.px.lgx .hm-ann :is(.hm-tag, .hm-pin){ border-radius: 999px; }
+:root .portal.px.lgx .pg-root .pg-tabs button{ font-family: var(--sk-display); }
+:root .portal.px.lgx .pg-root .pg-tabs small{ opacity: 0.7; }
+:root .fc .fc-tools{ gap: 6px; padding: 8px 12px; border-radius: 999px; }
+:root .fc .fc-tools button{ width: 44px; height: 44px; border-radius: 50%; }
+:root .fc .fc-tools button svg{ width: 20px; height: 20px; }
+:root .fc .fc-tools i{ margin: 0 8px; height: 24px; background: rgba(60, 40, 20, 0.14); }
+:root .fc .fc-react,:root .fc .fc-reacts{ gap: 8px; }
+:root .fc .fc-reacts button,:root .fc .fc-react button{ padding: 6px 12px; min-height: 36px; border-radius: 999px; }
+:root .fc-msg{ padding-block: 8px; }
+@media (max-width: 599px){:root .fc .fc-tools{ right: 6px; gap: 2px; padding: 6px 8px; }
+:root .fc .fc-tools button{ width: 40px; height: 40px; }
+:root .fc .fc-tools i{ margin: 0 4px; }
+}
+:root .fc .fc-rx{ gap: 10px; margin-top: 10px; }
+:root .fc .fc-rx button{ min-height: 36px; padding: 0 14px; gap: 7px; border: 0; background: #fffdf9; box-shadow: var(--clay); }
+:root .fc .fc-rx button.is-on,:root .fc .fc-rx button[aria-pressed="true"]{ background: #fff1e4; color: #c2410c; }
+:root .fc .fc-msg-head,:root .fc .fc-meta{ gap: 8px; }
+:root .fc .fc-chip{ padding: 2px 10px; border: 0; background: #fffdf9; box-shadow: 0 1px 0 #fff inset, 0 3px 6px -3px rgba(70, 40, 10, 0.3); }
+:root .portal.px.lgx .sk-main{ padding-inline: clamp(6px, 0.9vw, 12px); }
+:root .portal.px.lgx .sk-page,:root .portal.px.lgx .sk-main.is-admin .sk-page{ max-width: none; }
+:root .portal.px.lgx .pg-root,:root .portal.px.lgx .pg-root > *{ max-width: none; }
+:root .portal.px.lgx .sk-main > .sk-page > :is(.pg-root, .dg-page, .p-page, .ad-page, .ao){ margin-inline: 0; padding-inline: 0; width: 100%; }
+@media (max-width: 599px){:root .portal.px.lgx .sk-main{ padding-inline: 8px; }
+}
+:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero),:root .portal.px.lgx .fb-blue{
+  background: #fffdf9 !important; background-image: none !important; border: 0;
+  box-shadow: 0 2px 3px rgba(255, 255, 255, 0.95) inset, 0 -3px 6px rgba(120, 80, 40, 0.06) inset, 0 10px 22px -16px rgba(70, 40, 10, 0.3);
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero){ background: #1d1510 !important; }
+:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero)::before,:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero)::after{ display: none; }
+:root .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title){ color: #1c1812; -webkit-text-fill-color: #1c1812; }
+:root .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub){ color: #5b5349; }
+:root .portal.px.lgx .pg-root .dg-stat strong{ color: #ff5a0a; }
+:root .portal.px.lgx .pg-root .dg-stat span{ color: #5b5349; }
+:root .portal.px.lgx .pg-root .dg-stat-divider{ background: linear-gradient(180deg, transparent, rgba(60, 40, 20, 0.28), transparent); }
+@keyframes fx-drift{ to { transform: translateY(-22px); } }
+@keyframes fx-lift{ from { transform: translateY(18px); } to { transform: translateY(0); } }
+@supports (animation-timeline: view()){@media (prefers-reduced-motion: no-preference){:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero) > *{ animation: fx-drift linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+:root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .p-panel, .pg-card, .dg-card){ animation: fx-lift linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
+}
+}

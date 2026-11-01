@@ -9,6 +9,19 @@ class Members extends Controller
         $this->call->database();
     }
 
+    // Awtomatikong gumagawa ng `bio` column kung wala pa sa members/users (iwas "Unknown column 'bio'")
+    private function ensure_bio_columns()
+    {
+        foreach (['members', 'users'] as $t) {
+            try {
+                $has = $this->db->raw("SHOW COLUMNS FROM `$t` LIKE 'bio'")->fetch(PDO::FETCH_NUM);
+                if (!$has) {
+                    $this->db->raw("ALTER TABLE `$t` ADD COLUMN bio TEXT NULL");
+                }
+            } catch (Throwable $e) { /* hayaan, ang susunod na query ang magpapakita ng totoong error */ }
+        }
+    }
+
     // Officers at admins ang pwedeng tumingin ng buong listahan ng members
     public function index()
     {
@@ -144,6 +157,7 @@ class Members extends Controller
             $params[] = trim((string) $input['address']);
         }
         if (array_key_exists('bio', $input)) {
+            $this->ensure_bio_columns();
             $bioVal = trim((string) $input['bio']);
             $sets[] = 'bio = ?';
             $params[] = $bioVal !== '' ? $bioVal : null;

@@ -1,303 +1,98 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertCircle, Calendar, Users, Megaphone, X, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react'
+import { AlertCircle, CalendarDays, Users, Megaphone, X, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react'
 import { apiGet } from '../api.js'
+import '../styles/annpop.css'
 
+const CAT = {
+  urgent: { icon: AlertCircle, label: 'Urgent' },
+  event: { icon: CalendarDays, label: 'Event' },
+  ministry: { icon: Users, label: 'Ministry' },
+  general: { icon: Megaphone, label: 'Announcement' },
+}
+const KEY = 'dismissed_announcements'
+
+/* Floating clay card (bottom of the screen) instead of a full-width bar:
+   it never pushes the hero down, can be swiped away on phones, and pages through multiple posts. */
 export default function AnnouncementBanner() {
-  const [announcements, setAnnouncements] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [list, setList] = useState([])
+  const [i, setI] = useState(0)
+  const [more, setMore] = useState(false)
+  const gone = false
   const [dismissed, setDismissed] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]')
-    } catch {
-      return []
-    }
+    try { return JSON.parse(sessionStorage.getItem(KEY) || '[]') } catch { return [] }
   })
+  const drag = useRef(null)
+  const [dx, setDx] = useState(0)
 
   useEffect(() => {
-    let isMounted = true
-    apiGet('/api/announcements')
-      .then((data) => {
-        if (!isMounted) return
-        if (Array.isArray(data)) {
-          setAnnouncements(data)
-        }
-      })
-      .catch((err) => {
-        // Silently fail on network/backend offline
-        console.warn('Failed to load announcements:', err)
-      })
-
-    return () => {
-      isMounted = false
-    }
+    let alive = true
+    apiGet('/api/announcements').then((d) => alive && Array.isArray(d) && setList(d)).catch(() => {})
+    return () => { alive = false }
   }, [])
 
-  // Filter out dismissed announcements
-  const activeList = announcements.filter((a) => !dismissed.includes(a.id))
+  const active = list.filter((a) => !dismissed.includes(a.id))
+  if (!active.length || gone) return null
+  const cur = active[Math.min(i, active.length - 1)]
+  const cat = CAT[cur.category] || CAT.general
+  const Icon = cat.icon
+  const long = (cur.content || '').length > 110
 
-  if (activeList.length === 0) return null
+  const dismiss = () => {
+    const next = [...dismissed, cur.id]
+    setDismissed(next)
+    setMore(false)
+    setDx(0)
+    setI(0)
+    try { sessionStorage.setItem(KEY, JSON.stringify(next)) } catch { /* ignore */ }
+  }
+  const step = (d) => { setI((n) => (n + d + active.length) % active.length); setMore(false) }
 
-  const current = activeList[currentIndex] || activeList[0]
-
-  const handleDismiss = () => {
-    if (!current) return
-    const nextDismissed = [...dismissed, current.id]
-    setDismissed(nextDismissed)
-    try {
-      sessionStorage.setItem('dismissed_announcements', JSON.stringify(nextDismissed))
-    } catch {}
-
-    if (currentIndex >= activeList.length - 1) {
-      setCurrentIndex(0)
-    }
+  const onUp = () => {
+    const d = dx
+    drag.current = null
+    if (Math.abs(d) > 90) dismiss()
+    else setDx(0)
   }
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % activeList.length)
-  }
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + activeList.length) % activeList.length)
-  }
-
-  // Category styles & icon
-  const getCategoryTheme = (cat) => {
-    switch (cat) {
-      case 'urgent':
-        return {
-          bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-          text: '#ffffff',
-          badgeBg: 'rgba(255, 255, 255, 0.25)',
-          badgeText: '#ffffff',
-          icon: AlertCircle,
-          pulse: true,
-        }
-      case 'event':
-        return {
-          bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-          text: '#ffffff',
-          badgeBg: 'rgba(255, 255, 255, 0.22)',
-          badgeText: '#ffffff',
-          icon: Calendar,
-          pulse: false,
-        }
-      case 'ministry':
-        return {
-          bg: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-          text: '#ffffff',
-          badgeBg: 'rgba(255, 255, 255, 0.22)',
-          badgeText: '#ffffff',
-          icon: Users,
-          pulse: false,
-        }
-      case 'general':
-      default:
-        return {
-          bg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-          text: '#f8fafc',
-          badgeBg: 'rgba(255, 255, 255, 0.16)',
-          badgeText: '#93c5fd',
-          icon: Megaphone,
-          pulse: false,
-        }
-    }
-  }
-
-  const theme = getCategoryTheme(current.category)
-  const Icon = theme.icon
+  const external = cur.link_url?.startsWith('http')
+  const linkProps = { className: 'ap-link', children: <>{cur.link_text || 'Learn more'} <ArrowRight size={15} aria-hidden="true" /></> }
 
   return (
-    <div
+    <aside
+      key={cur.id}
+      className={`ap is-${cur.category || 'general'}${dx ? ' is-drag' : ''}`}
       role="alert"
-      style={{
-        position: 'relative',
-        zIndex: 50,
-        background: theme.bg,
-        color: theme.text,
-        padding: '10px 16px',
-        fontSize: '0.88rem',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.12)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
-        transition: 'all 0.3s ease',
-      }}
+      style={dx ? { transform: `translateX(${dx}px)`, opacity: 1 - Math.min(0.6, Math.abs(dx) / 260) } : undefined}
+      onPointerDown={(e) => { if (e.target.closest('button,a')) return; drag.current = e.clientX }}
+      onPointerMove={(e) => drag.current != null && setDx(e.clientX - drag.current)}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
     >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 300px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.2)',
-              flexShrink: 0,
-            }}
-          >
-            <Icon size={16} color="#fff" />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                background: theme.badgeBg,
-                color: theme.badgeText,
-                padding: '2px 8px',
-                borderRadius: 999,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              {theme.pulse && (
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: '#fff',
-                    display: 'inline-block',
-                    animation: 'pulse 1.5s infinite',
-                  }}
-                />
-              )}
-              {current.badge_text || current.category}
-            </span>
-
-            <strong style={{ fontWeight: 600 }}>{current.title}</strong>
-            <span style={{ opacity: 0.9, fontSize: '0.84rem' }}>— {current.content}</span>
-          </div>
+      <span className="ap-ico"><Icon size={20} aria-hidden="true" /></span>
+      <div className="ap-body">
+        <div className="ap-meta">
+          <b>{cur.badge_text || cat.label}</b>
+          {active.length > 1 && <small>{Math.min(i, active.length - 1) + 1} / {active.length}</small>}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {current.link_url && (
-            current.link_url.startsWith('http') ? (
-              <a
-                href={current.link_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: '#fff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  textDecoration: 'none',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-              >
-                {current.link_text || 'Learn more'} <ArrowRight size={13} />
-              </a>
-            ) : (
-              <Link
-                to={current.link_url}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: '#fff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  textDecoration: 'none',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-              >
-                {current.link_text || 'Learn more'} <ArrowRight size={13} />
-              </Link>
-            )
-          )}
-
-          {activeList.length > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0.85 }}>
-              <button
-                type="button"
-                onClick={handlePrev}
-                aria-label="Previous announcement"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  padding: 2,
-                  display: 'flex',
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span style={{ fontSize: '0.75rem' }}>
-                {currentIndex + 1}/{activeList.length}
-              </span>
-              <button
-                type="button"
-                onClick={handleNext}
-                aria-label="Next announcement"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  padding: 2,
-                  display: 'flex',
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleDismiss}
-            aria-label="Dismiss announcement"
-            title="Dismiss announcement"
-            style={{
-              background: 'rgba(255, 255, 255, 0.15)',
-              border: 'none',
-              borderRadius: '50%',
-              width: 22,
-              height: 22,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              cursor: 'pointer',
-              padding: 0,
-              transition: 'background 0.2s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
-          >
-            <X size={13} />
-          </button>
+        <strong>{cur.title}</strong>
+        {cur.content && <p className={more ? 'is-open' : ''}>{cur.content}</p>}
+        <div className="ap-acts">
+          {long && <button type="button" className="ap-more" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : 'Read more'}</button>}
+          {cur.link_url && (external
+            ? <a href={cur.link_url} target="_blank" rel="noopener noreferrer" {...linkProps} />
+            : <Link to={cur.link_url} {...linkProps} />)}
         </div>
       </div>
-    </div>
+      <div className="ap-side">
+        <button type="button" className="ap-x" onClick={dismiss} aria-label="Dismiss announcement"><X size={16} /></button>
+        {active.length > 1 && (
+          <div className="ap-pg">
+            <button type="button" onClick={() => step(-1)} aria-label="Previous announcement"><ChevronLeft size={16} /></button>
+            <button type="button" onClick={() => step(1)} aria-label="Next announcement"><ChevronRight size={16} /></button>
+          </div>
+        )}
+      </div>
+    </aside>
   )
 }

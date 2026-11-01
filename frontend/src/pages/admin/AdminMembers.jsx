@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, Download, Users, History } from 'lucide-react'
+import '../../styles/members.css'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import { downloadCsv } from '../../lib/csv.js'
@@ -150,6 +151,19 @@ export default function AdminMembers() {
     ])
   }
 
+  const count = (fn) => members.filter(fn).length
+  const roleTabs = [
+    ['all', 'All', members.length],
+    ['user', 'Members', count((m) => m.role === 'user')],
+    ['officer', 'Officers', count((m) => m.role === 'officer')],
+    ['admin', 'Admins', count((m) => m.role === 'admin')],
+  ]
+  const statusTabs = [
+    ['all', 'Any'], ['active', 'Active'], ['inactive', 'Inactive'],
+  ]
+  const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  const roleLabel = { user: 'Member', officer: 'Officer', admin: 'Admin' }
+
   return (
     <>
       <PageHeader
@@ -164,32 +178,24 @@ export default function AdminMembers() {
 
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
-      <div className="p-toolbar">
-        <div className="p-search">
-          <Search size={16} />
-          <input
-            className="p-input"
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, email or member ID"
-            aria-label="Search members"
-          />
+      <div className="mb-bar">
+        <div className="mb-search">
+          <Search size={18} aria-hidden="true" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or member ID" aria-label="Search members" />
         </div>
-        <select className="p-input p-auto" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Filter by role">
-          <option value="all">All roles</option>
-          <option value="user">Member</option>
-          <option value="officer">Officer</option>
-          <option value="admin">Admin</option>
-        </select>
-        <select className="p-input p-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
-          <option value="all">Any status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        <div className="mb-tabs" role="group" aria-label="Filter by role">
+          {roleTabs.map(([k, l, n]) => (
+            <button key={k} type="button" className={role === k ? 'is-on' : ''} aria-pressed={role === k} onClick={() => setRole(k)}>{l}<em>{n}</em></button>
+          ))}
+        </div>
+        <div className="mb-tabs is-small" role="group" aria-label="Filter by status">
+          {statusTabs.map(([k, l]) => (
+            <button key={k} type="button" className={status === k ? 'is-on' : ''} aria-pressed={status === k} onClick={() => setStatus(k)}>{l}</button>
+          ))}
+        </div>
       </div>
 
-      <section className="p-panel">
+      <section className="mb-list" aria-live="polite">
         {loading ? (
           <Loading rows={6} />
         ) : filtered.length === 0 ? (
@@ -199,77 +205,53 @@ export default function AdminMembers() {
             desc={members.length ? 'Try a different search or clear the filters.' : 'New sign-ups will show up here.'}
           />
         ) : (
-          <div className="p-table-wrap">
-            <table className="p-table" style={{ minWidth: 820 }}>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Gender</th>
-                  <th>D-Group</th>
-                  <th>Ministry</th>
-                  <th>Role</th>
-                  <th>Joined</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m) => {
-                  const self = m.user_id === me?.id && me?.member_id !== 'LG-ADMIN'
-                  const busy = busyId === m.user_id
-                  return (
-                    <tr key={m.id}>
-                      <td>
-                        <div className="p-row-title">
-                          {m.full_name || m.username} {self && <Badge>You</Badge>}
-                        </div>
-                        <div className="p-row-sub">{m.email}</div>
-                        <div className="p-mono">{m.member_id}</div>
-                        <button type="button" className="p-btn p-btn-quiet p-btn-sm" style={{ marginTop: 6, paddingInline: 0 }} onClick={() => setHistoryOf(m)}>
-                          <History size={14} /> Attendance history
-                        </button>
-                      </td>
-                      <td className={m.gender ? '' : 'p-muted'}>{m.gender || '—'}</td>
-                      <td className={m.dgroup_name ? '' : 'p-muted'}>{m.dgroup_name || '—'}</td>
-                      <td className={m.ministry_name ? '' : 'p-muted'}>{m.ministry_name || '—'}</td>
-                      <td>
-                        <select
-                          className="p-input p-auto"
-                          style={{ padding: '5px 8px', fontSize: 13 }}
-                          value={m.role}
-                          disabled={busy || (self && !isAdmin) || (!isAdmin && m.role === 'admin')}
-                          title={self && !isAdmin ? 'You cannot change your own role' : (!isAdmin && m.role === 'admin' ? 'Only an admin can change admin accounts' : undefined)}
-                          aria-label={`Role for ${m.full_name}`}
-                          onChange={(e) => askRole(m, e.target.value)}
-                        >
-                          <option value="user">Member</option>
-                          <option value="officer">Officer</option>
-                          {(isAdmin || m.role === 'admin') && <option value="admin">Admin</option>}
-                        </select>
-                      </td>
-                      <td className="p-num p-muted">{fmtDate(m.joined_at)}</td>
-                      <td>
-                        <span className="p-inline">
-                          <Switch
-                            checked={isOn(m)}
-                            disabled={busy || self}
-                            label={`${isOn(m) ? 'Deactivate' : 'Activate'} ${m.full_name}`}
-                            onChange={() => askStatus(m)}
-                          />
-                          <span className={isOn(m) ? '' : 'p-muted'}>{isOn(m) ? 'Active' : 'Inactive'}</span>
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="mb-head" aria-hidden="true"><span>Member</span><span>Group</span><span>Role</span><span>Joined</span><span>Status</span></div>
+            {filtered.map((m) => {
+              const self = m.user_id === me?.id && me?.member_id !== 'LG-ADMIN'
+              const busy = busyId === m.user_id
+              const on = isOn(m)
+              return (
+                <article key={m.id} className={`mb-row${on ? '' : ' is-off'}`}>
+                  <div className="mb-who">
+                    <span className={`mb-av is-${m.role}`} aria-hidden="true">{initials(m.full_name || m.username)}</span>
+                    <div>
+                      <h3>{m.full_name || m.username} {self && <Badge>You</Badge>}</h3>
+                      <p>{m.email}</p>
+                      <code>{m.member_id}</code>
+                    </div>
+                  </div>
+                  <div className="mb-grp" data-label="Group">
+                    <b className={m.dgroup_name ? '' : 'is-none'}>{m.dgroup_name || 'No D-Group'}</b>
+                    <span className={m.ministry_name ? '' : 'is-none'}>{m.ministry_name || 'No ministry'}</span>
+                  </div>
+                  <div className="mb-role" data-label="Role">
+                    <select
+                      value={m.role}
+                      disabled={busy || (self && !isAdmin) || (!isAdmin && m.role === 'admin')}
+                      title={self && !isAdmin ? 'You cannot change your own role' : (!isAdmin && m.role === 'admin' ? 'Only an admin can change admin accounts' : undefined)}
+                      aria-label={`Role for ${m.full_name}`}
+                      onChange={(e) => askRole(m, e.target.value)}
+                    >
+                      <option value="user">Member</option>
+                      <option value="officer">Officer</option>
+                      {(isAdmin || m.role === 'admin') && <option value="admin">Admin</option>}
+                    </select>
+                  </div>
+                  <div className="mb-joined" data-label="Joined">{fmtDate(m.joined_at)}</div>
+                  <div className="mb-state">
+                    <Switch checked={on} disabled={busy || self} label={`${on ? 'Deactivate' : 'Activate'} ${m.full_name}`} onChange={() => askStatus(m)} />
+                    <span>{on ? 'Active' : 'Inactive'}</span>
+                    <button type="button" className="mb-hist" onClick={() => setHistoryOf(m)} aria-label={`Attendance history of ${m.full_name}`} title="Attendance history"><History size={18} /><i>History</i></button>
+                  </div>
+                </article>
+              )
+            })}
+          </>
         )}
       </section>
       {!loading && members.length > 0 && (
-        <p className="p-hint" style={{ marginTop: 10 }}>
-          Showing {filtered.length} of {members.length} members.
-        </p>
+        <p className="mb-count">Showing {filtered.length} of {members.length} members</p>
       )}
 
       {historyOf && (

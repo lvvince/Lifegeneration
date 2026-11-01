@@ -346,10 +346,13 @@ export default function Chat() {
   async function react(m, key) {
     if (!canPost) return toast(me?.reason === 'muted' ? 'You are muted right now.' : 'Sign in with a member account to react.', 'bad')
     patch(m.id, (x) => {
-      const cur = x.reactions[key] || { n: 0, mine: false }
-      const next = { n: Math.max(0, cur.n + (cur.mine ? -1 : 1)), mine: !cur.mine }
-      const r = { ...x.reactions }
-      if (next.n) r[key] = next; else delete r[key]
+      const wasMine = !!x.reactions[key]?.mine
+      const r = {}
+      for (const [k, v] of Object.entries(x.reactions || {})) {
+        const n = v.n - (v.mine ? 1 : 0)   // one reaction per person: drop my previous one
+        if (n > 0) r[k] = { n, mine: false }
+      }
+      if (!wasMine) r[key] = { n: (r[key]?.n || 0) + 1, mine: true }
       return { ...x, reactions: r }
     })
     setPicked(null)
@@ -704,8 +707,7 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
           <div className="fc-head">
             <button type="button" className="fc-name" onClick={(e) => { e.stopPropagation(); onProfile() }}>{m.name}</button>
             {rn && <span className={`fc-role is-${m.role}`}>{rn}</span>}
-            {m.ministry && <span className="fc-chip"><HeartHandshake size={12} aria-hidden="true" />{m.ministry}</span>}
-            {m.dgroup && <span className="fc-chip"><Network size={12} aria-hidden="true" />{m.dgroup}</span>}
+            {(m.dgroup || m.ministry) && <span className="fc-chip" title={[m.dgroup, m.ministry].filter(Boolean).join(' · ')}>{m.dgroup ? <Network size={11} aria-hidden="true" /> : <HeartHandshake size={11} aria-hidden="true" />}{m.dgroup || m.ministry}</span>}
             <time>{hhmm(m.created_at)}</time>
           </div>
         )}
