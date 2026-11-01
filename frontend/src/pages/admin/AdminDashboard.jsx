@@ -4,6 +4,7 @@ import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHan
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate, fmtCurrency, isUpcoming } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
+import Roll from '../../components/fx/Roll.jsx'
 
 export default function AdminDashboard() {
   const toast = useToast()
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
         {tiles.map(({ label, value, to, Icon }, i) => (
           <Link to={to} className="ao-tile" key={label} style={{ '--i': i }}>
             <span className="ao-ico"><Icon size={18} /></span>
-            <b>{loading ? '–' : value ?? 0}</b>
+            <b>{loading ? '–' : <Roll value={value ?? 0} />}</b>
             <small>{label}</small>
             <ArrowUpRight size={16} className="ao-go" aria-hidden="true" />
           </Link>

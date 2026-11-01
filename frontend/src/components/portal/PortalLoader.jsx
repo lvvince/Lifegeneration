@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
    - Totoong naghihintay: fonts + window load (may minimum na ~1.4s para hindi kumurap lang)
    - Letra-por-letra ang pangalan, tumataas ang bilang, tapos bumubukas na parang shutter
    - onDone() kapag tapos na ang exit, saka lang magsisimula ang animation ng page */
-const WORD = 'LIFE GENERATION'.split('')
-const MIN = 1400
+const WORDS = ['LIFE', 'GENERATION']
+const MIN = 900
 
 export default function PortalLoader({ onDone }) {
   const [n, setN] = useState(0)
@@ -29,7 +29,7 @@ export default function PortalLoader({ onDone }) {
         done = true
         setN(100)
         setTimeout(() => setOut(true), 180)
-        setTimeout(onDone, still ? 50 : 950)
+        setTimeout(onDone, still ? 50 : 760)
         return
       }
       raf = requestAnimationFrame(tick)
@@ -44,12 +44,12 @@ export default function PortalLoader({ onDone }) {
       <i className="sk-load-bot" aria-hidden="true" />
       <div className="sk-load-mid">
         <div className="sk-load-mark" aria-hidden="true">
-          <i /><i /><i /><i />
+          <img src="/logo.png" alt="" width="64" height="64" onError={(e) => { e.currentTarget.style.display = 'none' }} />
         </div>
         <h2 aria-hidden="true">
-          {WORD.map((c, i) => (
-            <span key={i} style={{ '--i': i }}>
-              <b>{c === ' ' ? ' ' : c}</b>
+          {WORDS.map((w, wi) => (
+            <span key={w}>
+              {w.split('').map((c, i) => <b key={i} style={{ '--i': i + wi * 4 }}>{c}</b>)}
             </span>
           ))}
         </h2>

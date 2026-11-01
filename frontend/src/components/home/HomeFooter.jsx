@@ -75,7 +75,11 @@ export default function HomeFooter() {
             </div>
           </div>
 
-          <span className="lg-foot-mark" aria-hidden="true" data-parallax="-0.05">LIFEGEN</span>
+          <div className="lg-foot-marquee" aria-hidden="true">
+            {[0, 1].map((k) => (
+              <div className="track" key={k}><b>LIFEGEN</b><i /><b>CALAPAN</b><i /><b>NEXT GENERATION</b><i /></div>
+            ))}
+          </div>
           <div className="lg-foot-bottom">
             <span>© {new Date().getFullYear()} Life Generation Calapan. Calapan, Oriental Mindoro.</span>
             <div className="lg-foot-legal" role="navigation" aria-label="Legal">

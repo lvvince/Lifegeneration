@@ -50,7 +50,7 @@
 .gv-btn.is-line { background: transparent; color: var(--g-ink); }
 .gv-btn.is-sm { min-height: 44px; padding: 0 14px; }
 .gv-btn.is-big { width: 100%; min-height: 58px; font-size: 14px; background: var(--g-or); }
-@media (hover: hover) { .gv-btn:hover:not(:disabled) { box-shadow: 5px 5px 0 var(--g-ink); } }
+@media (hover: hover) { .gv-btn:hover:not(:disabled) { box-shadow: 0 10px 20px -10px rgba(70,40,10,.3); } }
 
 /* form layout */
 .gv-grid { display: grid; gap: 16px; }
@@ -77,7 +77,7 @@
 .gv-field > span, .gv-field > label { color: var(--g-ink2); font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
 .gv-field input[type='text'], .gv-field input[type='email'], .gv-field input[type='tel'], .gv-field input[type='number'], .gv-field textarea { width: 100%; min-height: 50px; padding: 0 14px; border: 2px solid var(--g-line); border-radius: 0; background: var(--g-bg); color: var(--g-ink); font: inherit; font-size: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
 .gv-field textarea { min-height: 84px; padding: 12px 14px; resize: vertical; }
-.gv-field input:focus, .gv-field textarea:focus { outline: 0; border-color: var(--g-ink); box-shadow: 4px 4px 0 var(--g-or); }
+.gv-field input:focus, .gv-field textarea:focus { outline: 0; border-color: var(--g-ink); box-shadow: 0 10px 20px -10px rgba(70,40,10,.3); }
 .gv-money > div { position: relative; }
 .gv-money b { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--g-ink2); font-weight: 800; }
 .gv-money input { padding-left: 34px !important; }

@@ -11,6 +11,14 @@ import AttendanceHistory from '../../components/portal/AttendanceHistory.jsx'
 function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClose }) {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(memberId)}&margin=10`
 
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const k = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', k)
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', k) }
+  }, [onClose])
+
   const handleDownload = () => {
     const a = document.createElement('a')
     a.href = qrUrl
@@ -29,11 +37,14 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
         inset: 0,
         zIndex: 9999,
         background: 'rgba(17,17,17,0.6)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+        padding: 'max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))'
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Digital pass"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -43,6 +54,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
           borderRadius: 24,
           maxWidth: 390,
           width: '100%',
+          margin: 'auto',
           overflow: 'hidden',
           boxShadow: '8px 8px 0 #111',
           animation: 'modalFadeIn 0.2s ease-out'
@@ -59,7 +71,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
         <div style={{
           background: 'linear-gradient(160deg, #ff7430 0%, #ff5a0a 60%, #ee4b00 100%)',
           borderBottom: '2px solid #111',
-          padding: '24px 20px',
+          padding: '24px 20px 58px',
           color: '#111',
           textAlign: 'center',
           position: 'relative'
@@ -105,11 +117,13 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
         <div style={{ padding: '24px 24px', textAlign: 'center' }}>
           {/* Member Avatar */}
           <div style={{
-            width: 64,
-            height: 64,
+            width: 72,
+            height: 72,
             borderRadius: '50%',
             overflow: 'hidden',
-            margin: '-48px auto 12px',
+            margin: '-72px auto 12px',
+            position: 'relative',
+            zIndex: 2,
             border: '3px solid #111',
             background: '#111',
             display: 'flex',

@@ -272,7 +272,7 @@ html[data-theme='dark'] .portal.px.mp { --mp-bg: #0b1020; }
 .portal.px.mp .pg-root .min-vol-apply-btn,
 .portal.px.mp .p-btn-primary,
 .portal.px.mp .pf-btn { background: var(--mp-orange); box-shadow: none; color: #fff; }
-.portal.px.mp .pg-root .pg-hero .pg-btn { border: 2px solid #fff; }
+.portal.px.mp .pg-root .pg-hero .pg-btn { border: 1.5px solid rgba(60,40,20,.14); }
 .portal.px.mp .pg-root .pg-btn-ghost,
 .portal.px.mp .pg-root .dg-btn-cancel-req,
 .portal.px.mp .pg-root .min-vol-cancel-btn,
@@ -284,7 +284,7 @@ html[data-theme='dark'] .portal.px.mp { --mp-bg: #0b1020; }
 .portal.px.mp .p-badge { background: var(--mp-tint); color: var(--mp-royal); }
 
 /* popup: mas bold */
-.portal.px.mp .mp-pop { border: 2px solid var(--mp-navy); border-radius: 26px; box-shadow: 6px 6px 0 var(--mp-navy); }
+.portal.px.mp .mp-pop { border: 2px solid var(--mp-navy); border-radius: 26px; box-shadow: 0 10px 20px -10px rgba(70,40,10,.3); }
 .portal.px.mp .mp-pop-body strong { font-family: var(--mp-display); font-size: 17px; }
 .portal.px.mp .mp-pop-link { background: var(--mp-orange); }
 

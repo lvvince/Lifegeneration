@@ -126,7 +126,7 @@ export default function Home() {
     <main className="lg-home" ref={rootRef}>
       {/* ===== HERO ===== */}
       <section className="lg-hero" data-hero aria-label="Welcome">
-        <div className="lg-hero-media" data-parallax="0.28" aria-hidden="true">
+        <div className="lg-hero-media" data-parallax="0.22" aria-hidden="true">
           <img src="/hero-bg.jpg" alt="" width="1376" height="768" fetchPriority="high" decoding="async" />
         </div>
 

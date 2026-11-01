@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { initFx } from './lib/fx.js'
+import './styles/soft.css'
 import Navbar from './components/Navbar.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -104,7 +107,7 @@ function PageRoutes() {
   )
 }
 
-export default function App() {
+function AppRoutes() {
   const { pathname } = useLocation()
   const user = getUser()
 
@@ -150,6 +153,15 @@ export default function App() {
       <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 60px' }}>
         <PageRoutes />
       </main>
+    </>
+  )
+}
+
+export default function App() {
+  useEffect(() => initFx(), [])
+  return (
+    <>
+      <AppRoutes />
     </>
   )
 }

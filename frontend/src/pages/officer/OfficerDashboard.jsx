@@ -7,6 +7,7 @@ import {
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { fmtDate, fmtCurrency } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
+import Roll from '../../components/fx/Roll.jsx'
 import '../../styles/officer-overview.css'
 
 /*
@@ -96,7 +97,7 @@ export default function OfficerDashboard() {
         {tiles.map(({ label, value, to, Icon, money }, i) => (
           <Link to={to} className="ao-tile" key={label} style={{ '--i': i }}>
             <span className="ao-ico"><Icon size={18} /></span>
-            <b style={money ? { fontSize: 'clamp(1.2rem, 2.2vw, 1.7rem)' } : undefined}>{loading ? '–' : value ?? 0}</b>
+            <b style={money ? { fontSize: 'clamp(1.2rem, 2.2vw, 1.7rem)' } : undefined}>{loading ? '–' : <Roll value={value ?? 0} />}</b>
             <small>{label}</small>
             <ArrowUpRight size={16} className="ao-go" aria-hidden="true" />
           </Link>

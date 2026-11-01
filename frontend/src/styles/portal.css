@@ -760,7 +760,7 @@ html[data-theme='dark'] .portal {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--p-border-strong);
+  border: 1px solid var(--cl-edge, rgba(60,40,20,.13));
   border-top-color: var(--p-accent);
   animation: p-rot 0.7s linear infinite;
 }

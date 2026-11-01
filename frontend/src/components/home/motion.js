@@ -67,6 +67,11 @@ export function useHomeMotion(rootRef, key) {
         const box = el.parentElement.getBoundingClientRect()
         if (box.bottom < -250 || box.top > vh + 250) return
         const speed = parseFloat(el.dataset.parallax || '0') * (small ? 0.6 : 1)
+        if (el.classList.contains('lg-hero-media')) {
+          const sy = Math.min(Math.max(0, -box.top), vh * 1.2)
+          el.style.transform = `translate3d(0, ${(sy * speed).toFixed(1)}px, 0)`
+          return
+        }
         const offset = box.top + box.height / 2 - vh / 2
         el.style.transform = `translate3d(0, ${(-offset * speed).toFixed(1)}px, 0)`
       })

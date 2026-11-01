@@ -55,7 +55,7 @@ function Avatar({ name, src, size = 36, online }) {
 
 /* text -> links and @mentions (React escapes everything, nothing is injected as HTML) */
 function RichText({ text, mentions = [] }) {
-  const names = mentions.map((m) => m.name).filter(Boolean)
+  const names = mentions.map((m) => m.name).filter(Boolean).sort((a, b) => b.length - a.length)
   const parts = []
   const re = new RegExp(`(https?:\\/\\/[^\\s<]+)${names.length ? `|(@(?:${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}))` : ''}`, 'g')
   let last = 0
@@ -96,6 +96,7 @@ export default function Chat() {
   const [members, setMembers] = useState([])
   const [draft, setDraft] = useState({ text: '', title: '', announce: false, important: false, mentions: [], image: null, preview: '', reply: null, edit: null })
   const [sending, setSending] = useState(false)
+  const [fly, setFly] = useState(false)
   const [joinDismissed, setJoinDismissed] = useState([])
   const [sessions, setSessions] = useState({ upcoming: [], past: [] })
 
@@ -256,11 +257,15 @@ export default function Chat() {
   }, [draft.text])
   const suggestions = useMemo(() => {
     if (mentionQuery === null) return []
-    return members.filter((m) => m.id !== me?.id && m.name.toLowerCase().includes(mentionQuery.trim())).slice(0, 6)
+    const q = mentionQuery.trim()
+    const rank = (m) => { const n = m.name.toLowerCase(); return n.startsWith(q) ? 0 : n.split(/\s+/).some((w) => w.startsWith(q)) ? 1 : n.includes(q) ? 2 : 9 }
+    return members.filter((m) => m.id !== me?.id && rank(m) < 9).sort((a, b) => rank(a) - rank(b) || (b.online ? 1 : 0) - (a.online ? 1 : 0) || a.name.localeCompare(b.name)).slice(0, 6)
   }, [mentionQuery, members, me?.id])
+  const [mi, setMi] = useState(0)
+  useEffect(() => setMi(0), [mentionQuery])
 
   function pickMention(m) {
-    const text = draft.text.replace(/@([\p{L}.' -]{0,30})$/u, `@${m.name} `)
+    const text = draft.text.replace(/@([\p{L}.' -]{0,30})$/u, () => `@${m.name} `)
     set({ text, mentions: draft.mentions.some((x) => x.id === m.id) ? draft.mentions : [...draft.mentions, { id: m.id, name: m.name }] })
     area.current?.focus()
   }
@@ -285,6 +290,7 @@ export default function Chat() {
   async function send(e) {
     e?.preventDefault()
     if (sending || !canPost) return
+    if (!draft.text.trim() && !draft.image) { area.current?.focus(); return }
     const text = draft.text.trim()
     const announce = channel?.readonly || draft.announce
     if (draft.edit) {
@@ -298,6 +304,7 @@ export default function Chat() {
     }
     if (!text && !draft.image) return
     if (announce && !draft.title.trim()) return toast('Give the announcement a short title.', 'bad')
+    setFly(true); setTimeout(() => setFly(false), 700)
     setSending(true)
     try {
       const fd = new FormData()
@@ -318,6 +325,12 @@ export default function Chat() {
   }
 
   const onKey = (e) => {
+    if (suggestions.length) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); return setMi((i) => (i + 1) % suggestions.length) }
+      if (e.key === 'ArrowUp') { e.preventDefault(); return setMi((i) => (i - 1 + suggestions.length) % suggestions.length) }
+      if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) { e.preventDefault(); return pickMention(suggestions[mi] || suggestions[0]) }
+      if (e.key === 'Escape') { e.preventDefault(); return set({ text: draft.text.replace(/@([\p{L}.' -]{0,30})$/u, '') }) }
+    }
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send() }
     if (e.key === 'Escape') { set({ reply: null, edit: null, text: draft.edit ? '' : draft.text }) }
   }
@@ -465,7 +478,7 @@ export default function Chat() {
                 <h2>{channel.kind === 'announcement' ? <Megaphone size={17} aria-hidden="true" /> : channel.staff_only ? <Lock size={16} aria-hidden="true" /> : <Hash size={17} aria-hidden="true" />}{channel.name}</h2>
                 <p>{channel.description}</p>
               </div>
-              <div className="fc-bar-a">
+              <div className="fc-bar-a" role="toolbar" aria-label="Room tools">
                 <button type="button" className={`fc-iconbtn${searching ? ' is-on' : ''}`} onClick={() => { setSearching((s) => !s); setQ('') }} aria-label="Search this room" aria-pressed={searching}><Search size={18} /></button>
                 <button type="button" className={`fc-iconbtn${showPins ? ' is-on' : ''}`} onClick={() => setShowPins((s) => !s)} aria-label={`Pinned messages (${pinned.length})`} aria-pressed={showPins}>
                   <Pin size={18} />{pinned.length > 0 && <i className="fc-pill">{pinned.length}</i>}
@@ -561,8 +574,8 @@ export default function Chat() {
                 )}
                 {suggestions.length > 0 && (
                   <ul className="fc-suggest" role="listbox" aria-label="Mention someone">
-                    {suggestions.map((m) => (
-                      <li key={m.id}><button type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => pickMention(m)}>
+                    {suggestions.map((m, i) => (
+                      <li key={m.id}><button type="button" role="option" aria-selected={i === mi} className={i === mi ? 'is-on' : ''} onMouseEnter={() => setMi(i)} onMouseDown={(e) => e.preventDefault()} onClick={() => pickMention(m)}>
                         <Avatar name={m.name} src={m.avatar} size={26} online={m.online} /><span>{m.name}</span><small>{[m.ministry, m.dgroup].filter(Boolean).join(' · ')}</small>
                       </button></li>
                     ))}
@@ -578,8 +591,8 @@ export default function Chat() {
                   <button type="button" className="fc-iconbtn" aria-label="Mention someone" onClick={() => { set({ text: `${draft.text}${draft.text && !/\s$/.test(draft.text) ? ' ' : ''}@` }); area.current?.focus() }}><AtSign size={19} /></button>
                   <textarea ref={area} rows={1} value={draft.text} maxLength={2000} onChange={(e) => set({ text: e.target.value })} onKeyDown={onKey}
                     placeholder={channel.readonly || draft.announce ? 'Write the announcement…' : `Message #${channel.name}`} aria-label="Message" />
-                  <button type="submit" className="fc-send" disabled={sending || (!draft.text.trim() && !draft.image)} aria-label={draft.edit ? 'Save edit' : 'Send'}>
-                    {draft.edit ? <Check size={19} /> : <Send size={19} />}
+                  <button type="submit" className={`fc-send${fly ? ' is-fly' : ''}${draft.text.trim() || draft.image ? ' is-ready' : ''}`} disabled={sending} aria-disabled={!draft.text.trim() && !draft.image} aria-label={draft.edit ? 'Save edit' : 'Send'}>
+                    {draft.edit ? <Check size={19} /> : <Send size={19} className="fc-plane" />}
                   </button>
                 </div>
               </form>
