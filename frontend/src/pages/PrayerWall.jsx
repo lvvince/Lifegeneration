@@ -2,41 +2,36 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X,
-  Users, EyeOff, Send, Search, Check, Share2, BookOpen, ImagePlus
+  Sparkles, CheckCircle2, Lock, Plus, Trash2, HandHeart, X, Users, EyeOff, Send, Search, Check, Share2,
+  BookOpen, ImagePlus, User, Home, HeartPulse, Compass, Flower2, Ellipsis, Sun, ArrowRight,
 } from 'lucide-react'
 import { apiGet, apiPost, apiRequest, API_URL, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
+import Garland from '../components/faith/Garland.jsx'
+import FaithTabs from '../components/faith/FaithTabs.jsx'
 import '../styles/prayer.css'
 import '../styles/prayer2.css'
-import '../styles/prayer3.css'
+import '../styles/faith.css'
 
-const COLORS = ['yellow', 'lilac', 'peach']
-const PRAYED_KEY = 'lg-prayed'
+export const CATS = [
+  { key: 'personal', label: 'Personal', icon: User },
+  { key: 'family', label: 'Family', icon: Home },
+  { key: 'healing', label: 'Healing', icon: HeartPulse },
+  { key: 'guidance', label: 'Guidance', icon: Compass },
+  { key: 'gratitude', label: 'Gratitude', icon: Flower2 },
+  { key: 'others', label: 'Others', icon: Ellipsis },
+]
+const catOf = (k) => CATS.find((c) => c.key === k) || CATS[0]
+const SORTS = [
+  ['new', 'Newest first'],
+  ['prayed', 'Most prayed for'],
+  ['answered', 'Answered first'],
+  ['old', 'Oldest first'],
+]
 
-const readPrayed = () => {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(PRAYED_KEY) || '[]'))
-  } catch {
-    return new Set()
-  }
-}
-const writePrayed = (set) => {
-  try {
-    localStorage.setItem(PRAYED_KEY, JSON.stringify([...set]))
-  } catch {
-    /* walang storage, okay lang */
-  }
-}
-
-// parehong note, parehong tabingi at kulay tuwing bubuksan (galing sa id)
-const KINDS = ['pin', 'paper', 'stack']
-const look = (id, i) => {
-  const n = Number(id) || i + 1
-  return { color: COLORS[(n * 7) % 3], kind: KINDS[(n * 5) % 3], rot: (((n * 37) % 9) - 4) * 0.7, flip: n % 2 === 0 }
-}
 const photoUrl = (p) => (/^(https?:|data:|blob:)/.test(String(p)) ? p : p ? `${API_URL}/${String(p).replace(/^\/+/, '')}` : '')
 const when = (d) => new Date(String(d).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+const tilt = (id, i) => ((((Number(id) || i + 1) * 37) % 9) - 4) * 0.55
 
 export default function PrayerWall() {
   const user = getUser()
@@ -45,8 +40,11 @@ export default function PrayerWall() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [cat, setCat] = useState('all')
+  const [sort, setSort] = useState('new')
   const [q, setQ] = useState('')
   const [composer, setComposer] = useState(false)
+  const [freshId, setFreshId] = useState(null)
   const location = useLocation()
   const [initialPrayer, setInitialPrayer] = useState({ title: '', body: '' })
 
@@ -64,12 +62,11 @@ export default function PrayerWall() {
   const [bibleError, setBibleError] = useState('')
   const [bibleCopied, setBibleCopied] = useState(false)
 
+
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('compose') === '1') {
-      const title = params.get('title') || ''
-      const body = params.get('body') || ''
-      setInitialPrayer({ title, body })
+      setInitialPrayer({ title: params.get('title') || '', body: params.get('body') || '' })
       setComposer(true)
     }
   }, [location.search])
@@ -78,10 +75,9 @@ export default function PrayerWall() {
     apiGet('/api/devotional/today').then(setDevotional).catch(() => {})
   }, [])
 
-  const [open, setOpen] = useState(null) // id ng nakabukas na note
+  const [open, setOpen] = useState(null)
   const [toDelete, setToDelete] = useState(null)
-  const [prayed, setPrayed] = useState(readPrayed)
-  const [burst, setBurst] = useState(0)
+  const [testi, setTesti] = useState('')
   const root = useRef(null)
 
   const load = useCallback(
@@ -92,35 +88,8 @@ export default function PrayerWall() {
         .finally(() => setLoading(false)),
     []
   )
+  useEffect(() => { load() }, [load])
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  // parallax: sumusunod ang title, magnets at mga note sa scroll
-  useEffect(() => {
-    const el = root.current
-    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
-    let raf = 0
-    const tick = () => {
-      raf = 0
-      const r = el.getBoundingClientRect()
-      el.style.setProperty('--sy', String(Math.max(-400, Math.min(400, -r.top))))
-    }
-    const on = () => {
-      if (!raf) raf = requestAnimationFrame(tick)
-    }
-    tick()
-    window.addEventListener('scroll', on, { passive: true })
-    window.addEventListener('resize', on)
-    return () => {
-      window.removeEventListener('scroll', on)
-      window.removeEventListener('resize', on)
-      cancelAnimationFrame(raf)
-    }
-  }, [])
-
-  // Esc isinasara ang note / composer
   useEffect(() => {
     if (!open && !composer) return undefined
     const key = (e) => e.key === 'Escape' && (setOpen(null), setComposer(false))
@@ -128,35 +97,46 @@ export default function PrayerWall() {
     return () => window.removeEventListener('keydown', key)
   }, [open, composer])
 
-  const mine = (p) => user && (p.is_mine || (p.user_id && Number(p.user_id) === Number(user.id)))
-  const owner = (p) => user && (mine(p) || user.role === 'admin')
+  const mine = (p) => !!user && !!p.is_mine
+  const owner = (p) => user && (mine(p) || user.role === 'admin' || user.role === 'officer')
   const answered = (p) => p.status === 'answered'
-  const shown = useMemo(
-    () => {
-      const t = q.trim().toLowerCase()
-      return prayers.filter((p) => (filter === 'answered' ? answered(p) : filter === 'mine' ? mine(p) : true) && (!t || `${p.title} ${p.body} ${p.member_name}`.toLowerCase().includes(t)))
-    },
-    [prayers, filter, q] // eslint-disable-line react-hooks/exhaustive-deps
-  )
+
+  const shown = useMemo(() => {
+    const t = q.trim().toLowerCase()
+    const list = prayers.filter((p) =>
+      (filter === 'answered' ? answered(p) : filter === 'active' ? !answered(p) : filter === 'mine' ? mine(p) : true) &&
+      (cat === 'all' || (p.category || 'personal') === cat) &&
+      (!t || `${p.title} ${p.body} ${p.member_name} ${p.testimony || ''}`.toLowerCase().includes(t))
+    )
+    const ts = (p) => new Date(String(p.created_at).replace(' ', 'T')).getTime() || 0
+    const by = {
+      new: (a, b) => ts(b) - ts(a),
+      old: (a, b) => ts(a) - ts(b),
+      prayed: (a, b) => (b.prayer_count || 0) - (a.prayer_count || 0) || ts(b) - ts(a),
+      answered: (a, b) => Number(answered(b)) - Number(answered(a)) || ts(b) - ts(a),
+    }[sort]
+    return [...list].sort(by)
+  }, [prayers, filter, cat, sort, q]) // eslint-disable-line react-hooks/exhaustive-deps
   const current = prayers.find((p) => p.id === open)
 
-  const togglePrayed = (id) => {
-    setPrayed((old) => {
-      const next = new Set(old)
-      if (next.has(id)) next.delete(id)
-      else {
-        next.add(id)
-        setBurst((b) => b + 1)
-      }
-      writePrayed(next)
-      return next
-    })
+  async function pray(p) {
+    if (!user) return toast('Sign in to pray for someone.', 'bad')
+    const was = !!p.i_prayed
+    setPrayers((old) => old.map((x) => (x.id === p.id ? { ...x, i_prayed: !was, prayer_count: Math.max(0, (x.prayer_count || 0) + (was ? -1 : 1)) } : x)))
+    try {
+      const r = await apiPost('/api/prayer/pray', { id: p.id })
+      setPrayers((old) => old.map((x) => (x.id === p.id ? { ...x, i_prayed: r.on, prayer_count: r.count } : x)))
+    } catch (e) {
+      toast(e.message || 'Could not save your prayer.', 'bad')
+      load()
+    }
   }
 
-  async function markAnswered(id) {
+  async function markAnswered(p, text) {
     try {
-      const res = await apiPost('/api/prayer/mark-answered', { id })
+      const res = await apiPost('/api/prayer/mark-answered', { id: p.id, testimony: text })
       toast(res.message || 'Marked as answered. Praise God!')
+      setTesti('')
       load()
     } catch (err) {
       toast(err.message || 'Failed to update prayer.', 'bad')
@@ -221,39 +201,44 @@ export default function PrayerWall() {
   const currentReflection = (isTl && devotional?.reflection_tl) ? devotional.reflection_tl : devotional?.reflection
   const currentPrayer = (isTl && devotional?.prayer_prompt_tl) ? devotional.prayer_prompt_tl : devotional?.prayer_prompt
 
+
   const tabs = [
     ['all', 'All', prayers.length],
+    ['active', 'Praying', prayers.filter((p) => !answered(p)).length],
     ['answered', 'Answered', prayers.filter(answered).length],
     ...(user ? [['mine', 'Mine', prayers.filter(mine).length]] : []),
   ]
+  const totalPrayers = prayers.reduce((n, p) => n + (p.prayer_count || 0), 0)
 
   return (
-    <div className="pw" ref={root}>
-      <header className="pw-head">
-        <div className="pw-head-l">
-          <span className="pw-kicker-top">Prayer wall</span>
-          <h1 className="pw-title">
-            Lift <span>one another</span> up<em>.</em>
-          </h1>
-          <p className="pw-sub">Pin a request, pray for someone, and celebrate the answers together.</p>
-          <ul className="pw-stats" aria-label="Prayer wall summary">
-            <li><b>{prayers.length}</b> on the wall</li>
-            <li><b>{prayers.filter(answered).length}</b> answered</li>
-            <li><b>{prayed.size}</b> prayed by you</li>
-          </ul>
-          {user ? (
-            <button type="button" className="pw-add" onClick={() => setComposer(true)}>
-              <Plus size={18} /> Stick a note
-            </button>
-          ) : (
-            <Link to="/login" className="pw-add">
-              Sign in to post
-            </Link>
-          )}
-
+    <div className="pw fh" ref={root}>
+      <section className="fh-hero">
+        <Garland />
+        <FaithTabs />
+        <div className="fh-hero-grid">
+          <div className="fh-hero-main">
+            <span className="fh-kicker">A place to carry one another</span>
+            <h1 className="fh-title">Prayer Wall</h1>
+            <p className="fh-verse">
+              “Confess your sins to one another and pray for one another, so that you may be healed.” <cite>James 5:16</cite>
+            </p>
+            <ul className="fh-stats" aria-label="Prayer wall summary">
+              <li><b>{prayers.length}</b> requests</li>
+              <li><b>{totalPrayers}</b> prayers lifted</li>
+              <li><b>{prayers.filter(answered).length}</b> answered</li>
+            </ul>
+            <div className="fh-cta">
+              {user ? (
+                <button type="button" className="fh-btn is-primary" onClick={() => setComposer(true)}><Plus size={18} aria-hidden="true" /> Pin a prayer</button>
+              ) : (
+                <Link to="/login" className="fh-btn is-primary">Sign in to post</Link>
+              )}
+              <Link to="/god-today" className="fh-btn"><Sun size={17} aria-hidden="true" /> Where have you seen God today? <ArrowRight size={16} aria-hidden="true" /></Link>
+            </div>
+          </div>
           {/* Verse of the day: pinned to the board */}
-          <figure className="pw-vod">
-            <i className="pw-peg" aria-hidden="true" />
+          <figure className="pw-vod fh-vod">
+            <i className="fh-pin" aria-hidden="true" />
             <figcaption className="pw-vod-top">
               <span className="pw-vod-label"><BookOpen size={14} aria-hidden="true" /> {isTl ? 'Talata ngayong araw' : 'Verse of the day'}</span>
               {devotional && (
@@ -320,139 +305,137 @@ export default function PrayerWall() {
             )}
           </figure>
         </div>
+      </section>
 
-      </header>
-
-      <div className="pw-tools">
-        <label className="pw-search">
-          <Search size={17} />
-          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search notes" aria-label="Search notes" />
-          {q && (
-            <button type="button" onClick={() => setQ('')} aria-label="Clear search">
-              <X size={15} />
-            </button>
-          )}
+      <div className="fh-tools">
+        <label className="fh-search">
+          <Search size={17} aria-hidden="true" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search prayers" aria-label="Search prayers" />
+          {q && <button type="button" onClick={() => setQ('')} aria-label="Clear search"><X size={15} /></button>}
         </label>
-        <div className="pw-tabs" role="tablist" aria-label="Filter notes">
+        <select className="fh-sort" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort prayers">
+          {SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
+        <div className="fh-seg" role="group" aria-label="Show">
           {tabs.map(([key, label, n]) => (
-            <button key={key} type="button" role="tab" aria-selected={filter === key} className={filter === key ? 'is-on' : ''} onClick={() => setFilter(key)}>
-              {label} <small>{n}</small>
-            </button>
+            <button key={key} type="button" className={filter === key ? 'is-on' : ''} aria-pressed={filter === key} onClick={() => setFilter(key)}>{label}<em>{n}</em></button>
+          ))}
+        </div>
+        <div className="fh-cats" role="group" aria-label="Category">
+          <button type="button" className={cat === 'all' ? 'is-on' : ''} aria-pressed={cat === 'all'} onClick={() => setCat('all')}>All</button>
+          {CATS.map(({ key, label, icon: Icon }) => (
+            <button key={key} type="button" className={`c-${key}${cat === key ? ' is-on' : ''}`} aria-pressed={cat === key} onClick={() => setCat(key)}><Icon size={14} aria-hidden="true" />{label}</button>
           ))}
         </div>
       </div>
 
       {error && <div className="pw-alert">{error}</div>}
 
-      <section className="pw-board" aria-live="polite">
+      <section className="fh-board" aria-live="polite" aria-label="Prayer requests">
         {loading ? (
-          <div className="pw-wall" aria-busy="true">
-            {[150, 210, 180, 240, 170, 200].map((h, i) => (
-              <div className="pw-note is-skel" key={i} style={{ height: h }} />
-            ))}
+          <div className="fh-grid" aria-busy="true">
+            {[0, 1, 2, 3, 4, 5].map((i) => <div className="fh-note is-skel" key={i} />)}
           </div>
         ) : shown.length === 0 ? (
-          <div className="pw-empty">
-            <div className="pw-note c-yellow is-blank" style={{ '--r': '-2deg' }}>
-              <h3>{q ? 'No match' : filter === 'mine' ? 'Nothing here yet' : 'Be the first'}</h3>
-              <p>{q ? 'Try a different word.' : filter === 'mine' ? 'Notes you post will stick here.' : 'Write what we can pray about and stick it on the wall.'}</p>
+          <div className="fh-empty">
+            <div className="fh-note c-personal is-blank">
+              <i className="fh-pin" aria-hidden="true" />
+              <h3>{q || cat !== 'all' ? 'Nothing matches' : filter === 'mine' ? 'Nothing here yet' : 'Be the first'}</h3>
+              <p>{q || cat !== 'all' ? 'Try another word or category.' : 'Pin a prayer request and let the community stand with you.'}</p>
             </div>
           </div>
         ) : (
-          <div className="pw-wall" key={`${filter}-${q}`}>
+          <div className="fh-grid" key={`${filter}-${cat}-${sort}-${q}`}>
             {shown.map((p, i) => {
-              const l = look(p.id, i)
+              const c = catOf(p.category)
+              const Icon = c.icon
               return (
-                <div key={p.id} className={`pw-item${p.image ? ' has-photo' : ''}${l.flip ? ' is-flip' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${l.rot}deg`, '--z': (i % 3) + 1 }}>
-                  <article className={`pw-note k-${l.kind} c-${l.color}${answered(p) ? ' is-answered' : ''}${prayed.has(p.id) ? ' is-prayed' : ''}`} style={{ '--k': (i % 3) + 1 }}>
-                    <i className="pw-peg" aria-hidden="true" />
-                    <button type="button" className="pw-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer note: ${p.title}`} />
-                    <h3>{p.title}</h3>
-                    <p>{p.body}</p>
-                    <footer>
-                      <span className="pw-by">
-                        {p.visibility === 'private' && <Lock size={12} aria-label="Leaders only" />}
-                        {p.member_name}
-                        <time>{when(p.created_at)}</time>
-                      </span>
-                      <button type="button" className="pw-pray-mini" aria-pressed={prayed.has(p.id)} aria-label={prayed.has(p.id) ? 'Remove prayed mark' : 'I prayed for this'} onClick={() => togglePrayed(p.id)}>
-                        <HandHeart size={17} />
-                      </button>
-                    </footer>
-                    {answered(p) && <span className="pw-stamp">Answered</span>}
-                  </article>
-                  {p.image && (
-                    <figure className="pw-photo">
-                      <i className="pw-peg" aria-hidden="true" />
-                      <img src={photoUrl(p.image)} alt={`Photo shared with: ${p.title}`} loading="lazy" decoding="async" />
-                    </figure>
-                  )}
-                </div>
+                <article key={p.id} className={`fh-note c-${c.key}${answered(p) ? ' is-answered' : ''}${p.i_prayed ? ' is-prayed' : ''}${freshId === p.id ? ' is-new' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${tilt(p.id, i)}deg` }}>
+                  <i className="fh-pin" aria-hidden="true" />
+                  <button type="button" className="fh-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer: ${p.title}`} />
+                  <div className="fh-note-top">
+                    <span className="fh-cat"><Icon size={12} aria-hidden="true" /> {c.label}</span>
+                    {p.visibility === 'private' && <span className="fh-lock" title="Leaders only"><Lock size={12} aria-label="Leaders only" /></span>}
+                    {answered(p) && <span className="fh-ans"><Sparkles size={12} aria-hidden="true" /> Answered</span>}
+                  </div>
+                  <h3>{p.title}</h3>
+                  <p>{p.body}</p>
+                  {answered(p) && p.testimony && <q className="fh-testi">{p.testimony}</q>}
+                  <footer>
+                    <span className="fh-by">{p.is_anonymous ? <EyeOff size={12} aria-hidden="true" /> : null}{p.member_name}<time>{when(p.created_at)}</time></span>
+                    <button type="button" className={`fh-pray${p.i_prayed ? ' is-on' : ''}`} aria-pressed={!!p.i_prayed} aria-label={`${p.i_prayed ? 'Stop praying for' : 'Pray for'} ${p.title}. ${p.prayer_count || 0} praying`} onClick={() => pray(p)}>
+                      <HandHeart size={16} aria-hidden="true" />
+                      <b>{p.prayer_count || 0}</b>
+                    </button>
+                  </footer>
+                </article>
               )
             })}
           </div>
         )}
       </section>
 
-      {/* ---------- binuksang note ---------- */}
       {current && createPortal(
-        <div className="pw pw-layer"><div className="pw-over" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
-          <article className={`pw-big c-${look(current.id, 0).color}${answered(current) ? ' is-answered' : ''}`} role="dialog" aria-modal="true" aria-label={current.title}>
-            <i className="pw-fix" aria-hidden="true" />
-            <button type="button" className="pw-x" onClick={() => setOpen(null)} aria-label="Close">
-              <X size={18} />
-            </button>
-            {answered(current) && (
-              <span className="pw-tag ok">
-                <Sparkles size={13} /> Answered
-              </span>
-            )}
-            {current.visibility === 'private' && (
-              <span className="pw-tag">
-                <Lock size={12} /> Leaders only
-              </span>
-            )}
+        <div className="pw pw-layer fh"><div className="pw-over" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
+          <article className={`pw-big fh-big c-${catOf(current.category).key}`} role="dialog" aria-modal="true" aria-label={current.title}>
+            <i className="fh-pin" aria-hidden="true" />
+            <button type="button" className="pw-x" onClick={() => setOpen(null)} aria-label="Close"><X size={18} /></button>
+            <div className="fh-note-top">
+              <span className="fh-cat">{(() => { const I = catOf(current.category).icon; return <I size={12} aria-hidden="true" /> })()} {catOf(current.category).label}</span>
+              {current.visibility === 'private' && <span className="fh-lock"><Lock size={12} aria-hidden="true" /> Leaders only</span>}
+              {answered(current) && <span className="fh-ans"><Sparkles size={12} aria-hidden="true" /> Answered</span>}
+            </div>
             <h2>{current.title}</h2>
             {current.image && <img className="pw-big-img" src={photoUrl(current.image)} alt={`Photo shared with: ${current.title}`} decoding="async" />}
             <p>{current.body}</p>
-            <footer>
-              <span>{current.member_name}</span>
-              <time>{when(current.created_at)}</time>
-            </footer>
-            <div className="pw-actions">
-              <button type="button" className={`pw-pray${prayed.has(current.id) ? ' is-on' : ''}`} onClick={() => togglePrayed(current.id)} key={burst}>
-                <HandHeart size={18} /> {prayed.has(current.id) ? 'You prayed for this' : 'I prayed for this'}
-                {prayed.has(current.id) && [0, 1, 2, 3, 4, 5].map((n) => <i key={n} className="pw-spark" style={{ '--a': `${n * 60}deg` }} aria-hidden="true" />)}
+            {answered(current) && current.testimony && (
+              <div className="fh-testi-big"><b><Sparkles size={14} aria-hidden="true" /> How God answered</b><p>{current.testimony}</p></div>
+            )}
+            <footer><span>{current.member_name}</span><time>{when(current.created_at)}</time></footer>
+            <div className="fh-pray-row">
+              <button type="button" className={`fh-btn is-primary fh-pray-big${current.i_prayed ? ' is-on' : ''}`} onClick={() => pray(current)} aria-pressed={!!current.i_prayed} key={`${current.id}-${current.i_prayed}`}>
+                <HandHeart size={18} aria-hidden="true" /> {current.i_prayed ? 'You are praying for this' : 'I will pray for this'}
+                {current.i_prayed && [0, 1, 2, 3, 4, 5].map((n) => <i key={n} className="pw-spark" style={{ '--a': `${n * 60}deg` }} aria-hidden="true" />)}
               </button>
-              {owner(current) && !answered(current) && (
-                <button type="button" className="pw-ghost" onClick={() => markAnswered(current.id)}>
-                  <CheckCircle2 size={16} /> Answered
-                </button>
-              )}
-              {owner(current) && (
-                <button type="button" className="pw-ghost is-danger" onClick={() => setToDelete(current)} aria-label="Delete note">
-                  <Trash2 size={16} />
-                </button>
-              )}
+              <span className="fh-count"><b>{current.prayer_count || 0}</b> {current.prayer_count === 1 ? 'person is' : 'people are'} praying</span>
             </div>
+            {owner(current) && !answered(current) && (
+              <form className="fh-testi-form" onSubmit={(e) => { e.preventDefault(); markAnswered(current, testi) }}>
+                <label htmlFor="fh-testi">God answered? Share a short testimony <small>(optional)</small></label>
+                <textarea id="fh-testi" rows={3} maxLength={800} value={testi} onChange={(e) => setTesti(e.target.value)} placeholder="Tell us how God moved…" />
+                <button type="submit" className="fh-btn is-sage"><CheckCircle2 size={16} aria-hidden="true" /> Mark as answered</button>
+              </form>
+            )}
+            {owner(current) && answered(current) && !current.testimony && (
+              <form className="fh-testi-form" onSubmit={(e) => { e.preventDefault(); markAnswered(current, testi) }}>
+                <label htmlFor="fh-testi2">Add your testimony</label>
+                <textarea id="fh-testi2" rows={3} maxLength={800} value={testi} onChange={(e) => setTesti(e.target.value)} placeholder="Tell us how God moved…" />
+                <button type="submit" className="fh-btn is-sage" disabled={!testi.trim()}><Check size={16} aria-hidden="true" /> Save testimony</button>
+              </form>
+            )}
+            {owner(current) && (
+              <button type="button" className="fh-del" onClick={() => setToDelete(current)}><Trash2 size={15} aria-hidden="true" /> Delete this prayer</button>
+            )}
           </article>
         </div></div>,
         document.body
       )}
 
-      {composer && createPortal(<div className="pw pw-layer"><Composer initial={initialPrayer} onClose={() => setComposer(false)} onDone={() => { setComposer(false); load() }} toast={toast} /></div>, document.body)}
+      {composer && createPortal(
+        <div className="pw pw-layer fh"><Composer initial={initialPrayer} onClose={() => setComposer(false)} onDone={(id) => { setComposer(false); setFreshId(id || null); load(); setTimeout(() => setFreshId(null), 2500) }} toast={toast} /></div>,
+        document.body
+      )}
 
       {toDelete && (
-        <ConfirmDialog title="Delete this note?" message={`"${toDelete.title}" will be removed for everyone.`} confirmLabel="Delete" danger onConfirm={remove} onCancel={() => setToDelete(null)} />
+        <ConfirmDialog title="Delete this prayer?" message={`"${toDelete.title}" will be removed for everyone.`} confirmLabel="Delete" danger onConfirm={remove} onCancel={() => setToDelete(null)} />
       )}
     </div>
   )
 }
 
-/* Blangkong sticky note na sinusulatan */
+/* Composer: a blank note you write on. Colour follows the category. */
 function Composer({ initial, onClose, onDone, toast }) {
-  const [form, setForm] = useState({ title: initial?.title || '', body: initial?.body || '', visibility: 'public', anonymous: false })
-  const [color, setColor] = useState('yellow')
+  const [form, setForm] = useState({ title: initial?.title || '', body: initial?.body || '', visibility: 'public', anonymous: false, category: 'personal' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -467,12 +450,11 @@ function Composer({ initial, onClose, onDone, toast }) {
     setPhoto(f)
     setPreview(URL.createObjectURL(f))
   }
-  const dropPhoto = () => { setPhoto(null); setPreview('') }
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   async function submit(e) {
     e.preventDefault()
-    if (!form.title.trim()) return setErr('Give your note a short title.')
+    if (!form.title.trim()) return setErr('Give your prayer a short title.')
     if (!form.body.trim()) return setErr('Write what we can pray about.')
     setErr('')
     setBusy(true)
@@ -481,61 +463,53 @@ function Composer({ initial, onClose, onDone, toast }) {
       fd.append('title', form.title.trim())
       fd.append('body', form.body.trim())
       fd.append('visibility', form.visibility)
+      fd.append('category', form.category)
       fd.append('is_anonymous', form.anonymous ? '1' : '0')
       if (photo) fd.append('image', photo)
       const res = await apiRequest('/api/prayer/submit', { method: 'POST', body: fd })
-      toast(res.message || 'Your note is on the wall.')
-      onDone()
-    } catch (err) {
-      toast(err.message || 'Failed to post prayer request.', 'bad')
+      toast(res.message || 'Your prayer is on the wall.')
+      onDone(res.id)
+    } catch (e2) {
+      toast(e2.message || 'Failed to post prayer request.', 'bad')
       setBusy(false)
     }
   }
 
   return (
     <div className="pw-over" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form className={`pw-big is-compose c-${color}`} onSubmit={submit} noValidate role="dialog" aria-modal="true" aria-label="Write a prayer note">
-        <i className="pw-fix" aria-hidden="true" />
-        <button type="button" className="pw-x" onClick={onClose} aria-label="Close">
-          <X size={18} />
-        </button>
-        <small className="pw-kicker">New prayer note</small>
+      <form className={`pw-big fh-big is-compose c-${form.category}`} onSubmit={submit} noValidate role="dialog" aria-modal="true" aria-label="Pin a prayer">
+        <i className="fh-pin" aria-hidden="true" />
+        <button type="button" className="pw-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        <small className="pw-kicker">New prayer</small>
+        <div className="fh-cats is-form" role="radiogroup" aria-label="Category">
+          {CATS.map(({ key, label, icon: Icon }) => (
+            <button key={key} type="button" role="radio" aria-checked={form.category === key} className={`c-${key}${form.category === key ? ' is-on' : ''}`} onClick={() => setForm((f) => ({ ...f, category: key }))}><Icon size={14} aria-hidden="true" />{label}</button>
+          ))}
+        </div>
         <input className="pw-in pw-in-title" value={form.title} onChange={set('title')} placeholder="Short title, e.g. Healing for Mama" maxLength={80} autoFocus aria-label="Title" />
         <textarea className="pw-in pw-in-body" value={form.body} onChange={set('body')} placeholder="Share what we can pray about" rows={5} maxLength={600} aria-label="Details" />
         <div className="pw-attach">
           {preview ? (
             <div className="pw-attach-prev">
               <img src={preview} alt="Selected photo preview" />
-              <button type="button" onClick={dropPhoto} aria-label="Remove photo"><X size={15} /></button>
+              <button type="button" onClick={() => { setPhoto(null); setPreview('') }} aria-label="Remove photo"><X size={15} /></button>
             </div>
           ) : (
-            <label className="pw-attach-btn">
-              <ImagePlus size={16} aria-hidden="true" /> Add a photo <small>optional</small>
+            <label className="pw-attach-btn"><ImagePlus size={16} aria-hidden="true" /> Add a photo <small>optional</small>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} />
             </label>
           )}
         </div>
         {err && <p className="pw-err" role="alert">{err}</p>}
-        <div className="pw-opts">
-          <div className="pw-sw" role="radiogroup" aria-label="Who can see this?">
-            <button type="button" role="radio" aria-checked={form.visibility === 'public'} className={form.visibility === 'public' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'public' }))}>
-              <Users size={15} /> Everyone
-            </button>
-            <button type="button" role="radio" aria-checked={form.visibility === 'private'} className={form.visibility === 'private' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'private' }))}>
-              <Lock size={14} /> Leaders
-            </button>
+        <div className="fh-privacy">
+          <div className="fh-seg is-mini" role="radiogroup" aria-label="Who can see this?">
+            <button type="button" role="radio" aria-checked={form.visibility === 'public'} className={form.visibility === 'public' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'public' }))}><Users size={15} aria-hidden="true" /> Everyone</button>
+            <button type="button" role="radio" aria-checked={form.visibility === 'private'} className={form.visibility === 'private' ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, visibility: 'private' }))}><Lock size={14} aria-hidden="true" /> Leaders only</button>
           </div>
-          <button type="button" className={`pw-anon${form.anonymous ? ' is-on' : ''}`} onClick={() => setForm((f) => ({ ...f, anonymous: !f.anonymous }))} aria-pressed={form.anonymous}>
-            <EyeOff size={15} /> No name
-          </button>
-          <div className="pw-swatches" role="radiogroup" aria-label="Note color">
-            {COLORS.map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={color === c} aria-label={c} className={`sw-${c}${color === c ? ' is-on' : ''}`} onClick={() => setColor(c)} />
-            ))}
-          </div>
+          <label className="fh-check"><input type="checkbox" checked={form.anonymous} onChange={(e) => setForm((f) => ({ ...f, anonymous: e.target.checked }))} /> <span><EyeOff size={14} aria-hidden="true" /> Post anonymously <small>your name stays hidden</small></span></label>
         </div>
-        <button type="submit" className="pw-send" disabled={busy}>
-          {busy ? 'Sticking…' : <><Send size={16} /> Stick it on the wall</>}
+        <button type="submit" className="fh-btn is-primary fh-send" disabled={busy}>
+          {busy ? 'Pinning…' : <><Send size={16} aria-hidden="true" /> Pin it to the wall</>}
         </button>
       </form>
     </div>

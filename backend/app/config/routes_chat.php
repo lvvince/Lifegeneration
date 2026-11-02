@@ -33,3 +33,12 @@ $router->get('/api/chat/google/status',             'Chat::google_status');
 $router->get('/api/chat/google/connect',            'Chat::google_connect');
 $router->get('/api/chat/google/callback',           'Chat::google_callback');
 $router->post('/api/chat/google/disconnect',        'Chat::google_disconnect');
+
+// Prayer wall (extra) + "Where have you seen God today?"
+$router->post('/api/prayer/pray',                   'Prayers::pray');
+$router->get('/api/sightings',                      'Sightings::index');
+$router->post('/api/sightings/submit',              'Sightings::submit');
+$router->post('/api/sightings/react',               'Sightings::react');
+$router->get('/api/sightings/{id}/comments',        'Sightings::comments');
+$router->post('/api/sightings/comment',             'Sightings::comment');
+$router->post('/api/sightings/delete',              'Sightings::delete');

@@ -1,7 +1,7 @@
 import {
   LayoutGrid, CalendarDays, Users, HeartHandshake, MessageCircleHeart,
   LayoutDashboard, ClipboardList, UserCheck, FileText, Network, Megaphone,
-  HandCoins, TrendingUp, Sparkles, MessageSquare,
+  HandCoins, TrendingUp, Sparkles, MessageSquare, Sun,
 } from 'lucide-react'
 
 /* Mga page ng portal. Dito rin kinukuha ng sidebar ang laman ng bawat icon. */
@@ -13,6 +13,7 @@ export const MEMBER_NAV = [
   { id: 'ministries', to: '/ministries',  label: 'Ministries',      icon: HeartHandshake,    blurb: 'Use your gifts to serve the community.' },
   { id: 'matcher',  to: '/gifts-matcher', label: 'Find My Place',   icon: Sparkles,          blurb: 'Take a short quiz to discover your best ministry team and D-Group.', badge: 'New' },
   { id: 'prayer',   to: '/prayer',        label: 'Prayer wall',     icon: MessageCircleHeart, blurb: 'Share a request and pray for one another.' },
+  { id: 'godtoday', to: '/god-today',     label: 'God today',       icon: Sun,               blurb: 'Share where you saw God at work today.' },
   { id: 'give',     to: '/give',          label: 'Give',            icon: HandCoins,         blurb: 'Support ministries, youth camps and tithes.' },
 ]
 
@@ -28,6 +29,7 @@ const DON     = A('a-don',     '/admin/donations',     'Donations',       HandCo
 const ANN     = A('a-ann',     '/admin/announcements', 'Announcements',   Megaphone,         'Post news that pops up for members.')
 const REP     = A('a-reports', '/admin/reports',       'Reports',         FileText,          'Attendance and growth reports.')
 const PRY     = A('a-prayer',  '/prayer',              'Prayer wall',     MessageCircleHeart,'See and moderate prayer requests.')
+const GOD     = A('a-godtoday','/god-today',           'God today',       Sun,               'See what the youth are thankful for.')
 const CHAT    = A('a-chat',    '/chat',                'Fellowship Chat', MessageSquare,     'Chat with youth members, officers and admins.')
 
 const group = (id, label, icon, blurb, items) => ({ id, label, icon, blurb, admin: true, to: items[0].to, items, match: items.map((i) => i.to) })
@@ -37,7 +39,7 @@ export const ADMIN_NAV = [
   { id: 'chat', to: '/chat', label: 'Fellowship Chat', icon: MessageSquare, blurb: 'Chat with youth members, officers, and admins in real time.' },
   group('g-people',  'People',              Users,       'Members, sign-ups, groups and teams.',             [MEMBERS, APPS, DG, MIN]),
   group('g-events',  'Events',              CalendarDays,'Plan events and take attendance.',                  [EV, CHK]),
-  group('g-content', 'Content & Community', Megaphone,   'News, donations, reports, prayer wall, and chat.', [DON, ANN, REP, PRY, CHAT]),
+  group('g-content', 'Content & Community', Megaphone,   'News, donations, reports, prayer wall, and chat.', [DON, ANN, REP, PRY, GOD, CHAT]),
 ]
 
 /* Officer/Secretary: same compact rail and grouped pages as the admin portal. */
@@ -52,6 +54,7 @@ const O_ATT     = O('o-attendance', '/officer/attendance',   'Attendance',   Use
 const O_EVENTS  = O('o-events',     '/events',               'Events',       CalendarDays,      'Youth nights, worship and special days.')
 const O_DON     = O('o-donations',  '/officer/donations',    'Donations',    HandCoins,         'Review and verify online giving receipts.')
 const O_INS     = O('o-insights',   '/officer/insights',     'Insights',     TrendingUp,        'Forecasts for attendance, members and giving.')
+const O_GOD     = O('o-godtoday',   '/god-today',            'God today',    Sun,               'See what the youth are thankful for.')
 const O_PRAY    = O('o-prayer',     '/prayer',               'Prayer wall',  MessageCircleHeart,'See and moderate prayer requests.')
 
 export const OFFICER_NAV = [
@@ -59,5 +62,5 @@ export const OFFICER_NAV = [
   { id: 'chat', to: '/chat', label: 'Fellowship Chat', icon: MessageSquare, blurb: 'Chat with youth members, officers, and admins.' },
   oGroup('og-people',  'People',              Users,        'Members, applications, groups and teams.', [O_MEMBERS, O_APPS, O_DG, O_MIN]),
   oGroup('og-events',  'Events',              CalendarDays, 'Plan around events and take attendance.',  [O_ATT, O_EVENTS]),
-  oGroup('og-content', 'Content & Community', Megaphone,    'Giving, insights and the prayer wall.',    [O_DON, O_INS, O_PRAY]),
+  oGroup('og-content', 'Content & Community', Megaphone,    'Giving, insights and the prayer wall.',    [O_DON, O_INS, O_PRAY, O_GOD]),
 ]
