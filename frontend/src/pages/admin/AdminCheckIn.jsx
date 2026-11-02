@@ -18,6 +18,7 @@ import { apiGet, apiPost } from '../../api.js'
 import { fmtDate, fmtDateTime, initials } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, Tabs, Badge, useToast } from '../../components/portal/ui.jsx'
 import '../../styles/pages.css'
+import '../../styles/staffui.css'
 
 export default function AdminCheckIn() {
   const toast = useToast()
@@ -259,31 +260,32 @@ export default function AdminCheckIn() {
         #qr-reader img[alt="Info icon"] { display: none !important; }
         #qr-reader__scan_region { border-radius: 16px; }
       `}</style>
-      <PageHeader title="Check-in" desc="Scan a member's QR pass or type their ID. Walk-ins are welcome." />
+      <header className="su-head ck-head">
+        <div>
+          <h1>Check-in</h1>
+          <p>Scan a QR pass or type an ID. Walk-ins are welcome.</p>
+        </div>
+      </header>
 
       <div className="ck-grid">
         <div className="ck-side">
-          <section className="p-panel ck-card">
-            <label className="p-label" htmlFor="ci-event">Event</label>
-            <select id="ci-event" className="p-input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
-              {events.length === 0 && <option value="">No events yet</option>}
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>{e.title} — {fmtDate(e.event_date)}</option>
-              ))}
-            </select>
-            <div className="ck-ring-row">
-              <div className="ck-ring" aria-hidden="true">
-                <svg viewBox="0 0 36 36">
-                  <circle className="bg" cx="18" cy="18" r="15.9" />
-                  <circle className="fg" cx="18" cy="18" r="15.9" pathLength="100" strokeDasharray={`${pct} 100`} />
-                </svg>
-                <b>{pct}%</b>
-              </div>
-              <div className="ck-ring-text">
-                <strong>{checked} of {attendees.length}</strong>
-                <span>checked in</span>
-                {current && <small>{fmtDate(current.event_date)}{current.location ? ` · ${current.location}` : ''}</small>}
-              </div>
+          <section className="p-panel ck-card ck-event">
+            <div className="ck-ring" aria-hidden="true">
+              <svg viewBox="0 0 36 36">
+                <circle className="bg" cx="18" cy="18" r="15.9" />
+                <circle className="fg" cx="18" cy="18" r="15.9" pathLength="100" strokeDasharray={`${pct} 100`} />
+              </svg>
+              <b>{pct}%</b>
+            </div>
+            <div className="ck-event-info">
+              <label className="p-label" htmlFor="ci-event">Event</label>
+              <select id="ci-event" className="p-input" value={eventId} onChange={(e) => setEventId(e.target.value)} aria-label="Event">
+                {events.length === 0 && <option value="">No events yet</option>}
+                {events.map((e) => (
+                  <option key={e.id} value={e.id}>{e.title} — {fmtDate(e.event_date)}</option>
+                ))}
+              </select>
+              <p><b>{checked}</b> of {attendees.length} checked in{current ? ` · ${fmtDate(current.event_date)}` : ''}</p>
             </div>
           </section>
 

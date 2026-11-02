@@ -1,0 +1,57 @@
+/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+:root .pw{--twine:#b79b6b;--wood1:#d9a766;--wood2:#a8742f}
+@media(min-width:960px){:root .pw{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);column-gap:clamp(24px,4vw,56px);align-items:start}
+:root .pw>.pw-head{grid-column:1;grid-row:1 / span 4;position:sticky;top:20px;display:block;margin:0}
+:root .pw>.pw-tools,:root .pw>.pw-alert,:root .pw>.pw-board{grid-column:2}
+}
+:root .pw .pw-head-l{display:grid;gap:0;justify-items:start}
+:root .pw .pw-add{width:100%;margin-top:16px;justify-content:center}
+:root .pw .pw-vod{width:100%;max-width:none;margin-top:18px;rotate:0deg;border-radius:6px 6px 22px 6px}
+:root .pw .pw-vod::after{display:none}
+:root .pw .pw-title{font-size:clamp(3rem,6vw,4.4rem);line-height:.92}
+:root .pw .pw-tools{position:sticky;top:8px;z-index:20;padding:8px 0;margin-bottom:6px;background:linear-gradient(var(--bg,#f6f0e6) 70%,transparent)}
+:root .pw .pw-board{min-height:50vh;margin:0;padding:8px 4px 40px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+:root .pw .pw-board::before{display:none}
+:root .pw .pw-wall{grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:46px 26px;padding-top:18px}
+@media(max-width:640px){:root .pw .pw-wall{grid-template-columns:1fr;gap:40px 0}
+:root .pw .pw-board{padding-inline:0}
+}
+:root .pw .pw-item{position:relative;display:block;rotate:0deg;translate:none;animation:pw-in3 .8s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0)*70ms + 80ms)}
+@keyframes pw-in3{from{opacity:0;transform:translateY(-26px)}
+to{opacity:1;transform:none}
+}
+:root .pw .pw-item.has-photo{grid-column:auto;display:block}
+:root .pw .pw-item.has-photo .pw-photo{display:none}
+:root .pw .pw-item::before{content:'';position:absolute;z-index:0;top:-1px;left:-14px;right:-14px;height:4px;border-radius:3px;background:repeating-linear-gradient(115deg,#a88a58 0 3px,#c7ad7c 3px 6px);box-shadow:0 2px 3px rgba(60,40,10,.3)}
+:root .pw .pw-note{--paper:#fff8b5;margin:14px 0 0;padding:26px 18px 12px;min-height:178px;border-radius:6px 6px 22px 6px;transform-origin:50% 0;animation:pw-sway3 7s ease-in-out infinite;animation-delay:calc(var(--i,0)*-1.3s);background-image:linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%,rgba(120,80,20,.06));box-shadow:0 1px 1px rgba(0,0,0,.1),0 18px 22px -14px rgba(40,25,5,.55)}
+:root .pw .pw-note::after,:root .pw .pw-note::before{display:none}
+:root .pw .pw-note.c-yellow{--paper:#fff3a3}
+:root .pw .pw-note.c-lilac{--paper:#ead9f8}
+:root .pw .pw-note.c-peach{--paper:#ffdcc7}
+:root .pw .pw-note.is-answered{--paper:#d6f2e1}
+@keyframes pw-sway3{0%,100%{transform:rotate(var(--r,0deg))}
+50%{transform:rotate(calc(var(--r,0deg)*-1 + .6deg))}
+}
+@media(hover:hover){:root .pw .pw-item:hover{scale:1;rotate:0deg}
+:root .pw .pw-item:hover .pw-note{animation:none;transform:rotate(0) translateY(4px);box-shadow:0 2px 2px rgba(0,0,0,.1),0 28px 30px -16px rgba(40,25,5,.65);transition:transform .5s cubic-bezier(.34,1.56,.64,1),box-shadow .4s}
+}
+:root .pw .pw-peg{position:absolute;z-index:3;top:-14px;left:50%;width:16px;height:44px;margin-left:-8px;border-radius:4px 4px 3px 3px;background:linear-gradient(90deg,#b9803a 0,#e8bb7a 35%,#cf9650 55%,#9c6a2c 100%);box-shadow:1px 3px 4px rgba(40,20,0,.45),inset 0 0 0 1px rgba(80,45,10,.25);pointer-events:none}
+:root .pw .pw-peg::before{content:'';position:absolute;left:50%;top:50%;width:2px;height:20px;margin-left:-1px;background:rgba(60,30,5,.45);border-radius:1px}
+:root .pw .pw-peg::after{content:'';position:absolute;left:-2px;right:-2px;top:12px;height:4px;border-radius:2px;background:linear-gradient(180deg,#d9dde2,#8a929b);box-shadow:0 1px 1px rgba(0,0,0,.4)}
+:root .pw .pw-vod>.pw-peg{top:-16px}
+:root .pw .pw-note h3{font-size:1.7rem}
+:root .pw .pw-note p{-webkit-line-clamp:4}
+:root .pw .pw-note.is-prayed{box-shadow:0 0 0 2px rgba(255,150,50,.55),0 0 32px rgba(255,150,50,.45),0 18px 22px -14px rgba(40,25,5,.55)}
+:root .pw .pw-note.is-prayed .pw-pray-mini svg{animation:pw-flick 1.6s ease-in-out infinite}
+@keyframes pw-flick{0%,100%{transform:scale(1) rotate(0)}
+30%{transform:scale(1.12) rotate(-4deg)}
+60%{transform:scale(.96) rotate(3deg)}
+}
+:root .pw .pw-stamp{top:auto;bottom:46px;right:10px}
+:root .pw .pw-tools{gap:10px}
+:root .pw .pw-search{max-width:none;flex:1 1 220px}
+@media(prefers-reduced-motion:reduce){:root .pw .pw-note,:root .pw .pw-item,:root .pw .pw-note.is-prayed .pw-pray-mini svg{animation:none!important}
+}:root .pw .pw-board{overflow-x:clip;padding-inline:16px}
+@media(max-width:640px){:root .pw .pw-board{padding-inline:6px}:root .pw .pw-item::before{left:-6px;right:-6px}}
+:root .pw .pw-note{padding-top:36px}
+:root .pw .pw-note.k-paper h3::before{display:none}

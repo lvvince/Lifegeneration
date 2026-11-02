@@ -9,6 +9,7 @@ import { apiGet, apiPost, apiRequest, API_URL, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
 import '../styles/prayer.css'
 import '../styles/prayer2.css'
+import '../styles/prayer3.css'
 
 const COLORS = ['yellow', 'lilac', 'peach']
 const PRAYED_KEY = 'lg-prayed'
@@ -240,10 +241,19 @@ export default function PrayerWall() {
             <li><b>{prayers.filter(answered).length}</b> answered</li>
             <li><b>{prayed.size}</b> prayed by you</li>
           </ul>
+          {user ? (
+            <button type="button" className="pw-add" onClick={() => setComposer(true)}>
+              <Plus size={18} /> Stick a note
+            </button>
+          ) : (
+            <Link to="/login" className="pw-add">
+              Sign in to post
+            </Link>
+          )}
 
           {/* Verse of the day: pinned to the board */}
           <figure className="pw-vod">
-            <i className="pw-pin" aria-hidden="true" />
+            <i className="pw-peg" aria-hidden="true" />
             <figcaption className="pw-vod-top">
               <span className="pw-vod-label"><BookOpen size={14} aria-hidden="true" /> {isTl ? 'Talata ngayong araw' : 'Verse of the day'}</span>
               {devotional && (
@@ -311,17 +321,6 @@ export default function PrayerWall() {
           </figure>
         </div>
 
-        <div className="pw-head-r">
-          {user ? (
-            <button type="button" className="pw-add" onClick={() => setComposer(true)}>
-              <Plus size={18} /> Stick a note
-            </button>
-          ) : (
-            <Link to="/login" className="pw-add">
-              Sign in to post
-            </Link>
-          )}
-        </div>
       </header>
 
       <div className="pw-tools">
@@ -366,7 +365,7 @@ export default function PrayerWall() {
               return (
                 <div key={p.id} className={`pw-item${p.image ? ' has-photo' : ''}${l.flip ? ' is-flip' : ''}`} style={{ '--i': Math.min(i, 12), '--r': `${l.rot}deg`, '--z': (i % 3) + 1 }}>
                   <article className={`pw-note k-${l.kind} c-${l.color}${answered(p) ? ' is-answered' : ''}${prayed.has(p.id) ? ' is-prayed' : ''}`} style={{ '--k': (i % 3) + 1 }}>
-                    <i className="pw-fix" aria-hidden="true" />
+                    <i className="pw-peg" aria-hidden="true" />
                     <button type="button" className="pw-open" onClick={() => setOpen(p.id)} aria-label={`Open prayer note: ${p.title}`} />
                     <h3>{p.title}</h3>
                     <p>{p.body}</p>
@@ -384,7 +383,7 @@ export default function PrayerWall() {
                   </article>
                   {p.image && (
                     <figure className="pw-photo">
-                      <i className="pw-fix is-tape" aria-hidden="true" />
+                      <i className="pw-peg" aria-hidden="true" />
                       <img src={photoUrl(p.image)} alt={`Photo shared with: ${p.title}`} loading="lazy" decoding="async" />
                     </figure>
                   )}

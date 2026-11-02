@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Check, X, RotateCcw } from 'lucide-react'
+import '../../styles/staffui.css'
 import { apiGet, apiPost } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import {
-  PageHeader, Empty, Loading, Tabs, Badge, useToast,
+  Empty, Loading, useToast,
 } from '../../components/portal/ui.jsx'
 
 const TONE = { pending: 'warn', approved: 'ok', rejected: 'bad' }
@@ -49,26 +50,27 @@ export default function AdminApplications() {
     }
   }
 
+  const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   return (
-    <>
-      <PageHeader
-        title="Applications"
-        desc="Members who want to serve in a ministry. Approving one adds the member to that ministry."
-      />
-      {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
+    <div className="su">
+      <header className="su-head">
+        <div>
+          <h1>Applications</h1>
+          <p>Members who want to serve. Approving adds them to the ministry.</p>
+        </div>
+        {counts.pending > 0 && <span className="su-badge">{counts.pending} to review</span>}
+      </header>
+      {error && <div className="alert" style={{ marginBottom: 12 }}>{error}</div>}
 
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { value: 'pending', label: 'Pending', count: counts.pending },
-          { value: 'approved', label: 'Approved', count: counts.approved },
-          { value: 'rejected', label: 'Rejected', count: counts.rejected },
-          { value: 'all', label: 'All', count: apps.length },
-        ]}
-      />
+      <div className="su-bar is-simple">
+        <div className="su-seg" role="group" aria-label="Status">
+          {[['pending', 'Pending', counts.pending], ['approved', 'Approved', counts.approved], ['rejected', 'Rejected', counts.rejected], ['all', 'All', apps.length]].map(([k, l, n]) => (
+            <button key={k} type="button" className={tab === k ? 'is-on' : ''} aria-pressed={tab === k} onClick={() => setTab(k)}>{l}<em>{n}</em></button>
+          ))}
+        </div>
+      </div>
 
-      <section className="p-panel">
+      <section className="su-list su-grid" aria-live="polite">
         {loading ? (
           <Loading rows={4} />
         ) : shown.length === 0 ? (
@@ -78,55 +80,37 @@ export default function AdminApplications() {
             desc={tab === 'pending' ? 'New applications will show up here.' : undefined}
           />
         ) : (
-          shown.map((a) => (
-            <div className="p-row p-row-wrap" key={a.id}>
-              <div className="p-row-main">
-                <div className="p-row-title">
-                  {a.member_name} <span className="p-muted" style={{ fontWeight: 400 }}>applied to</span> {a.ministry_name}
+          shown.map((a, i) => (
+            <article className={`su-row is-${a.status} is-stack`} key={a.id} style={{ '--i': Math.min(i, 8) }}>
+              <span className="su-puck">{initials(a.member_name)}</span>
+              <div className="su-main">
+                <div className="su-top">
+                  <h3>{a.member_name}</h3>
+                  <span className={`su-pill is-${a.status}`}>{a.status}</span>
                 </div>
-                <div className="p-row-sub">
-                  <span className="p-mono">{a.member_id || '—'}</span>
-                  {a.email ? ` · ${a.email}` : ''} · {fmtDate(a.created_at)}
+                <div className="su-meta">
+                  <span className="su-chip is-accent">{a.ministry_name}</span>
+                  <code>{a.member_id || '—'}</code>
+                  <time>{fmtDate(a.created_at)}</time>
                 </div>
-                {a.message && <p className="p-quote">{a.message}</p>}
+                {a.email && <div className="su-sub">{a.email}</div>}
+                {a.message && <p className="su-note">“{a.message}”</p>}
               </div>
-              <div className="p-inline" style={{ flexWrap: 'wrap' }}>
-                <Badge tone={TONE[a.status]}>{a.status}</Badge>
+              <div className="su-acts is-row">
                 {a.status !== 'approved' && (
-                  <button
-                    type="button"
-                    className="p-btn p-btn-primary p-btn-sm"
-                    disabled={busyId === a.id}
-                    onClick={() => setStatus(a, 'approved')}
-                  >
-                    Approve
-                  </button>
+                  <button type="button" className="su-act is-ok" disabled={busyId === a.id} onClick={() => setStatus(a, 'approved')}><Check size={16} /> Approve</button>
                 )}
                 {a.status !== 'rejected' && (
-                  <button
-                    type="button"
-                    className="p-btn p-btn-secondary p-btn-sm"
-                    disabled={busyId === a.id}
-                    onClick={() => setStatus(a, 'rejected')}
-                  >
-                    Reject
-                  </button>
+                  <button type="button" className="su-act" disabled={busyId === a.id} onClick={() => setStatus(a, 'rejected')}><X size={16} /> Reject</button>
                 )}
                 {a.status !== 'pending' && (
-                  <button
-                    type="button"
-                    className="p-btn p-btn-quiet p-btn-sm"
-                    disabled={busyId === a.id}
-                    onClick={() => setStatus(a, 'pending')}
-                  >
-                    Reset
-                  </button>
+                  <button type="button" className="su-act is-quiet" disabled={busyId === a.id} onClick={() => setStatus(a, 'pending')}><RotateCcw size={15} /> Reset</button>
                 )}
               </div>
-            </div>
+            </article>
           ))
         )}
       </section>
-    </>
+    </div>
   )
 }

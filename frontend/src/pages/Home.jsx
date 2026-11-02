@@ -25,6 +25,14 @@ function parseDate(d) {
   return y ? new Date(y, m - 1, day) : null
 }
 
+function countdown(d) {
+  const x = parseDate(d)
+  if (!x) return ''
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const n = Math.round((x - t) / 864e5)
+  return n <= 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`
+}
+
 function dateParts(d) {
   const x = parseDate(d)
   return x ? { day: x.getDate(), mon: MONTHS[x.getMonth()], dow: DAYS[x.getDay()] } : null
@@ -215,7 +223,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div className="lg-events">
+            <div className="lg-ag">
               {upcoming.length === 0 ? (
                 <p className="lg-empty" data-reveal>
                   {loaded
@@ -229,40 +237,55 @@ export default function Home() {
                   )}
                 </p>
               ) : (
-                upcoming.map((ev, i) => {
-                  const p = dateParts(ev.event_date)
-                  return (
-                    <article className={`lg-ev${i === 0 ? ' is-next' : ''}`} key={ev.id} data-reveal style={{ '--d': `${i * 0.08}s` }}>
-                      <Link to={`/events/${ev.id}`} className="lg-ev-main">
-                        <span className="lg-ev-cal" aria-hidden="true">
-                          <i>{p?.mon}</i>
-                          <b>{p?.day}</b>
-                          <em>{p?.dow}</em>
-                        </span>
-                        <span className="lg-ev-info">
-                          {i === 0 && <span className="lg-ev-tag">Next up</span>}
-                          <strong>{ev.title}</strong>
-                          <span className="lg-ev-meta">
-                            {ev.event_time && <span><Clock size={14} aria-hidden="true" /> {ev.event_time}</span>}
-                            {ev.location && <span><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
-                          </span>
-                        </span>
-                        {ev.banner_image && (
-                          <img className="lg-ev-thumb" src={resolveImageUrl(ev.banner_image)} alt="" loading="lazy" decoding="async" />
-                        )}
-                      </Link>
-                      <div className="lg-ev-acts">
-                        <AddToCalendarButton event={ev} variant="icon" className="lg-ev-btn" />
-                        <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(ev.id, ev.title)} aria-label={`Share ${ev.title} on Facebook`} title="Share on Facebook">
-                          <Share2 size={18} />
-                        </button>
-                        <Link to={`/events/${ev.id}`} className="lg-ev-go" aria-label={`Open ${ev.title}`}>
-                          Details <ArrowRight size={16} aria-hidden="true" />
-                        </Link>
-                      </div>
-                    </article>
-                  )
-                })
+                <>
+                  <article className="lg-fe" data-reveal>
+                    <span className="lg-fe-bg" data-parallax="0.1" aria-hidden="true">{nextParts?.day}</span>
+                    <div className="lg-fe-top">
+                      <span className="lg-fe-tag"><Flame size={14} aria-hidden="true" /> Next gathering</span>
+                      <span className="lg-fe-count">{countdown(next.event_date)}</span>
+                    </div>
+                    <Link to={`/events/${next.id}`} className="lg-fe-title">{next.title}</Link>
+                    <ul className="lg-fe-meta">
+                      <li><CalendarDays size={16} aria-hidden="true" /> {nextParts?.dow}, {nextParts?.mon} {nextParts?.day}</li>
+                      {next.event_time && <li><Clock size={16} aria-hidden="true" /> {next.event_time}</li>}
+                      {next.location && <li><MapPin size={16} aria-hidden="true" /> {next.location}</li>}
+                    </ul>
+                    <div className="lg-fe-acts">
+                      <Link to={`/events/${next.id}`} className="lg-fe-go">View details <ArrowRight size={18} aria-hidden="true" /></Link>
+                      <AddToCalendarButton event={next} variant="icon" className="lg-ev-btn" />
+                      <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(next.id, next.title)} aria-label={`Share ${next.title} on Facebook`} title="Share on Facebook"><Share2 size={18} /></button>
+                    </div>
+                  </article>
+
+                  {upcoming.length > 1 && (
+                    <ol className="lg-tl">
+                      {upcoming.slice(1).map((ev, i) => {
+                        const p = dateParts(ev.event_date)
+                        return (
+                          <li className="lg-tli" key={ev.id} data-reveal style={{ '--d': `${i * 0.1}s` }}>
+                            <span className="lg-tli-dot" aria-hidden="true" />
+                            <time className="lg-tli-date" dateTime={String(ev.event_date).slice(0, 10)}><b>{p?.day}</b> {p?.mon} <i>{p?.dow}</i></time>
+                            <div className="lg-tli-card">
+                              <Link to={`/events/${ev.id}`} className="lg-tli-main">
+                                <strong>{ev.title}</strong>
+                                <span className="lg-tli-meta">
+                                  {ev.event_time && <span><Clock size={14} aria-hidden="true" /> {ev.event_time}</span>}
+                                  {ev.location && <span><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
+                                  <span className="lg-tli-in">{countdown(ev.event_date)}</span>
+                                </span>
+                              </Link>
+                              <div className="lg-tli-acts">
+                                <AddToCalendarButton event={ev} variant="icon" className="lg-ev-btn" />
+                                <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(ev.id, ev.title)} aria-label={`Share ${ev.title} on Facebook`} title="Share on Facebook"><Share2 size={18} /></button>
+                                <Link to={`/events/${ev.id}`} className="lg-ev-btn lg-tli-go" aria-label={`Open ${ev.title}`}><ArrowRight size={18} /></Link>
+                              </div>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ol>
+                  )}
+                </>
               )}
             </div>
             <div className="lg-more" data-reveal>
@@ -344,15 +367,15 @@ export default function Home() {
             </div>
             <p className="lg-lead" style={{ margin: 0 }}>Photos, recaps and announcements from Life Generation.</p>
           </div>
-          <div className="lg-channels" data-reveal style={{ '--d': '0.1s' }}>
-            {CHANNELS.map(({ icon: Icon, name, sub, desc, tags, cta, href, tone }) => (
-              <a className={`lg-channel is-${tone}`} key={name} href={href} target="_blank" rel="noopener noreferrer">
-                <span className="lg-channel-ico"><Icon size={26} /></span>
+          <div className="lg-fa" data-reveal style={{ '--d': '0.1s' }}>
+            {CHANNELS.map(({ icon: Icon, name, sub, desc, tags, cta, href, tone }, i) => (
+              <a className={`lg-fa-item is-${tone}`} key={name} href={href} target="_blank" rel="noopener noreferrer" style={{ '--i': i }}>
+                <span className="lg-fa-orbw" data-parallax={i % 2 ? '0.05' : '-0.04'} aria-hidden="true"><span className="lg-fa-orb"><Icon size={34} /></span></span>
                 <strong>{name}</strong>
-                <span className="lg-channel-sub">{sub}</span>
-                <span className="lg-channel-desc">{desc}</span>
-                <span className="lg-channel-tags">{tags.map((t) => <i key={t}>{t}</i>)}</span>
-                <span className="lg-channel-cta">{cta} <ArrowRight size={16} /></span>
+                <span className="lg-fa-sub">{sub}</span>
+                <span className="lg-fa-desc">{desc}</span>
+                <span className="lg-fa-tags">{tags.map((t) => <i key={t}>{t}</i>)}</span>
+                <span className="lg-fa-cta">{cta} <ArrowRight size={16} aria-hidden="true" /></span>
               </a>
             ))}
           </div>

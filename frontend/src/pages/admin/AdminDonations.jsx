@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   HeartHandshake, CheckCircle2, XCircle, Search, Eye,
   ExternalLink, Copy, Check, Filter, AlertCircle, RefreshCw,
-  QrCode, FileText, ChevronRight
+  QrCode, FileText, ChevronRight, Wallet, Clock, CalendarDays, Users, EyeOff
 } from 'lucide-react'
+import '../../styles/staffui.css'
 import { apiGet, apiPost } from '../../api.js'
 import { fmtDate, fmtDateTime, fmtCurrency, resolveImageUrl } from '../../lib/format.js'
 import {
-  PageHeader, Empty, Loading, Tabs, Badge, useToast,
+  Empty, Loading, useToast,
 } from '../../components/portal/ui.jsx'
 
 const TONE = { pending: 'warn', verified: 'ok', rejected: 'bad' }
@@ -126,225 +127,105 @@ export default function AdminDonations() {
     }
   }
 
+  const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  const METHOD = { gcash: 'GCash', maya: 'Maya', bank: 'Bank', cash: 'Cash' }
+  const statTiles = [
+    { icon: Wallet, label: 'Verified total', value: stats ? fmtCurrency(stats.total_collected) : '–' },
+    { icon: Clock, label: 'Awaiting review', value: stats ? stats.pending_count : '–', hot: (stats?.pending_count || 0) > 0 },
+    { icon: CalendarDays, label: 'This month', value: stats ? fmtCurrency(stats.month_collected) : '–' },
+    { icon: Users, label: 'Donors', value: stats ? stats.donor_count : '–' },
+  ]
+
   return (
-    <>
-      <PageHeader
-        title="Donations & Giving"
-        desc="Review online contributions, verify GCash and bank receipts, and track church campaign funds."
-        actions={
-          <button
-            type="button"
-            className="p-btn p-btn-secondary"
-            onClick={() => { setLoading(true); loadData() }}
-            title="Refresh donations"
-          >
-            <RefreshCw size={15} /> Refresh
-          </button>
-        }
-      />
-
-      {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
-
-      {/* 4 Overview Metrics */}
-      <div className="p-stats" style={{ marginBottom: 20 }}>
-        <div className="p-stat">
-          <span>Total Verified</span>
-          <strong>{stats ? fmtCurrency(stats.total_collected) : '–'}</strong>
+    <div className="su">
+      <header className="su-head">
+        <div>
+          <h1>Donations</h1>
+          <p>Verify GCash, Maya and bank receipts.</p>
         </div>
-        <div className="p-stat">
-          <span>Pending Verifications</span>
-          <strong style={{ color: (stats?.pending_count || 0) > 0 ? '#ff5a0a' : 'inherit' }}>
-            {stats ? stats.pending_count : '–'}
-          </strong>
-        </div>
-        <div className="p-stat">
-          <span>This Month Giving</span>
-          <strong>{stats ? fmtCurrency(stats.month_collected) : '–'}</strong>
-        </div>
-        <div className="p-stat">
-          <span>Verified Donors</span>
-          <strong>{stats ? stats.donor_count : '–'}</strong>
-        </div>
-      </div>
+        <button type="button" className="su-icon" onClick={() => { setLoading(true); loadData() }} title="Refresh" aria-label="Refresh donations">
+          <RefreshCw size={18} />
+        </button>
+      </header>
 
-      {/* Status Tabs */}
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { value: 'pending', label: 'Pending', count: counts.pending },
-          { value: 'verified', label: 'Verified', count: counts.verified },
-          { value: 'rejected', label: 'Rejected', count: counts.rejected },
-          { value: 'all', label: 'All', count: donations.length },
-        ]}
-      />
+      {error && <div className="alert" style={{ marginBottom: 12 }}>{error}</div>}
 
-      {/* Search & Filter Bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          margin: '14px 0 16px'
-        }}
-      >
-        <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, opacity: 0.5 }} />
-          <input
-            type="text"
-            className="p-input"
-            style={{ paddingLeft: 36, width: '100%', height: 38, borderRadius: 10 }}
-            placeholder="Search donor, ref #, or code..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      <ul className="su-kpis" aria-label="Giving summary">
+        {statTiles.map(({ icon: Icon, label, value, hot }) => (
+          <li key={label} className={hot ? 'is-hot' : ''}>
+            <span className="su-kpi-ico"><Icon size={18} aria-hidden="true" /></span>
+            <small>{label}</small>
+            <b>{value}</b>
+          </li>
+        ))}
+      </ul>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Filter size={15} style={{ opacity: 0.6 }} />
-          <select
-            className="p-input"
-            style={{ height: 38, borderRadius: 10, padding: '0 12px', fontSize: 13 }}
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-          >
-            <option value="all">All Giving Categories</option>
-            <option value="tithe">Tithes & Offerings</option>
-            <option value="camp_sponsor">Youth Camp Sponsorship</option>
-            <option value="missions">Missions & Outreach</option>
-            <option value="building_fund">Audio & Equipment</option>
-            <option value="benevolence">Benevolence / Love Gift</option>
-          </select>
+      <div className="su-bar">
+        <label className="su-search">
+          <Search size={17} aria-hidden="true" />
+          <input type="search" placeholder="Search donor, reference or code" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search donations" />
+        </label>
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Giving category">
+          <option value="all">All categories</option>
+          <option value="tithe">Tithes & Offerings</option>
+          <option value="camp_sponsor">Youth Camp Sponsorship</option>
+          <option value="missions">Missions & Outreach</option>
+          <option value="building_fund">Audio & Equipment</option>
+          <option value="benevolence">Benevolence / Love Gift</option>
+        </select>
+        <div className="su-seg" role="group" aria-label="Status">
+          {[['pending', 'Pending', counts.pending], ['verified', 'Verified', counts.verified], ['rejected', 'Rejected', counts.rejected], ['all', 'All', donations.length]].map(([k, l, n]) => (
+            <button key={k} type="button" className={tab === k ? 'is-on' : ''} aria-pressed={tab === k} onClick={() => setTab(k)}>{l}<em>{n}</em></button>
+          ))}
         </div>
       </div>
 
-      {/* Donations List Panel */}
-      <section className="p-panel">
+      <section className="su-list" aria-live="polite">
         {loading ? (
           <Loading rows={4} />
         ) : filtered.length === 0 ? (
           <Empty
             icon={HeartHandshake}
-            title={tab === 'pending' ? 'No pending donations to verify' : 'No donations found'}
-            desc={tab === 'pending' ? 'All submitted donations have been processed.' : 'Try adjusting your search or filters.'}
+            title={tab === 'pending' ? 'Nothing to verify' : 'No donations found'}
+            desc={tab === 'pending' ? 'All submitted donations are processed.' : 'Try another search or filter.'}
           />
         ) : (
-          filtered.map((d) => (
-            <div className="p-row p-row-wrap" key={d.id} style={{ alignItems: 'flex-start', padding: '16px 20px' }}>
-              <div className="p-row-main">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span className="p-row-title" style={{ fontSize: 16 }}>
-                    {d.donor_name}
-                  </span>
-                  {d.is_anonymous && (
-                    <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
-                      Anonymous
-                    </span>
-                  )}
-                  <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--p-accent, #c2410c)', marginLeft: 'auto' }}>
-                    {fmtCurrency(d.amount)}
-                  </span>
+          filtered.map((d, i) => (
+            <article className={`su-row is-${d.status}`} key={d.id} style={{ '--i': Math.min(i, 8) }}>
+              <span className="su-puck">{d.is_anonymous ? <EyeOff size={18} aria-hidden="true" /> : initials(d.donor_name)}</span>
+              <div className="su-main">
+                <div className="su-top">
+                  <h3>{d.donor_name}</h3>
+                  <b className="su-amt">{fmtCurrency(d.amount)}</b>
                 </div>
-
-                <div className="p-row-sub" style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                  <span className="p-mono" style={{ background: 'rgba(0,0,0,0.04)', padding: '2px 6px', borderRadius: 4 }}>
-                    {d.tracking_code}
-                  </span>
-                  <span>·</span>
-                  <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>
-                    {d.payment_method.toUpperCase()}
-                  </span>
+                <div className="su-meta">
+                  <span className="su-chip is-accent">{d.campaign_title || CATEGORY_LABELS[d.category] || d.category}</span>
+                  <span className="su-chip">{METHOD[d.payment_method] || String(d.payment_method || '').toUpperCase()}</span>
+                  <code>{d.tracking_code}</code>
                   {d.reference_number && (
-                    <>
-                      <span>·</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Ref: <b>{d.reference_number}</b>
-                        <button
-                          type="button"
-                          onClick={() => copyText(d.reference_number, `ref-${d.id}`)}
-                          style={{ border: 0, background: 'none', cursor: 'pointer', padding: 2, opacity: 0.7 }}
-                          title="Copy reference number"
-                        >
-                          {copiedId === `ref-${d.id}` ? <Check size={13} color="#16a34a" /> : <Copy size={13} />}
-                        </button>
-                      </span>
-                    </>
-                  )}
-                  <span>·</span>
-                  <span>{fmtDateTime(d.created_at)}</span>
-                </div>
-
-                <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 999, background: 'rgba(194, 65, 12, 0.1)', color: 'var(--p-accent, #c2410c)', fontWeight: 600 }}>
-                    {d.campaign_title || CATEGORY_LABELS[d.category] || d.category}
-                  </span>
-                  {d.donor_email && (
-                    <span style={{ fontSize: 12, opacity: 0.75 }}>
-                      Email: {d.donor_email}
-                    </span>
-                  )}
-                  {d.donor_phone && (
-                    <span style={{ fontSize: 12, opacity: 0.75 }}>
-                      Phone: {d.donor_phone}
-                    </span>
-                  )}
-                </div>
-
-                {d.donor_message && (
-                  <p className="p-quote" style={{ margin: '10px 0 0', fontStyle: 'italic', fontSize: 13 }}>
-                    &ldquo;{d.donor_message}&rdquo;
-                  </p>
-                )}
-
-                {d.admin_notes && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: 'rgba(220,38,38,0.06)', padding: '4px 10px', borderRadius: 6 }}>
-                    <b>Note:</b> {d.admin_notes}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Column */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <Badge tone={TONE[d.status]}>{d.status}</Badge>
-
-                  {d.proof_receipt && (
-                    <button
-                      type="button"
-                      className="p-btn p-btn-secondary p-btn-sm"
-                      onClick={() => setSelectedReceipt(d)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <Eye size={14} /> Receipt
+                    <button type="button" className="su-copy" onClick={() => copyText(d.reference_number, `ref-${d.id}`)} title="Copy reference number">
+                      Ref {d.reference_number} {copiedId === `ref-${d.id}` ? <Check size={13} color="#16a34a" /> : <Copy size={13} />}
                     </button>
                   )}
+                  <time>{fmtDateTime(d.created_at)}</time>
                 </div>
-
+                {(d.donor_message || d.admin_notes) && (
+                  <p className={`su-note${d.admin_notes ? ' is-bad' : ''}`}>{d.admin_notes ? `Note: ${d.admin_notes}` : `“${d.donor_message}”`}</p>
+                )}
+              </div>
+              <div className="su-acts">
+                <span className={`su-pill is-${d.status}`}>{d.status}</span>
+                {d.proof_receipt && (
+                  <button type="button" className="su-icon" onClick={() => setSelectedReceipt(d)} title="View receipt" aria-label={`View receipt of ${d.donor_name}`}><Eye size={18} /></button>
+                )}
                 {d.status === 'pending' && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      type="button"
-                      className="p-btn p-btn-primary p-btn-sm"
-                      disabled={busyId === d.id}
-                      onClick={() => handleVerify(d)}
-                    >
-                      <CheckCircle2 size={14} /> Verify
-                    </button>
-                    <button
-                      type="button"
-                      className="p-btn p-btn-outline p-btn-sm"
-                      style={{ color: '#dc2626', borderColor: '#fca5a5' }}
-                      disabled={busyId === d.id}
-                      onClick={() => { setRejectModal(d); setRejectReason('') }}
-                    >
-                      <XCircle size={14} /> Reject
-                    </button>
-                  </div>
+                  <>
+                    <button type="button" className="su-act is-ok" disabled={busyId === d.id} onClick={() => handleVerify(d)}><CheckCircle2 size={16} /> Verify</button>
+                    <button type="button" className="su-icon is-bad" disabled={busyId === d.id} onClick={() => { setRejectModal(d); setRejectReason('') }} title="Reject" aria-label={`Reject ${d.donor_name}`}><XCircle size={18} /></button>
+                  </>
                 )}
               </div>
-            </div>
+            </article>
           ))
         )}
       </section>
@@ -507,7 +388,7 @@ export default function AdminDonations() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 
