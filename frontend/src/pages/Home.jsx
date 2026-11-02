@@ -1,36 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowRight, Clock, MapPin, Share2, Users, HeartHandshake, MessageSquare,
-  BookOpen, Music, Flame, HandCoins, ShieldCheck, ReceiptText, Smartphone,
-  Tent, Wallet, ClipboardCheck, Bell, Camera, Video, Newspaper, CalendarDays,
+  ArrowRight, MapPin, Users, HeartHandshake, MessageSquare,
+  BookOpen, Music, Flame, HandCoins, ShieldCheck, Tent,
 } from 'lucide-react'
 import { apiGet, getUser } from '../api.js'
 import { useAuthModal } from '../context/AuthModal.jsx'
-import { shareEventOnFacebook } from '../utils/share.js'
-import AddToCalendarButton from '../components/AddToCalendarButton.jsx'
 import { resolveImageUrl } from '../lib/media.js'
 import { useHomeMotion } from '../components/home/motion.js'
 import HomeFooter from '../components/home/HomeFooter.jsx'
-import { FacebookIcon, InstagramIcon, TikTokIcon, SOCIALS } from '../components/home/SocialIcons.jsx'
+import { SOCIALS } from '../components/home/SocialIcons.jsx'
 import '../styles/home.css'
 import '../styles/home-extra.css'
 import '../styles/home3.css'
+import '../styles/home4.css'
 
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function parseDate(d) {
   const [y, m, day] = String(d || '').slice(0, 10).split('-').map(Number)
   return y ? new Date(y, m - 1, day) : null
-}
-
-function countdown(d) {
-  const x = parseDate(d)
-  if (!x) return ''
-  const t = new Date(); t.setHours(0, 0, 0, 0)
-  const n = Math.round((x - t) / 864e5)
-  return n <= 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`
 }
 
 function dateParts(d) {
@@ -50,12 +42,6 @@ const GALLERY = [
 
 const KEY_FROM = 'kindled'
 
-const CHANNELS = [
-  { icon: FacebookIcon, name: 'Facebook', sub: 'Our official page', desc: 'Event posts, photo albums and weekly reminders.', tags: ['Events', 'Albums'], cta: 'Follow us', href: SOCIALS.facebook, tone: 'fb' },
-  { icon: FacebookIcon, name: 'Radical LED Calapan', sub: 'Youth leadership and campus movement', desc: 'Leadership trainings and campus outreach updates.', tags: ['Leadership', 'Campus'], cta: 'Visit page', href: SOCIALS.radical, tone: 'fb' },
-  { icon: InstagramIcon, name: 'Instagram', sub: '@lifegencalapan', desc: 'Photo highlights and stories from our nights together.', tags: ['Photos', 'Stories'], cta: 'Follow us', href: SOCIALS.instagram, tone: 'ig' },
-  { icon: TikTokIcon, name: 'TikTok', sub: '@life.generation7', desc: 'Short clips from worship, games and fellowship.', tags: ['Clips', 'Moments'], cta: 'Watch', href: SOCIALS.tiktok, tone: 'tt' },
-]
 const USES = [
   { icon: Flame, t: 'Youth nights', d: 'Worship, sound and venue.' },
   { icon: Tent, t: 'Camps', d: 'Retreats and leadership camps.' },
@@ -213,87 +199,53 @@ export default function Home() {
         ))}
       </ul>
 
-      {/* ===== GATHERINGS ===== */}
-      <section className="lg-section" id="gatherings">
-        <div className="lg-wrap lg-split">
-          <div className="lg-split-aside" data-reveal>
-            <span className="lg-eyebrow">Gatherings</span>
-            <h2 className="lg-h2">Come as you are</h2>
-            <p className="lg-lead">Meetings, youth nights and special events. Sign up so we can save you a spot.</p>
+      {/* ===== EVENTS ===== */}
+      <section className="lg-section lg-evs" id="gatherings" aria-labelledby="evs-h">
+        <div className="lg-wrap">
+          <header className="lg-evs-head" data-reveal>
+            <h2 id="evs-h">Events</h2>
+            <p>Youth nights, meetings and special gatherings throughout the year. Register so we can save you a spot.</p>
+          </header>
+          <div className="lg-evs-sub" data-reveal>
+            <h3>Upcoming events</h3>
+            <Link to="/events">See all events <ArrowRight size={16} aria-hidden="true" /></Link>
           </div>
-
-          <div>
-            <div className="lg-ag">
-              {upcoming.length === 0 ? (
-                <p className="lg-empty" data-reveal>
-                  {loaded
-                    ? 'No gatherings are posted right now. Follow our Facebook page to hear about the next one.'
-                    : 'Loading gatherings…'}
-                  {loaded && (
-                    <>
-                      {' '}
-                      <a href={SOCIALS.facebook} target="_blank" rel="noopener noreferrer">Open Facebook</a>
-                    </>
-                  )}
-                </p>
-              ) : (
-                <>
-                  <article className="lg-fe" data-reveal>
-                    <span className="lg-fe-bg" data-parallax="0.1" aria-hidden="true">{nextParts?.day}</span>
-                    <div className="lg-fe-top">
-                      <span className="lg-fe-tag"><Flame size={14} aria-hidden="true" /> Next gathering</span>
-                      <span className="lg-fe-count">{countdown(next.event_date)}</span>
+          {upcoming.length === 0 ? (
+            <p className="lg-empty" data-reveal>
+              {loaded ? 'No gatherings are posted right now. Follow our Facebook page to hear about the next one.' : 'Loading gatherings…'}
+              {loaded && <> <a href={SOCIALS.facebook} target="_blank" rel="noopener noreferrer">Open Facebook</a></>}
+            </p>
+          ) : (
+            <ul className="lg-evs-grid">
+              {upcoming.map((ev, i) => {
+                const d = parseDate(ev.event_date)
+                const photo = resolveImageUrl(ev.banner_image) || `/images/gallery-${(i % 5) + 1}.webp`
+                return (
+                  <li className="lg-evc" key={ev.id} data-reveal style={{ '--d': `${i * 0.08}s` }}>
+                    <Link to={`/events/${ev.id}`} className="lg-evc-top">
+                      <h4>{ev.title}</h4>
+                      <span className="lg-evc-when">
+                        <span className="lg-evc-day">{d.getDate()}</span>
+                        <span className="lg-evc-my"><b>{MONTH_SHORT[d.getMonth()]}</b><small>{DOW[d.getDay()]}{ev.event_time ? ` · ${ev.event_time}` : ''}</small></span>
+                      </span>
+                      {ev.location && <span className="lg-evc-loc"><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
+                    </Link>
+                    <Link to={`/events/${ev.id}`} className="lg-evc-img" tabIndex={-1} aria-hidden="true">
+                      <img src={photo} alt="" loading="lazy" decoding="async" draggable="false" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `/images/gallery-${(i % 5) + 1}.webp` }} />
+                    </Link>
+                    <div className="lg-evc-bar">
+                      {user ? (
+                        <Link to={`/events/${ev.id}`} className="lg-evc-a">Register</Link>
+                      ) : (
+                        <button type="button" className="lg-evc-a" onClick={openRegister}>Register</button>
+                      )}
+                      <Link to={`/events/${ev.id}`} className="lg-evc-a">More info</Link>
                     </div>
-                    <Link to={`/events/${next.id}`} className="lg-fe-title">{next.title}</Link>
-                    <ul className="lg-fe-meta">
-                      <li><CalendarDays size={16} aria-hidden="true" /> {nextParts?.dow}, {nextParts?.mon} {nextParts?.day}</li>
-                      {next.event_time && <li><Clock size={16} aria-hidden="true" /> {next.event_time}</li>}
-                      {next.location && <li><MapPin size={16} aria-hidden="true" /> {next.location}</li>}
-                    </ul>
-                    <div className="lg-fe-acts">
-                      <Link to={`/events/${next.id}`} className="lg-fe-go">View details <ArrowRight size={18} aria-hidden="true" /></Link>
-                      <AddToCalendarButton event={next} variant="icon" className="lg-ev-btn" />
-                      <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(next.id, next.title)} aria-label={`Share ${next.title} on Facebook`} title="Share on Facebook"><Share2 size={18} /></button>
-                    </div>
-                  </article>
-
-                  {upcoming.length > 1 && (
-                    <ol className="lg-tl">
-                      {upcoming.slice(1).map((ev, i) => {
-                        const p = dateParts(ev.event_date)
-                        return (
-                          <li className="lg-tli" key={ev.id} data-reveal style={{ '--d': `${i * 0.1}s` }}>
-                            <span className="lg-tli-dot" aria-hidden="true" />
-                            <time className="lg-tli-date" dateTime={String(ev.event_date).slice(0, 10)}><b>{p?.day}</b> {p?.mon} <i>{p?.dow}</i></time>
-                            <div className="lg-tli-card">
-                              <Link to={`/events/${ev.id}`} className="lg-tli-main">
-                                <strong>{ev.title}</strong>
-                                <span className="lg-tli-meta">
-                                  {ev.event_time && <span><Clock size={14} aria-hidden="true" /> {ev.event_time}</span>}
-                                  {ev.location && <span><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
-                                  <span className="lg-tli-in">{countdown(ev.event_date)}</span>
-                                </span>
-                              </Link>
-                              <div className="lg-tli-acts">
-                                <AddToCalendarButton event={ev} variant="icon" className="lg-ev-btn" />
-                                <button type="button" className="lg-ev-btn" onClick={() => shareEventOnFacebook(ev.id, ev.title)} aria-label={`Share ${ev.title} on Facebook`} title="Share on Facebook"><Share2 size={18} /></button>
-                                <Link to={`/events/${ev.id}`} className="lg-ev-btn lg-tli-go" aria-label={`Open ${ev.title}`}><ArrowRight size={18} /></Link>
-                              </div>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ol>
-                  )}
-                </>
-              )}
-            </div>
-            <div className="lg-more" data-reveal>
-              <Link to="/events" className="lg-btn lg-btn-outline">
-                See all events <ArrowRight size={18} />
-              </Link>
-            </div>
-          </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </section>
 
@@ -316,26 +268,17 @@ export default function Home() {
       </section>
 
       {/* ===== GALLERY ===== */}
-      <section className="lg-section lg-wall" id="moments">
+      <section className="lg-section lg-moments" id="moments" aria-labelledby="mom-h">
         <div className="lg-wrap">
-          <div className="lg-tiles-head" data-reveal>
-            <div>
-              <span className="lg-eyebrow">Our people</span>
-              <h2 className="lg-h2">Moments together</h2>
-            </div>
-            <p className="lg-lead" style={{ margin: 0 }}>A few snapshots from our gatherings.</p>
-          </div>
-          <div className="lg-gallery">
+          <header className="lg-moments-head" data-reveal>
+            <h2 id="mom-h">Moments together</h2>
+            <p>A few snapshots from our gatherings.</p>
+          </header>
+          <div className="lg-collage">
             {GALLERY.map((g, i) => (
-              <figure className={`lg-pic lg-pic-${i + 1}`} key={g.img} data-reveal style={{ '--d': `${i * 0.08}s` }}>
-                <div className="lg-pic-in" data-parallax={i % 2 ? '-0.03' : '0.04'}>
-                  <div className="lg-pic-frame">
-                    <span className="lg-pic-photo">
-                      <img src={`/images/${g.img}.webp`} alt={g.cap} width={g.w} height={g.h} loading="lazy" decoding="async" />
-                    </span>
-                  </div>
-                  <figcaption>{g.cap}</figcaption>
-                </div>
+              <figure className={`lg-cp lg-cp-${i + 1}`} key={g.img} data-reveal style={{ '--d': `${i * 0.07}s` }}>
+                <img src={`/images/${g.img}.webp`} alt={g.cap} width={g.w} height={g.h} loading="lazy" decoding="async" draggable="false" />
+                <figcaption>{g.cap}</figcaption>
               </figure>
             ))}
           </div>
@@ -354,36 +297,6 @@ export default function Home() {
             ))}
           </p>
           <span className="lg-note" data-reveal>young, rooted, and sent out.</span>
-        </div>
-      </section>
-
-      {/* ===== FOLLOW ALONG ===== */}
-      <section className="lg-section" id="updates">
-        <div className="lg-wrap">
-          <div className="lg-tiles-head" data-reveal>
-            <div>
-              <span className="lg-eyebrow">What is happening</span>
-              <h2 className="lg-h2">Follow along</h2>
-            </div>
-            <p className="lg-lead" style={{ margin: 0 }}>Photos, recaps and announcements from Life Generation.</p>
-          </div>
-          <div className="lg-fa" data-reveal style={{ '--d': '0.1s' }}>
-            {CHANNELS.map(({ icon: Icon, name, sub, desc, tags, cta, href, tone }, i) => (
-              <a className={`lg-fa-item is-${tone}`} key={name} href={href} target="_blank" rel="noopener noreferrer" style={{ '--i': i }}>
-                <span className="lg-fa-orbw" data-parallax={i % 2 ? '0.05' : '-0.04'} aria-hidden="true"><span className="lg-fa-orb"><Icon size={34} /></span></span>
-                <strong>{name}</strong>
-                <span className="lg-fa-sub">{sub}</span>
-                <span className="lg-fa-desc">{desc}</span>
-                <span className="lg-fa-tags">{tags.map((t) => <i key={t}>{t}</i>)}</span>
-                <span className="lg-fa-cta">{cta} <ArrowRight size={16} aria-hidden="true" /></span>
-              </a>
-            ))}
-          </div>
-          <ul className="lg-tips" data-reveal style={{ '--d': '0.15s' }}>
-            <li><Bell size={20} aria-hidden="true" /><span><b>Turn on notifications</b>We post schedules and changes there first.</span></li>
-            <li><Share2 size={20} aria-hidden="true" /><span><b>Share a post</b>Invite a friend to the next gathering.</span></li>
-            <li><MessageSquare size={20} aria-hidden="true" /><span><b>Send us a message</b>Questions are always welcome.</span></li>
-          </ul>
         </div>
       </section>
 

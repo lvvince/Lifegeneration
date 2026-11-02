@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { HandHeart, Heart, ImagePlus, MessageCircle, PenLine, Send, Sparkles, Trash2, X, Clock, EyeOff } from 'lucide-react'
+import { HandHeart, Heart, ImagePlus, MessageCircle, PenLine, Search, Send, Sparkles, Trash2, X, Clock, EyeOff } from 'lucide-react'
 import { apiGet, apiPost, apiRequest, API_URL, getUser } from '../api.js'
 import { ConfirmDialog, useToast } from '../components/portal/ui.jsx'
 import Garland from '../components/faith/Garland.jsx'
@@ -15,6 +15,18 @@ const photoUrl = (p) => (/^(https?:|data:|blob:)/.test(String(p)) ? p : p ? `${A
 const parse = (d) => new Date(String(d).replace(' ', 'T'))
 const when = (d) => parse(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 const MAX = 400
+const DRAFT = 'lgy_god_today_draft'
+const PROMPTS = [
+  'Name one small thing today that reminded you God is near.',
+  'Who did God use to encourage you this week?',
+  'What answered prayer are you thankful for right now?',
+  'Where did you feel peace today when you did not expect it?',
+  'What did you see, hear or read that pointed you to Jesus?',
+  'What is one way God provided for you recently?',
+  'Where did you notice His goodness in an ordinary moment?',
+]
+const draftGet = () => { try { return localStorage.getItem(DRAFT) || '' } catch { return '' } }
+const draftSet = (v) => { try { v ? localStorage.setItem(DRAFT, v) : localStorage.removeItem(DRAFT) } catch { /* private mode */ } }
 // stable pseudo-random tilt per note so the board doesn't reshuffle on every render
 const tilt = (id) => ((Number(id) * 37) % 70) / 10 - 3.5
 const tone = (id) => TONES[Number(id) % TONES.length]
@@ -29,6 +41,7 @@ export default function GodToday() {
   const [freshId, setFreshId] = useState(null)
   const [toDelete, setToDelete] = useState(null)
   const [err, setErr] = useState('')
+  const [q, setQ] = useState('')
 
   const load = useCallback(async (s = sort) => {
     try {
@@ -73,32 +86,53 @@ export default function GodToday() {
   }
 
   const bump = (id, n) => setPosts((l) => l.map((x) => (x.id === id ? { ...x, comments: (x.comments || 0) + n } : x)))
+  const prompt = PROMPTS[Math.floor(Date.now() / 864e5) % PROMPTS.length]
+  const shown = useMemo(() => {
+    const t = q.trim().toLowerCase()
+    if (!posts || !t) return posts
+    return posts.filter((p) => `${p.body} ${p.author_name}`.toLowerCase().includes(t))
+  }, [posts, q])
   const total = posts?.length || 0
+  const totalAmens = (posts || []).reduce((n, p) => n + (p.amens || 0), 0)
 
   return (
-    <main className="fh gt" id="main">
-      <header className="fh-hero gt-hero">
+    <div className="pw fh gt">
+      <header className="fh-hero">
         <Garland />
         <FaithTabs />
-        <div className="gt-hero-in">
-          <span className="fh-kicker">Take a moment…</span>
-          <h1 className="gt-q">Where have you <em>seen&nbsp;God</em> today?</h1>
-          <p className="fh-verse">Every good gift is from above. Write it down, so we can thank Him together.
-            <cite>James 1:17</cite></p>
-          <div className="fh-cta">
-            {user ? (
-              <button type="button" className="fh-btn is-primary" onClick={() => setCompose(true)}><PenLine size={17} aria-hidden="true" /> Write a note</button>
-            ) : (
-              <Link to="/login" className="fh-btn is-primary"><PenLine size={17} aria-hidden="true" /> Sign in to write</Link>
-            )}
-            <Link to="/prayer" className="fh-btn"><HandHeart size={17} aria-hidden="true" /> Go to Prayer Wall</Link>
+        <div className="fh-hero-grid">
+          <div className="fh-hero-main">
+            <span className="fh-kicker">Take a moment to remember</span>
+            <h1 className="fh-title gt-title">Where have you seen God today?</h1>
+            <p className="fh-verse">“Every good and perfect gift is from above.” <cite>James 1:17</cite></p>
+            <ul className="fh-stats" aria-label="Board summary">
+              <li><b>{total}</b> {total === 1 ? 'note' : 'notes'}</li>
+              <li><b>{totalAmens}</b> amens</li>
+            </ul>
+            <div className="fh-cta">
+              {user ? (
+                <button type="button" className="fh-btn is-primary" onClick={() => setCompose(true)}><PenLine size={17} aria-hidden="true" /> Write a note</button>
+              ) : (
+                <Link to="/login" className="fh-btn is-primary"><PenLine size={17} aria-hidden="true" /> Sign in to write</Link>
+              )}
+              <Link to="/prayer" className="fh-btn"><HandHeart size={17} aria-hidden="true" /> Prayer Wall</Link>
+            </div>
           </div>
+          <figure className="fh-vod gt-prompt">
+            <i className="fh-pin" aria-hidden="true" />
+            <figcaption><Sparkles size={14} aria-hidden="true" /> Today&apos;s prompt</figcaption>
+            <blockquote>{prompt}</blockquote>
+          </figure>
         </div>
       </header>
 
-      <div className="gt-bar">
-        <p className="gt-count" aria-live="polite"><b>{total}</b> {total === 1 ? 'note' : 'notes'} on the board</p>
-        <div className="fh-seg is-mini gt-sort" role="radiogroup" aria-label="Sort notes">
+      <div className="fh-tools">
+        <label className="fh-search">
+          <Search size={18} aria-hidden="true" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search notes or names" aria-label="Search notes" />
+          {q && <button type="button" onClick={() => setQ('')} aria-label="Clear search"><X size={16} /></button>}
+        </label>
+        <div className="fh-seg gt-sort" role="radiogroup" aria-label="Sort notes">
           <button type="button" role="radio" aria-checked={sort === 'recent'} className={sort === 'recent' ? 'is-on' : ''} onClick={() => setSort('recent')}><Clock size={15} aria-hidden="true" /> Recent</button>
           <button type="button" role="radio" aria-checked={sort === 'top'} className={sort === 'top' ? 'is-on' : ''} onClick={() => setSort('top')}><Heart size={15} aria-hidden="true" /> Most appreciated</button>
         </div>
@@ -118,9 +152,10 @@ export default function GodToday() {
             </div>
           </div>
         )}
-        {posts && posts.length > 0 && (
+        {shown && shown.length === 0 && posts?.length > 0 && <p className="gt-none">No notes match “{q}”.</p>}
+        {shown && shown.length > 0 && (
           <ul className="gt-wall">
-            {posts.map((p, i) => (
+            {shown.map((p, i) => (
               <li key={p.id} className={`gt-note t-${tone(p.id)}${p.image ? ' has-img' : ''}${freshId === p.id ? ' is-new' : ''}`} style={{ '--r': `${tilt(p.id)}deg`, '--i': Math.min(i, 12) }}>
                 <i className="fh-pin" aria-hidden="true" />
                 <button type="button" className="fh-open" onClick={() => setOpenId(p.id)} aria-label={`Open note by ${p.author_name}`} />
@@ -140,22 +175,22 @@ export default function GodToday() {
       </section>
 
       {current && createPortal(
-        <Reader post={current} user={user} onClose={() => setOpenId(null)} onAmen={() => amen(current)} onDelete={canDelete(current) ? () => setToDelete(current) : null} onBump={(n) => bump(current.id, n)} toast={toast} />,
+        <div className="pw pw-layer fh"><Reader post={current} user={user} onClose={() => setOpenId(null)} onAmen={() => amen(current)} onDelete={canDelete(current) ? () => setToDelete(current) : null} onBump={(n) => bump(current.id, n)} toast={toast} /></div>,
         document.body,
       )}
       {compose && createPortal(
-        <Composer onClose={() => setCompose(false)} toast={toast} onDone={async (id) => {
+        <div className="pw pw-layer fh"><Composer onClose={() => setCompose(false)} toast={toast} onDone={async (id) => {
           setCompose(false)
           setSort('recent')
           await load('recent')
           setFreshId(id)
           setTimeout(() => setFreshId(null), 2600)
-          window.scrollTo({ top: document.querySelector('.gt-board')?.offsetTop - 80 || 0, behavior: 'smooth' })
-        }} />,
+          window.scrollTo({ top: (document.querySelector('.gt-board')?.getBoundingClientRect().top || 0) + window.scrollY - 90, behavior: 'smooth' })
+        }} /></div>,
         document.body,
       )}
       {toDelete && <ConfirmDialog title="Take down this note?" message="It will be removed from the board for everyone." confirmLabel="Delete" danger onConfirm={remove} onCancel={() => setToDelete(null)} />}
-    </main>
+    </div>
   )
 }
 
@@ -229,13 +264,14 @@ function Reader({ post, user, onClose, onAmen, onDelete, onBump, toast }) {
 }
 
 function Composer({ onClose, onDone, toast }) {
-  const [body, setBody] = useState('')
+  const [body, setBody] = useState(draftGet)
   const [anon, setAnon] = useState(false)
   const [photo, setPhoto] = useState(null)
   const [preview, setPreview] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+  useEffect(() => draftSet(body), [body])
   useEffect(() => {
     const k = (e) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', k)
@@ -263,6 +299,7 @@ function Composer({ onClose, onDone, toast }) {
       fd.append('anonymous', anon ? '1' : '0')
       if (photo) fd.append('image', photo)
       const res = await apiRequest('/api/sightings/submit', { method: 'POST', body: fd })
+      draftSet('')
       toast(res.message || 'Pinned to the board.')
       onDone(res.id)
     } catch (e2) {
@@ -277,8 +314,8 @@ function Composer({ onClose, onDone, toast }) {
         <i className="fh-pin" aria-hidden="true" />
         <button type="button" className="pw-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
         <small className="pw-kicker"><Sparkles size={13} aria-hidden="true" /> Where have you seen God today?</small>
-        <textarea className="gt-ta" value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX} rows={5} placeholder="I saw God when…" aria-label="Your note" autoFocus />
-        <span className="gt-left" aria-live="polite">{MAX - body.length} left</span>
+        <textarea className="gt-ta" value={body} onChange={(e) => setBody(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(e) }} maxLength={MAX} rows={5} placeholder="I saw God when…" aria-label="Your note" autoFocus />
+        <span className="gt-left" aria-live="polite">{body.length}/{MAX}</span>
         <div className="pw-attach">
           {preview ? (
             <div className="pw-attach-prev"><img src={preview} alt="Selected photo preview" /><button type="button" onClick={() => { setPhoto(null); setPreview('') }} aria-label="Remove photo"><X size={15} /></button></div>

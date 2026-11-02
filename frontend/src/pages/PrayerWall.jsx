@@ -435,7 +435,11 @@ export default function PrayerWall() {
 
 /* Composer: a blank note you write on. Colour follows the category. */
 function Composer({ initial, onClose, onDone, toast }) {
-  const [form, setForm] = useState({ title: initial?.title || '', body: initial?.body || '', visibility: 'public', anonymous: false, category: 'personal' })
+  const [form, setForm] = useState(() => {
+    let d = {}
+    try { d = JSON.parse(localStorage.getItem('lgy_prayer_draft') || '{}') } catch { d = {} }
+    return { title: initial?.title || d.title || '', body: initial?.body || d.body || '', visibility: 'public', anonymous: false, category: d.category || 'personal' }
+  })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -450,6 +454,9 @@ function Composer({ initial, onClose, onDone, toast }) {
     setPhoto(f)
     setPreview(URL.createObjectURL(f))
   }
+  useEffect(() => {
+    try { (form.title || form.body) ? localStorage.setItem('lgy_prayer_draft', JSON.stringify({ title: form.title, body: form.body, category: form.category })) : localStorage.removeItem('lgy_prayer_draft') } catch { /* private mode */ }
+  }, [form.title, form.body, form.category])
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   async function submit(e) {
@@ -467,6 +474,7 @@ function Composer({ initial, onClose, onDone, toast }) {
       fd.append('is_anonymous', form.anonymous ? '1' : '0')
       if (photo) fd.append('image', photo)
       const res = await apiRequest('/api/prayer/submit', { method: 'POST', body: fd })
+      try { localStorage.removeItem('lgy_prayer_draft') } catch { /* ignore */ }
       toast(res.message || 'Your prayer is on the wall.')
       onDone(res.id)
     } catch (e2) {

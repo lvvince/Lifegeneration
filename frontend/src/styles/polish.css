@@ -1,0 +1,12 @@
+/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+:root *{-webkit-tap-highlight-color:transparent}
+:root body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+:root input,:root textarea,:root select,:root [contenteditable="true"],:root [data-selectable],:root .allow-select{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root img,:root svg,:root a{-webkit-user-drag:none;user-drag:none}
+:root img{pointer-events:auto}
+:root ::selection{background:rgba(242,78,0,.2);color:inherit}
+:root input::selection,:root textarea::selection{background:rgba(242,78,0,.25)}
+:root button,:root a,:root [role=button],:root summary{-webkit-user-select:none;user-select:none}
+:root :focus:not(:focus-visible){outline:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:root body{overflow-x:clip}
