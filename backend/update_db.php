@@ -40,7 +40,15 @@ try {
     ]);
     echo "✓ Connected successfully!\n\n";
 } catch (Exception $e) {
-    die("Database connection failed: " . $e->getMessage() . "\nCheck DB credentials in backend/.env\n");
+    $altPort = ($port == 3306) ? 3307 : 3306;
+    try {
+        $pdo = new PDO("mysql:host={$host};port={$altPort};dbname={$db};charset=utf8mb4", $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ]);
+        echo "✓ Connected successfully via port {$altPort}!\n\n";
+    } catch (Exception $e2) {
+        die("Database connection failed: " . $e->getMessage() . "\nCheck DB credentials in backend/.env\n");
+    }
 }
 
 // 0. Auto-initialize full database if 'users' or 'members' table is missing

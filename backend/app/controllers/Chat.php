@@ -132,6 +132,11 @@ class Chat extends Controller
             $this->db->raw("ALTER TABLE chat_sessions ADD COLUMN event_id VARCHAR(255) NULL AFTER notes");
         }
 
+        if ($this->db->raw("SHOW TABLES LIKE 'chat_presence'")->fetch(PDO::FETCH_NUM)
+            && !$this->db->raw("SHOW COLUMNS FROM chat_presence LIKE 'last_seen'")->fetch(PDO::FETCH_NUM)) {
+            $this->db->raw("ALTER TABLE chat_presence ADD COLUMN last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        }
+
         $count = (int) $this->db->raw("SELECT COUNT(*) FROM chat_channels")->fetchColumn();
         if ($count === 0) {
             $seed = [

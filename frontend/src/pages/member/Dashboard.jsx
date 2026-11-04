@@ -204,7 +204,7 @@ function DigitalPassModal({ memberId, name, email, avatarUrl, tier, role, onClos
                 justifyContent: 'center',
                 gap: 7,
                 whiteSpace: 'nowrap',
-                                transition: 'transform 0.15s ease'
+                transition: 'transform 0.15s ease'
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}

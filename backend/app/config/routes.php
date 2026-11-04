@@ -116,4 +116,8 @@ $router->get('/api/matcher/config',   'Matcher::config');
 $router->post('/api/matcher/suggest', 'Matcher::suggest');
 
 // Fellowship Chat routes
+// 11. Spiritual Gifts and Community Matcher
+$router->get('/api/matcher/config',   'Matcher::config');
+$router->post('/api/matcher/suggest', 'Matcher::suggest');
+
 require __DIR__ . '/routes_chat.php';

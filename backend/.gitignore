@@ -29,3 +29,7 @@ Thumbs.db
 # Uploads
 public/uploads/receipts/*
 !public/uploads/receipts/.gitkeep
+public/uploads/chat/*
+!public/uploads/chat/.gitkeep
+public/uploads/prayers/*
+!public/uploads/prayers/.gitkeep
