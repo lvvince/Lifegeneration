@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Download, FileText } from 'lucide-react'
+import { Download, FileText, Printer } from 'lucide-react'
 import { apiGet } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import { downloadCsv } from '../../lib/csv.js'
 import { PageHeader, Stats, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
 import Insights from '../../components/portal/Insights.jsx'
+import PrintReportModal from '../../components/PrintReportModal.jsx'
 
 function Bar({ value, max }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
@@ -32,6 +33,7 @@ export default function AdminReports() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showPrint, setShowPrint] = useState(false)
 
   useEffect(() => {
     apiGet('/api/reports/summary')
@@ -73,7 +75,21 @@ export default function AdminReports() {
 
   return (
     <>
-      <PageHeader title="Reports" desc="Member numbers, event attendance and forecasts. Export any table as CSV." />
+      {/* ── Page header with Print button ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+        <PageHeader title="Reports" desc="Member numbers, event attendance and forecasts. Export any table as CSV or print a full PDF report." />
+        <button
+          type="button"
+          className="p-btn p-btn-primary"
+          onClick={() => setShowPrint(true)}
+          disabled={loading}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0, alignSelf: 'flex-end' }}
+        >
+          <Printer size={16} />
+          Print / PDF
+        </button>
+      </div>
+
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
       <Stats
@@ -169,6 +185,9 @@ export default function AdminReports() {
           </div>
         </>
       )}
+
+      {/* ── Print modal (admin + officer only — rendered only on this page) ── */}
+      {showPrint && <PrintReportModal onClose={() => setShowPrint(false)} />}
     </>
   )
 }

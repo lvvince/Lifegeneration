@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle, Navigation, Copy, Check, ExternalLink } from 'lucide-react'
-import { FacebookIcon } from '../../components/Footer.jsx'
-import { shareEventOnFacebook } from '../../utils/share.js'
+import ShareEventModal from '../../components/ShareEventModal.jsx'
 import { resolveImageUrl } from '../../lib/format.js'
 import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
 import { getGoogleMapEmbedUrl, getGoogleMapsDirectionsUrl, isOnlineOnly } from '../../utils/maps.js'
@@ -16,6 +15,7 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true)
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showShare, setShowShare] = useState(false)
 
   const user = getUser()
 
@@ -347,10 +347,10 @@ export default function EventDetail() {
             {/* Google Calendar Button */}
             <AddToCalendarButton event={event} label="Add to Google Calendar" />
 
-            {/* Facebook Share Button */}
+            {/* Share button */}
             <button
               type="button"
-              onClick={() => shareEventOnFacebook(event.id, event.title)}
+              onClick={() => setShowShare(true)}
               style={{
                 background: '#1877F2',
                 color: '#fff',
@@ -369,11 +369,16 @@ export default function EventDetail() {
               onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <FacebookIcon size={16} color="#fff" /> Share on Facebook
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+              Share on Facebook
             </button>
           </div>
         </div>
       </div>
+
+      {showShare && event && (
+        <ShareEventModal event={event} onClose={() => setShowShare(false)} />
+      )}
     </div>
   )
 }

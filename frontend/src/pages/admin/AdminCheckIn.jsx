@@ -183,9 +183,12 @@ export default function AdminCheckIn() {
           await html5QrCode.start(
             { facingMode: 'environment' },
             {
-              fps: 10,
-              qrbox: { width: 240, height: 240 },
-              aspectRatio: 1.0,
+              fps: 15,
+              qrbox: (viewfinderWidth, viewfinderHeight) => {
+                const minEdge = Math.min(viewfinderWidth, viewfinderHeight)
+                const size = Math.floor(minEdge * 0.72)
+                return { width: size, height: size }
+              },
             },
             (decodedText) => {
               if (active) handleScan(decodedText)
@@ -255,10 +258,37 @@ export default function AdminCheckIn() {
   return (
     <>
       <style>{`
-        #qr-reader { border: none !important; background: #000 !important; border-radius: 20px; overflow: hidden; width: 100%; }
-        #qr-reader video { border-radius: 20px; object-fit: cover; max-height: 320px; }
-        #qr-reader img[alt="Info icon"] { display: none !important; }
-        #qr-reader__scan_region { border-radius: 16px; }
+        #qr-reader {
+          border: none !important;
+          background: #000 !important;
+          border-radius: 20px;
+          overflow: hidden;
+          width: 100% !important;
+          max-width: 100% !important;
+          position: relative;
+        }
+        #qr-reader video {
+          border-radius: 20px;
+          width: 100% !important;
+          height: auto !important;
+          max-height: 380px !important;
+          object-fit: cover !important;
+          display: block !important;
+        }
+        #qr-reader__scan_region {
+          border-radius: 16px;
+          overflow: hidden;
+        }
+        #qr-reader__scan_region video {
+          width: 100% !important;
+          max-height: 380px !important;
+          object-fit: cover !important;
+        }
+        #qr-reader img[alt="Info icon"],
+        #qr-reader__status_span,
+        #qr-reader__dashboard_section_csr {
+          display: none !important;
+        }
       `}</style>
       <header className="su-head ck-head">
         <div>

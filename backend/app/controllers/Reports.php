@@ -17,7 +17,7 @@ class Reports extends Controller
 
     public function summary()
     {
-        require_admin_user();
+        require_staff_user(); // admin + officer can access reports summary
 
         $m = $this->db->raw(
             "SELECT COUNT(*) AS total,

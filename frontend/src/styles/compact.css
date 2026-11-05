@@ -35,9 +35,9 @@
 :root .portal.px .ck-ring{width:68px;height:68px}
 :root .portal.px .ck-ring-row{gap:14px;margin-top:2px}
 :root .portal.px .ck-ring-text strong{font-size:1.15rem}
-:root .portal.px .ck-scan{min-height:0;aspect-ratio:16/10;max-height:230px}
+:root .portal.px .ck-scan{min-height:220px}
 :root .portal.px .ck-idle{padding:14px;gap:4px}
 :root .portal.px .ck-manual{margin-bottom:2px}
 @media(max-width:900px){:root .portal.px .ck-grid{grid-template-columns:1fr}
-:root .portal.px .ck-scan{max-height:200px}
+:root .portal.px .ck-scan{min-height:200px}
 }
