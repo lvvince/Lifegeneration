@@ -3,7 +3,7 @@ import {
   Network, Plus, Pencil, Trash2,
   Image as ImageIcon, UploadCloud, X,
   Users, Calendar, MapPin, MessageCircle,
-  Inbox, Check, X as XIcon, Clock, ExternalLink
+  Inbox, Check, X as XIcon, Clock
 } from 'lucide-react'
 import { API_URL, apiGet, apiPost } from '../../api.js'
 import { resolveImageUrl, fmtDate } from '../../lib/format.js'
@@ -17,7 +17,6 @@ const blank = {
   leader_name: '',
   schedule: '',
   location: '',
-  gc_link: '',
   description: '',
   image: '',
 }
@@ -119,7 +118,6 @@ function GroupForm({ initial, onClose, onSaved }) {
         leader_name:  f.leader_name.trim(),
         schedule:     f.schedule.trim(),
         location:     f.location.trim(),
-        gc_link:      (f.gc_link || '').trim(),
         description:  f.description.trim(),
         image:        (f.image || '').trim(),
       }
@@ -163,20 +161,6 @@ function GroupForm({ initial, onClose, onSaved }) {
               <input id="dg-loc" className="p-input" value={f.location} onChange={set('location')} placeholder="e.g. Room A / Zoom" />
             </Field>
           </div>
-
-          <Field
-            label="Official Group Chat Link (GC)"
-            htmlFor="dg-gc"
-            hint="Unlocked only for approved members (e.g. Messenger GC https://m.me/j/... or Telegram)"
-          >
-            <input
-              id="dg-gc"
-              className="p-input"
-              value={f.gc_link || ''}
-              onChange={set('gc_link')}
-              placeholder="https://m.me/j/... or Telegram invite"
-            />
-          </Field>
 
           <Field label="Description" htmlFor="dg-desc">
             <textarea id="dg-desc" className="p-input" value={f.description} onChange={set('description')} rows={3} placeholder="What is this group about?" />
@@ -454,7 +438,7 @@ export default function AdminDGroups() {
     <>
       <PageHeader
         title="D-Groups"
-        desc="Small discipleship groups that members request to join. Accepting requests unlocks the official Group Chat (GC)."
+        desc="Small discipleship groups that members request to join."
         actions={
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -535,15 +519,6 @@ export default function AdminDGroups() {
                         <span className="dg-meta-chip"><MapPin size={11} /> {g.location}</span>
                       )}
                       <span className="dg-meta-chip"><Users size={11} /> {g.member_count} member{g.member_count !== 1 ? 's' : ''}</span>
-                      {g.gc_link ? (
-                        <span className="dg-meta-chip" style={{ color: '#0284c7', background: '#f0f9ff' }}>
-                          <MessageCircle size={11} /> GC Configured
-                        </span>
-                      ) : (
-                        <span className="dg-meta-chip" style={{ color: '#94a3b8' }}>
-                          No GC Link
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -558,7 +533,6 @@ export default function AdminDGroups() {
                         leader_name:  g.leader_name || '',
                         schedule:     g.schedule || '',
                         location:     g.location || '',
-                        gc_link:      g.gc_link || '',
                         description:  g.description || '',
                         image:        g.image || '',
                       })}

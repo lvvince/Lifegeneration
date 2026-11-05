@@ -398,12 +398,10 @@ function send_dgroup_accepted_email($applicantData)
 
     $subject = "🎉 Request Approved: Welcome to {$rawGroupName} — Life Generation";
 
-    $gcButton = '';
-    if ($gcLink !== '') {
-        $gcButton = '<div style="text-align: center; margin: 26px 0;">'
-                  . '<a href="' . $gcLink . '" target="_blank" style="display: inline-block; background: #0084ff; color: #ffffff; font-weight: 700; font-size: 15px; padding: 14px 28px; text-decoration: none; border-radius: 10px;">'
-                  . '💬 Join Official Group Chat (GC)</a></div>';
-    }
+    $chatUrl  = mail_url('/chat');
+    $gcButton = '<div style="text-align: center; margin: 26px 0;">'
+              . '<a href="' . $chatUrl . '" target="_blank" style="display: inline-block; background: #0084ff; color: #ffffff; font-weight: 700; font-size: 15px; padding: 14px 28px; text-decoration: none; border-radius: 10px;">'
+              . '💬 Open Fellowship Chat</a></div>';
 
     $meta = mail_meta_box([
         '👤 Leader'   => $applicantData['leader_name'] ?? 'D-Group Leader',

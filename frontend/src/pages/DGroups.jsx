@@ -5,7 +5,7 @@ import { resolveImageUrl } from '../lib/format.js'
 import {
   Users, Calendar, MapPin, CheckCircle,
   Network, UserPlus, ChevronRight, MessageCircle,
-  Lock, Clock, ExternalLink, AlertCircle, Sparkles
+  Lock, Clock, AlertCircle, Sparkles
 } from 'lucide-react'
 import '../styles/pages.css'
 
@@ -76,7 +76,7 @@ export default function DGroups() {
     )
 
   const handleLeave = () => {
-    if (!window.confirm('Are you sure you want to leave your D-Group? You will lose access to the official Group Chat (GC).')) {
+    if (!window.confirm('Are you sure you want to leave your D-Group?')) {
       return
     }
     runAction(
@@ -275,26 +275,17 @@ export default function DGroups() {
                           Sign In to Join <ChevronRight size={15} />
                         </Link>
                         <div className="dg-gc-lock-hint">
-                          <Lock size={12} /> GC link unlocked upon leader approval
+                          <Lock size={12} /> Group chat unlocked upon leader approval
                         </div>
                       </div>
                     ) : isMember ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {g.gc_link ? (
-                          <a
-                            href={g.gc_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="dg-btn-gc"
-                          >
-                            <MessageCircle size={17} /> Open Official Group Chat <ExternalLink size={14} />
-                          </a>
-                        ) : (
-                          <div className="dg-gc-empty-notice">
-                            <MessageCircle size={13} style={{ display: 'inline', marginRight: 4 }} />
-                            You're approved! Leader will post the GC link soon.
-                          </div>
-                        )}
+                        <Link
+                          to="/chat"
+                          className="dg-btn-gc"
+                        >
+                          <MessageCircle size={17} /> Open Fellowship Chat <ChevronRight size={14} />
+                        </Link>
                         <button
                           type="button"
                           className="dg-btn-leave-text"
@@ -308,7 +299,7 @@ export default function DGroups() {
                       <div className="dg-pending-box">
                         <div className="dg-pending-text">
                           <Clock size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-                          <span><b>Request Sent:</b> Waiting for leader approval. GC link unlocks as soon as you're accepted.</span>
+                          <span><b>Request Sent:</b> Waiting for leader approval. Group chat unlocks as soon as you're accepted.</span>
                         </div>
                         <button
                           type="button"
@@ -331,7 +322,7 @@ export default function DGroups() {
                           {processingId === g.id ? 'Submitting Request…' : 'Request to Join'}
                         </button>
                         <div className="dg-gc-lock-hint">
-                          <Lock size={12} /> Group Chat (GC) unlocked upon leader approval
+                          <Lock size={12} /> Group chat unlocked upon leader approval
                         </div>
                       </div>
                     )}

@@ -115,9 +115,7 @@ $router->get('/api/bible/search',      'Devotionals::lookup');
 $router->get('/api/matcher/config',   'Matcher::config');
 $router->post('/api/matcher/suggest', 'Matcher::suggest');
 
-// Fellowship Chat routes
-// 11. Spiritual Gifts and Community Matcher
-$router->get('/api/matcher/config',   'Matcher::config');
-$router->post('/api/matcher/suggest', 'Matcher::suggest');
+// 11. Social Share (OG-tag redirect pages for Facebook etc.)
+$router->get('/share/event/{id}', 'Share::event');
 
 require __DIR__ . '/routes_chat.php';

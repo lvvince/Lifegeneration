@@ -29,7 +29,7 @@ export const FAQS = [
     q: 'How do I join a D-Group?',
     a: [
       'Open D-Groups, pick a group that fits your schedule and location, then tap Request to Join. Your request goes to the group leader.',
-      'Once the leader approves you, the group chat link unlocks on the same card, so you can say hi before the first meeting.',
+      'Once the leader approves you, you can join the group chat inside the system to say hi before the first meeting.',
     ],
     go: { to: '/dgroups', label: 'Browse D-Groups' },
   },
