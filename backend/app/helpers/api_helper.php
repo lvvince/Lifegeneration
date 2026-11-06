@@ -2,6 +2,18 @@
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
+ * Debug log: isinusulat diretso sa backend/runtime/auth-trace.txt
+ * (hindi umaasa sa PHP error_log settings). Burahin ang laman ng file kapag ayos na.
+ */
+function auth_log($message) {
+    @file_put_contents(
+        dirname(__DIR__, 2) . '/runtime/auth-trace.txt',
+        date('Y-m-d H:i:s') . ' ' . $message . PHP_EOL,
+        FILE_APPEND
+    );
+}
+
+/**
  * Send JSON response and terminate
  */
 function api_response($data, $status = 200) {
@@ -110,59 +122,133 @@ function get_bearer_token() {
 }
 
 /**
- * Get authenticated user from Bearer token (lgy_db schema)
- * Walang hiwalay na admins table: ang admin ay user na role = 'admin'.
+ * Normalize a role string (lowercase, trimmed) so 'Admin ' still equals 'admin'
+ */
+function normalize_role($role) {
+    return strtolower(trim((string) $role));
+}
+
+/**
+ * Get authenticated user from Bearer token.
+ * May hiwalay na `admins` table: admin token -> admins table (by id, then email/username),
+ * fallback sa users table (users.role = 'admin' para sa admin na nasa users).
  */
 function get_auth_user() {
     $token = get_bearer_token();
     if (!$token) {
+        auth_log('get_auth_user: walang bearer token (hindi umaabot ang Authorization header)');
         return null;
     }
 
     $payload = jwt_verify($token, get_jwt_secret());
     if (!$payload || empty($payload['sub'])) {
+        auth_log('get_auth_user: invalid/expired token o walang sub');
         return null;
     }
 
     $lava = lava_instance();
+    $claimRole = normalize_role($payload['role'] ?? '');
+    $isAdminToken = ($claimRole === 'admin') || !empty($payload['is_admin']);
 
-    // 1. Check if admin token
-    if (!empty($payload['role']) && $payload['role'] === 'admin') {
+    auth_log('get_auth_user: sub=' . $payload['sub']
+        . ' role_claim=' . ($payload['role'] ?? 'none')
+        . ' is_admin=' . (!empty($payload['is_admin']) ? 'yes' : 'no')
+        . ' email=' . ($payload['email'] ?? 'none'));
+
+    $adminSelect = "SELECT id, 'LG-ADMIN' AS member_id, username, full_name, email, role, is_active,
+                           NULL AS member_record_id, NULL AS dgroup_id, NULL AS ministry_id,
+                           NULL AS age, NULL AS address, avatar
+                    FROM admins";
+
+    // 1. Admin token -> admins table
+    if ($isAdminToken) {
         try {
+            // 1a. by id (sub)
             $aStmt = $lava->db->raw(
-                "SELECT id, 'LG-ADMIN' AS member_id, username, full_name, email, role, is_active,
-                        NULL AS member_record_id, NULL AS dgroup_id, NULL AS ministry_id, NULL AS age, NULL AS address, avatar
-                 FROM admins
-                 WHERE id = ? AND is_active = 1
-                 LIMIT 1",
+                $adminSelect . " WHERE id = ? AND is_active = 1 LIMIT 1",
                 [$payload['sub']]
             );
             $admin = $aStmt->fetch(PDO::FETCH_ASSOC);
+
+            // 1b. fallback: by email/username from the token (kapag nagbanggaan ang id)
+            if (!$admin && (!empty($payload['email']) || !empty($payload['username']))) {
+                $aStmt = $lava->db->raw(
+                    $adminSelect . " WHERE (email = ? OR username = ?) AND is_active = 1 LIMIT 1",
+                    [$payload['email'] ?? '', $payload['username'] ?? '']
+                );
+                $admin = $aStmt->fetch(PDO::FETCH_ASSOC);
+            }
+
             if ($admin) {
+                $admin['role'] = 'admin';
+                auth_log('get_auth_user: admins row found id=' . $admin['id']);
                 return $admin;
             }
-        } catch (Exception $e) {}
+
+            auth_log('get_auth_user: admin token pero walang active admins row para sa sub='
+                . $payload['sub'] . ' email=' . ($payload['email'] ?? 'none'));
+
+            // 1c. fallback: admin na nasa users table (users.role = 'admin') gamit ang email
+            if (!empty($payload['email'])) {
+                $uStmt = $lava->db->raw(
+                    "SELECT u.id,
+                            COALESCE(m.member_id, m.member_code) AS member_id,
+                            u.username,
+                            COALESCE(m.full_name, u.username) AS full_name,
+                            u.email, u.role, u.is_active,
+                            m.id AS member_record_id, m.age, m.address, m.avatar,
+                            m.dgroup_id, m.ministry_id
+                     FROM users u
+                     LEFT JOIN members m ON m.user_id = u.id
+                     WHERE u.email = ? AND u.role = 'admin' AND u.is_active = 1
+                     LIMIT 1",
+                    [$payload['email']]
+                );
+                $uAdmin = $uStmt->fetch(PDO::FETCH_ASSOC);
+                if ($uAdmin) {
+                    $uAdmin['role'] = 'admin';
+                    auth_log('get_auth_user: admin found sa users table id=' . $uAdmin['id']);
+                    return $uAdmin;
+                }
+            }
+        } catch (Throwable $e) {
+            auth_log('get_auth_user: admins lookup failed: ' . $e->getMessage());
+        }
     }
 
-    // 2. Regular user
-    $stmt = $lava->db->raw(
-        "SELECT u.id,
-                COALESCE(m.member_id, m.member_code) AS member_id,
-                u.username,
-                COALESCE(m.full_name, u.username) AS full_name,
-                u.email, u.role, u.is_active,
-                m.id AS member_record_id, m.age, m.address, m.avatar,
-                m.dgroup_id,
-                m.ministry_id
-         FROM users u
-         LEFT JOIN members m ON m.user_id = u.id
-         WHERE u.id = ? AND u.is_active = 1
-         LIMIT 1",
-        [$payload['sub']]
-    );
+    // 2. Regular user (users table)
+    try {
+        $stmt = $lava->db->raw(
+            "SELECT u.id,
+                    COALESCE(m.member_id, m.member_code) AS member_id,
+                    u.username,
+                    COALESCE(m.full_name, u.username) AS full_name,
+                    u.email, u.role, u.is_active,
+                    m.id AS member_record_id, m.age, m.address, m.avatar,
+                    m.dgroup_id,
+                    m.ministry_id
+             FROM users u
+             LEFT JOIN members m ON m.user_id = u.id
+             WHERE u.id = ? AND u.is_active = 1
+             LIMIT 1",
+            [$payload['sub']]
+        );
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $user ?: null;
+        if (!$user) {
+            auth_log('get_auth_user: walang active users row para sa sub=' . $payload['sub']
+                . ' role_claim=' . ($payload['role'] ?? 'none'));
+            return null;
+        }
+
+        $user['role'] = normalize_role($user['role'] ?? 'user');
+        auth_log('get_auth_user: users row found id=' . $user['id']
+            . ' username=' . ($user['username'] ?? '?') . ' role=' . $user['role']);
+        return $user;
+    } catch (Throwable $e) {
+        auth_log('get_auth_user: users lookup failed: ' . $e->getMessage());
+        return null;
+    }
 }
 
 /**
@@ -182,7 +268,10 @@ function require_auth_user() {
 function require_admin_user() {
     $user = require_auth_user();
 
-    if ($user['role'] !== 'admin') {
+    if (normalize_role($user['role'] ?? '') !== 'admin') {
+        auth_log('require_admin_user: DENIED id=' . ($user['id'] ?? '?')
+            . ' username=' . ($user['username'] ?? '?')
+            . ' role=' . ($user['role'] ?? '?'));
         api_response([
             'error' => 'Forbidden. Administrator privileges required.'
         ], 403);
@@ -196,7 +285,8 @@ if (!function_exists('require_staff')) {
     {
         $user = require_auth_user();
 
-        if (!in_array($user['role'], ['admin', 'officer', 'secretary'], true)) {
+        if (!in_array(normalize_role($user['role'] ?? ''), ['admin', 'officer', 'secretary'], true)) {
+            auth_log('require_staff: DENIED id=' . ($user['id'] ?? '?') . ' role=' . ($user['role'] ?? '?'));
             api_response([
                 'error' => 'Forbidden. Staff privileges required.'
             ], 403);
@@ -213,7 +303,10 @@ if (!function_exists('require_staff')) {
  */
 function require_staff_user() {
     $user = require_auth_user();
-    if (!in_array($user['role'], ['admin', 'officer'], true)) {
+    if (!in_array(normalize_role($user['role'] ?? ''), ['admin', 'officer'], true)) {
+        auth_log('require_staff_user: DENIED id=' . ($user['id'] ?? '?')
+            . ' username=' . ($user['username'] ?? '?')
+            . ' role=' . ($user['role'] ?? '?'));
         api_response(['error' => 'Forbidden. Officer or administrator privileges required.'], 403);
     }
     return $user;

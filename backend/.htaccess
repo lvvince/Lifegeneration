@@ -1,30 +1,26 @@
 AddDefaultCharset UTF-8
+Options -Indexes
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /LIFEGEN/backend/
 
-    # --------------------------------------------------
-    # Allow index.php
-    <Files "index.php">
-        Require all granted
-    </Files>
+    # Pass the Authorization header (Bearer token) through to PHP
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # --------------------------------------------------
-    # Deny access to sensitive directories
-    RedirectMatch 403 ^/LIFEGEN/backend/(app|scheme|console|runtime)/
+    # Serve real files and folders directly (React assets, uploads, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-    # --------------------------------------------------
-    # Deny access to sensitive files
-    <FilesMatch "\.(env|json|xml|log|md|lock|git|ini|bak|sql)$">
-        Require all denied
-    </FilesMatch>
+    # /api/... goes to LavaLust
+    RewriteRule ^api(/.*)?$ index.php/$0 [L,QSA]
 
-    # --------------------------------------------------
-    # Prevent directory browsing
-    Options -Indexes
-
-    # --------------------------------------------------
-    # Route all requests through public/index.php
-    RewriteCond %{REQUEST_URI} !/public/
-    RewriteRule ^(.*)$ public/$1 [L,QSA]
+    # Everything else falls back to the React app (fixes refresh on /events, /login, etc.)
+    RewriteRule ^ index.html [L]
 </IfModule>
+
+# Block sensitive file types
+<FilesMatch "\.(env|log|md|lock|ini|bak|sql)$">
+    Require all denied
+</FilesMatch>

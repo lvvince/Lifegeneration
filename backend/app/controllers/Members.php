@@ -27,8 +27,8 @@ class Members extends Controller
     {
         $user = require_auth_user();
         if (!in_array($user['role'], ['admin', 'officer'], true)) {
-            api_response(['error' => 'Forbidden. Admin or officer privileges required.'], 403);
-        }
+            api_response(['error' => 'Forbidden. Admin or officer privileges required. [got id=' . ($user['id'] ?? '?') . ' username=' . ($user['username'] ?? '?') . ' role=' . ($user['role'] ?? '?') . ']'], 403);
+                    }
 
         $stmt = $this->db->raw(
             "SELECT m.*, u.username, u.email, u.role, u.is_active AS user_active,

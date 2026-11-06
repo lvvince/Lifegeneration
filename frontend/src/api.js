@@ -1,6 +1,11 @@
 // API Client for Life Generation
+// Production (Render): same origin as the backend, so no base URL needed
+// Local dev (Laragon): points to the LavaLust public folder
 export const API_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost/LIFEGEN/backend/public'
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD
+    ? ''
+    : 'http://localhost/Lifegeneration/backend/public')
 
 // Decode HTML entities (e.g. &#039; -> ') so PHP error messages read normally
 function decodeEntities(s) {

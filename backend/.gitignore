@@ -1,19 +1,23 @@
 # macOS
 .DS_Store
+Thumbs.db
 
 # Environment
 .env
 !.env.example
 
-# Dependencies
+# PHP dependencies (installed during the Docker build)
 vendor/
 app/vendor/
-composer.lock
+
+# Frontend
+node_modules/
+dist/
 
 # Cache & Logs
-runtime/*
-!runtime/.htaccess
-!runtime/index.html
+backend/runtime/*
+!backend/runtime/.htaccess
+!backend/runtime/index.html
 *.log
 *.cache
 
@@ -22,14 +26,12 @@ runtime/*
 .vscode/
 *.sublime-*
 
-# OS
-Thumbs.db
-
-
 # Uploads
-public/uploads/receipts/*
-!public/uploads/receipts/.gitkeep
-public/uploads/chat/*
-!public/uploads/chat/.gitkeep
-public/uploads/prayers/*
-!public/uploads/prayers/.gitkeep
+backend/public/uploads/receipts/*
+!backend/public/uploads/receipts/.gitkeep
+backend/public/uploads/chat/*
+!backend/public/uploads/chat/.gitkeep
+backend/public/uploads/prayers/*
+!backend/public/uploads/prayers/.gitkeep
+
+runtime/*.txt
