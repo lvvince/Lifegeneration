@@ -110,4 +110,5 @@ to{transform:scaleY(1)}
 :root .lg-give-go{width:auto!important;flex:0 0 auto;min-height:50px;padding:0 24px;gap:10px}
 :root .lg-give-note{display:inline-flex;align-items:center;gap:6px;color:#177a54;font-size:.84rem;font-weight:700}
 :root .lg-give-policy{color:#6f6558;border-color:rgba(60,40,20,.12)}
-@media(min-width:900px){:root .lg-give-grid{grid-template-columns:1fr 1.05fr}
+
+@media(min-width:900px){:root .lg-give-grid{grid-template-columns:1fr 1.05fr}}

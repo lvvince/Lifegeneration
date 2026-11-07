@@ -1,19 +1,21 @@
 /* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
 :root .lg-home .lg-evs,:root .lg-home .lg-moments{background:#fff;color:#141414}
 :root .lg-evs{padding-block:clamp(56px,9vw,104px) clamp(40px,7vw,80px)}
-:root .lg-evs-head h2,:root .lg-moments-head h2{margin:0;font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:clamp(2.6rem,9vw,4.2rem);font-weight:800;line-height:1;letter-spacing:-.04em;color:#141414}
-:root .lg-evs-head p,:root .lg-moments-head p{max-width:52ch;margin:14px 0 0;color:#4b4741;font-size:clamp(1rem,2.6vw,1.12rem);line-height:1.6}
-:root .lg-evs-sub{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:clamp(30px,5vw,48px) 0 16px}
+:root .lg-evs-head h2,:root .lg-moments-head h2{margin:0;font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:clamp(2.4rem,9vw,4.2rem);font-weight:800;line-height:1;letter-spacing:-.04em;color:#141414;overflow-wrap:break-word}
+:root .lg-evs-head p,:root .lg-moments-head p{max-width:min(100%,52ch);margin:14px 0 0;color:#4b4741;font-size:clamp(1rem,2.6vw,1.12rem);line-height:1.6}
+:root .lg-evs-sub{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin:clamp(30px,5vw,48px) 0 16px}
 :root .lg-evs-sub h3{margin:0;font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:clamp(1.3rem,4vw,1.6rem);font-weight:700;letter-spacing:-.02em}
 :root .lg-evs-sub a{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#141414;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid transparent;transition:border-color .25s,gap .3s}
 :root .lg-evs-sub a:hover{gap:10px;border-color:#f24e00}
-:root .lg-evs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:16px;margin:0;padding:0;list-style:none}
+:root .lg-evs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:clamp(12px,2vw,20px);margin:0;padding:0;list-style:none}
 :root .lg-evc{display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid #e4dfd6;border-radius:16px;background:#fff;transition:transform .45s cubic-bezier(.22,1,.36,1),box-shadow .45s,border-color .3s}
-@media(hover:hover){:root .lg-evc:hover{transform:translateY(-4px);border-color:#cfc7b9;box-shadow:0 22px 34px -24px rgba(20,14,6,.45)}
+@media(hover:hover){
+:root .lg-evc:hover{transform:translateY(-4px);border-color:#cfc7b9;box-shadow:0 22px 34px -24px rgba(20,14,6,.45)}
 :root .lg-evc:hover .lg-evc-img img{transform:scale(1.05)}
 }
 :root .lg-evc-top{display:grid;gap:12px;padding:20px 20px 16px;color:inherit;text-decoration:none}
-:root .lg-evc-top h4{margin:0;min-height:3.9em;font-size:1.05rem;font-weight:600;line-height:1.3;letter-spacing:-.005em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+/* FIX: added standard line-clamp (clears the yellow warning) */
+:root .lg-evc-top h4{margin:0;min-height:3.9em;font-size:1.05rem;font-weight:600;line-height:1.3;letter-spacing:-.005em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 :root .lg-evc-when{display:flex;align-items:center;gap:12px}
 :root .lg-evc-day{font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:clamp(3.2rem,5vw,3.9rem);font-weight:700;line-height:.9;letter-spacing:-.05em}
 :root .lg-evc-my{display:grid;gap:2px;min-width:0}
@@ -31,19 +33,32 @@
 :root .lg-evc .lg-evc-a:active{background:#c93f00}
 :root .lg-evc .lg-evc-a:focus-visible{outline:2px solid #ff8a47;outline-offset:-4px}
 :root .lg-evs .lg-empty{margin:0;padding:26px 0;color:#4b4741}
+/* phones: single column cards, taller image, no forced title height */
+@media(max-width:479px){
+:root .lg-evs-grid{grid-template-columns:minmax(0,1fr)}
+:root .lg-evc-top h4{min-height:0}
+:root .lg-evc-img{flex:none;min-height:180px}
+}
+
 :root .lg-moments{padding-block:clamp(40px,7vw,80px) clamp(56px,9vw,110px)}
 :root .lg-collage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:clamp(26px,5vw,48px)}
 :root .lg-cp{position:relative;margin:0;overflow:hidden;border-radius:14px;background:#ece6da}
-:root .lg-cp img{display:block;width:100%;height:100%;min-height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.22,1,.36,1)}
+/* FIX: image fills its frame absolutely so the frame never depends on image height */
+:root .lg-cp img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.22,1,.36,1)}
 :root .lg-cp figcaption{position:absolute;inset:auto 0 0;padding:34px 14px 12px;background:linear-gradient(0deg,rgba(10,8,5,.7),transparent);color:#fff;font-size:13px;font-weight:600;line-height:1.3;opacity:0;transform:translateY(6px);transition:opacity .35s,transform .45s cubic-bezier(.22,1,.36,1);pointer-events:none}
-@media(hover:hover){:root .lg-cp:hover img{transform:scale(1.05)}
+@media(hover:hover){
+:root .lg-cp:hover img{transform:scale(1.05)}
 :root .lg-cp:hover figcaption{opacity:1;transform:none}
 }
+/* touch screens have no hover: keep captions visible */
+@media(hover:none){:root .lg-cp figcaption{opacity:1;transform:none;padding-top:28px}}
 :root .lg-cp-1{grid-column:1/-1;aspect-ratio:16/10}
 :root .lg-cp-3{grid-row:span 2}
 :root .lg-cp-2,:root .lg-cp-4{aspect-ratio:4/3}
 :root .lg-cp-5{grid-column:1/-1;aspect-ratio:16/10}
-@media(min-width:900px){:root .lg-collage{grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:clamp(32px,4.1vw,56px);gap:clamp(12px,1.6vw,20px)}
+@media(max-width:479px){:root .lg-collage{gap:8px}}
+@media(min-width:900px){
+:root .lg-collage{grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:clamp(32px,4.1vw,56px);gap:clamp(12px,1.6vw,20px)}
 :root .lg-cp{aspect-ratio:auto!important;border-radius:12px}
 :root .lg-cp-3{grid-column:1/4;grid-row:2/9}
 :root .lg-cp-1{grid-column:4/9;grid-row:1/7}
@@ -51,17 +66,27 @@
 :root .lg-cp-4{grid-column:4/8;grid-row:7/13}
 :root .lg-cp-5{grid-column:8/13;grid-row:9/14}
 }
+
 :root .lg-ft{background:#fff;color:#141414;border-top:1px solid #ece6da}
 :root .lg-ft-grid{display:grid;grid-template-columns:1fr;gap:clamp(30px,5vw,44px);padding-block:clamp(44px,7vw,72px) clamp(36px,6vw,56px)}
-@media(min-width:620px){:root .lg-ft-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-:root .lg-ft-brand{grid-column:1/-1}
+/* phones: link columns sit two across; brand + contact full width */
+@media(min-width:360px) and (max-width:619px){
+:root .lg-ft-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 16px}
+:root .lg-ft-brand,:root .lg-ft-contact{grid-column:1/-1}
 }
-@media(min-width:1000px){:root .lg-ft-grid{grid-template-columns:1.3fr repeat(3,minmax(0,.8fr)) 1.2fr;gap:36px}
-:root .lg-ft-brand{grid-column:auto}
+/* tablets / small laptops: 3 columns */
+@media(min-width:620px) and (max-width:1179px){
+:root .lg-ft-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:32px 24px}
+:root .lg-ft-brand,:root .lg-ft-contact{grid-column:1/-1}
+}
+/* FIX: 5 columns start at 1180 (was 1000, too tight) */
+@media(min-width:1180px){
+:root .lg-ft-grid{grid-template-columns:1.3fr repeat(3,minmax(0,.8fr)) 1.2fr;gap:36px}
+:root .lg-ft-brand,:root .lg-ft-contact{grid-column:auto}
 }
 :root .lg-ft-logo{display:inline-flex;align-items:center;gap:10px;color:#141414;font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:-.03em;text-decoration:none}
 :root .lg-ft-logo b{color:#f24e00}
-:root .lg-ft-brand p{max-width:34ch;margin:12px 0 22px;color:#5a554c;font-size:14.5px;line-height:1.6}
+:root .lg-ft-brand p{max-width:min(100%,34ch);margin:12px 0 22px;color:#5a554c;font-size:14.5px;line-height:1.6}
 :root .lg-ft h3{margin:0 0 14px;font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:-.01em}
 :root .lg-ft-brand h3{margin-bottom:12px}
 :root .lg-ft-social{display:flex;flex-wrap:wrap;gap:10px;margin:0;padding:0;list-style:none}
@@ -70,16 +95,20 @@
 :root .lg-ft-social a:active{transform:scale(.92)}
 :root .lg-ft-social a:focus-visible{outline:2px solid #f24e00;outline-offset:3px}
 :root .lg-ft-col ul{display:grid;gap:2px;margin:0;padding:0;list-style:none}
-:root .lg-ft-col a,:root .lg-ft-col button,:root .lg-ft-col span{color:#3a362f;font-size:14.5px;font-weight:500;line-height:1.4;text-decoration:none}
+:root .lg-ft-col a,:root .lg-ft-col button,:root .lg-ft-col span{color:#3a362f;font-size:14.5px;font-weight:500;line-height:1.4;text-decoration:none;text-align:left;overflow-wrap:anywhere}
 :root .lg-ft-col li>a,:root .lg-ft-col li>button{display:inline-flex;align-items:center;min-height:36px;padding:0;margin:0;border:0;background:none;font-family:inherit;cursor:pointer;transition:color .2s,transform .3s}
+@media(pointer:coarse){:root .lg-ft-col li>a,:root .lg-ft-col li>button{min-height:44px}}
 :root .lg-ft-col li>a:hover,:root .lg-ft-col li>button:hover{color:#f24e00;transform:translateX(3px)}
 :root .lg-ft-col a:focus-visible,:root .lg-ft-col button:focus-visible{outline:2px solid #f24e00;outline-offset:3px;border-radius:4px}
-:root .lg-ft-contact li{display:flex;align-items:center;gap:12px;min-height:40px}
-:root .lg-ft-contact svg{flex:none;color:#141414}
+:root .lg-ft-contact li{display:flex;align-items:flex-start;gap:12px;min-height:40px;padding-block:6px}
+:root .lg-ft-contact svg{flex:none;margin-top:3px;color:#141414}
 :root .lg-ft-bar{background:#141414;color:#fff}
-:root .lg-ft-bar .lg-wrap{display:flex;align-items:center;min-height:64px;padding-block:14px calc(14px + env(safe-area-inset-bottom));font-size:14px}
-@media(prefers-reduced-motion:reduce){:root .lg-evc,:root .lg-evc-img img,:root .lg-cp img,:root .lg-cp figcaption{transition:none}
-}:root .lg-ft .lg-ft-col{display:block;position:static;margin:0;padding:0;border:0;background:none;min-height:0}
+:root .lg-ft-bar .lg-wrap{display:flex;align-items:center;min-height:64px;padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));font-size:14px;line-height:1.4}
+@media(prefers-reduced-motion:reduce){
+:root .lg-evc,:root .lg-evc-img img,:root .lg-cp img,:root .lg-cp figcaption{transition:none}
+}
+
+:root .lg-ft .lg-ft-col{display:block;position:static;margin:0;padding:0;border:0;background:none;min-height:0}
 :root .lg-ft .lg-ft-col::before,:root .lg-ft .lg-ft-col::after,:root .lg-ft .lg-ft-col ul::after,:root .lg-ft .lg-ft-col li::after{content:none;display:none}
 :root .lg-evc,:root .lg-cp,:root .lg-ft-social a,:root .lg-ft-logo img,:root .lg-evc-img,:root .lg-evc .lg-evc-a{border-radius:0}
 :root .lg-collage .lg-cp{border-radius:0}
