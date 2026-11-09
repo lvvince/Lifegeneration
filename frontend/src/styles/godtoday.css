@@ -1,7 +1,5 @@
-/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
+﻿/* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
 :root .fh{--t-sage:#cfe0c8;--t-cream:#fff6e0;--t-blue:#cfdff0;--t-butter:#fbeeb0;--t-blush:#f6d9cf;--paint:#fffdf6;--dash:#a9c1dd}
-:root .fh .fh-seg.gt-sort button{flex:1}
-}
 :root .gt-board{padding-top:clamp(28px,4vw,48px)}
 :root .gt-wall{align-items:start;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:38px 26px;margin:0;padding:0;list-style:none}
 :root .gt-note{--n:var(--t-cream);position:relative;display:flex;flex-direction:column;min-height:170px;margin:0;padding:30px 16px 12px;border-radius:2px 2px 14px 2px;background:var(--n) linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%,rgba(120,80,20,.06));color:#2a2418;rotate:var(--r,0deg);transform-origin:50% 0;box-shadow:0 1px 1px rgba(0,0,0,.12),0 16px 20px -12px rgba(40,25,5,.7);animation:fh-drop .8s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0)*55ms + 60ms);transition:rotate .45s var(--spring),scale .4s var(--spring),box-shadow .35s}
