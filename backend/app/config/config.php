@@ -88,7 +88,11 @@ $config['date_default_timezone'] = 'Asia/Manila';
 | WARNING: You MUST set this value!
 |
 */
-$config['base_url'] = 'http://localhost/LIFEGEN/backend/public/';
+$config['base_url'] = getenv('BASE_URL') ?: (
+    isset($_SERVER['HTTP_HOST'])
+        ? ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . (str_contains($_SERVER['REQUEST_URI'] ?? '', 'Lifegeneration') ? '/Lifegeneration/backend/public/' : '/LIFEGEN/backend/public/'))
+        : 'http://localhost/LIFEGEN/backend/public/'
+);
 /*
 |--------------------------------------------------------------------------
 | Static File Proxies
