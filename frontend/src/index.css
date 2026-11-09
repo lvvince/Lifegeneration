@@ -1321,7 +1321,6 @@ html[data-theme="dark"] .min-vol-pending-badge {
 
 /* Card body */
 .dg-card-body { padding: 18px 20px 20px; display: flex; flex-direction: column; flex: 1; gap: 10px; }
-.dg-card-top {}
 .dg-card-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 3px; }
 .dg-card-leader { font-size: 0.82rem; color: var(--orange); font-weight: 600; }
 .dg-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.55; flex: 1; }
