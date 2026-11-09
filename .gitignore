@@ -1,32 +1,43 @@
-# Environment files
+# ---------- Environment files ----------
 .env
 .env.*
 !.env.example
+# Uncomment ONLY if frontend/.env.production holds non-secret values (e.g. the API URL)
+# !frontend/.env.production
 
-# OS generated files
+# ---------- OS generated files ----------
 .DS_Store
 Thumbs.db
 ehthumbs.db
 
-# Editor directories
+# ---------- Editor directories ----------
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 
-# Build / Dependencies fallback
-node_modules/
-vendor/
-dist/
+# ---------- Dependencies and build output (anchored to real locations) ----------
+/node_modules/
+/frontend/node_modules/
+/frontend/dist/
+/backend/vendor/
+/backend/app/vendor/
 
-# Database dumps
+# ---------- Database dumps ----------
 *.sql
 *.sqlite
-
 # Allow official schema dump
 !database.sql
+!**/database.sql
 
+# ---------- User uploads (keep folders via .gitkeep) ----------
+/backend/public/uploads/receipts/*
+!/backend/public/uploads/receipts/.gitkeep
+/backend/public/uploads/chat/*
+!/backend/public/uploads/chat/.gitkeep
+/backend/public/uploads/prayers/*
+!/backend/public/uploads/prayers/.gitkeep
 
-# User uploads (keep directory structures via .gitkeep)
-backend/public/uploads/receipts/*
-!backend/public/uploads/receipts/.gitkeep
+# ---------- Runtime ----------
+/backend/runtime/*
+!/backend/runtime/.gitkeep
