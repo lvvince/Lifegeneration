@@ -10,6 +10,8 @@ import '../styles/pages.css'
 import '../styles/give.css'
 
 const MAX_RECEIPT = 15 * 1024 * 1024
+const MAX_DONATION = 1000000
+const PRESET_AMOUNTS = [100, 250, 500, 1000, 2500, 5000]
 const METHODS = [
   { id: 'gcash', label: 'GCash', title: 'GCash number' },
   { id: 'maya', label: 'Maya', title: 'Maya number' },
@@ -114,10 +116,41 @@ export default function Give() {
 
   const effectiveAmount = parseFloat(amount)
 
+  const handleAmountChange = (e) => {
+    const val = e.target.value
+    if (val === '') {
+      setAmount('')
+      setError('')
+      return
+    }
+    const num = parseFloat(val)
+    if (isNaN(num)) {
+      setAmount('')
+      return
+    }
+    if (num > MAX_DONATION) {
+      setAmount(String(MAX_DONATION))
+      setError(`Maximum donation limit is ${fmtCurrency(MAX_DONATION)}.`)
+      return
+    }
+    if (num < 0) {
+      setAmount('0')
+      return
+    }
+    setError('')
+    setAmount(val)
+  }
+
+  const handlePreset = (val) => {
+    setAmount(String(val))
+    setError('')
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (!effectiveAmount || effectiveAmount <= 0) return setError('Please enter the gift you wish to give.')
+    if (effectiveAmount > MAX_DONATION) return setError(`Maximum donation limit is ${fmtCurrency(MAX_DONATION)}.`)
     if (!isAnonymous && !donorName.trim()) return setError('Please add your name, or choose to give anonymously.')
 
     setSubmitting(true)
@@ -175,7 +208,7 @@ export default function Give() {
   }
   const acct = accounts[method]
   const methodMeta = METHODS.find((m) => m.id === method)
-  const validAmount = effectiveAmount > 0
+  const validAmount = effectiveAmount > 0 && effectiveAmount <= MAX_DONATION
 
   return (
     <div className="gv">
@@ -323,11 +356,38 @@ export default function Give() {
             <fieldset className="gv-step">
               <legend><i>2</i> Your gift, from the heart</legend>
               <p className="gv-heart">Give as you are able and as you feel led. Only you and God know what this gift means.</p>
-              <label className="gv-field gv-money">
+
+              <div className="gv-presets" role="group" aria-label="Suggested amounts">
+                {PRESET_AMOUNTS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`gv-preset-btn${parseFloat(amount) === p ? ' is-active' : ''}`}
+                    onClick={() => handlePreset(p)}
+                  >
+                    ₱{p.toLocaleString('en-PH')}
+                  </button>
+                ))}
+              </div>
+
+              <label className="gv-field gv-money" style={{ marginTop: '10px' }}>
                 <span>Amount you wish to give</span>
                 <div>
                   <b aria-hidden="true">₱</b>
-                  <input type="number" inputMode="decimal" min="1" step="any" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="1"
+                    max={MAX_DONATION}
+                    step="any"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={handleAmountChange}
+                  />
+                </div>
+                <div className="gv-limit-hint">
+                  <span>Minimum ₱1.00</span>
+                  <span>Maximum ₱1,000,000.00</span>
                 </div>
               </label>
             </fieldset>

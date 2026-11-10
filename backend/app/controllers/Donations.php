@@ -78,6 +78,9 @@ class Donations extends Controller
         if ($amount <= 0) {
             api_response(['error' => 'A valid donation amount is required (greater than 0).'], 422);
         }
+        if ($amount > 1000000) {
+            api_response(['error' => 'Donation amount cannot exceed ₱1,000,000.00.'], 422);
+        }
 
         $campaignId = !empty($input['campaign_id']) ? (int) $input['campaign_id'] : null;
         $category = trim($input['category'] ?? 'offering');
