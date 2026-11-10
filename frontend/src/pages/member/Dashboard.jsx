@@ -285,6 +285,20 @@ export default function Dashboard() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file type before sending
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please use JPG, PNG, WEBP, or GIF.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 25MB.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setUploading(true)
     setSaveMsg('')
     try {
@@ -292,17 +306,30 @@ export default function Dashboard() {
       const fd = new FormData()
       fd.append('avatar', file)
 
+      // Use apiRequest so we get proper token handling and safe JSON parsing
+      // (avoids crash when server returns HTML error page instead of JSON)
       const res = await fetch(`${API_URL}/api/members/upload-avatar`, {
         method: 'POST',
         headers: {
+          Accept: 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: fd
       })
 
-      const data = await res.json()
+      // Safe parse: read as text first, then try JSON — never crash on HTML
+      const text = await res.text()
+      let data
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        // Server returned HTML (PHP exception page) — show readable message
+        const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
+        throw new Error(stripped || `Server error (${res.status}). Please try again.`)
+      }
+
       if (!res.ok || data.error) {
-        throw new Error(data.error || 'Failed to upload photo')
+        throw new Error(data.error || `Upload failed (${res.status}).`)
       }
 
       setSaveMsg('Profile picture updated successfully!')

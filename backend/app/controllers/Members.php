@@ -254,12 +254,27 @@ class Members extends Controller
     {
         $user = require_auth_user();
 
-        if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
-            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        // Check upload error code — give descriptive messages per PHP error constant
+        if (!isset($_FILES['avatar'])) {
+            api_response(['error' => 'No file received. Please try again.'], 400);
         }
 
-        $file = $_FILES['avatar'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $uploadErr = $_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($uploadErr !== UPLOAD_ERR_OK) {
+            $errMap = [
+                UPLOAD_ERR_INI_SIZE   => 'File exceeds server upload limit (php.ini upload_max_filesize).',
+                UPLOAD_ERR_FORM_SIZE  => 'File exceeds the form MAX_FILE_SIZE.',
+                UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded.',
+                UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temp folder on server.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION  => 'A PHP extension blocked the upload.',
+            ];
+            api_response(['error' => $errMap[$uploadErr] ?? 'Upload error occurred (code ' . $uploadErr . ').'], 400);
+        }
+
+        $file    = $_FILES['avatar'];
+        $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
         $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
         if (!in_array($ext, $allowed)) {
@@ -270,11 +285,18 @@ class Members extends Controller
             api_response(['error' => 'File size exceeds 25MB limit.'], 422);
         }
 
-        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'avatar.jpg');
+        // --- Try ImgBB cloud upload first ---
+        $cloudUrl = null;
+        try {
+            $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'avatar.jpg');
+        } catch (\Throwable $e) {
+            // ImgBB failed — will fall through to local storage below
+        }
+
         if ($cloudUrl) {
             $relativeUrl = $cloudUrl;
-            $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
-            $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+            try { $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
+            try { $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
             try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
             api_response([
                 'success' => true,
@@ -283,23 +305,23 @@ class Members extends Controller
             ]);
         }
 
-        $filename = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
-
+        // --- Fallback: save locally ---
+        $filename  = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
         $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
         $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'avatars' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0755, true);
         }
 
         if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-            api_response(['error' => 'Failed to save avatar image.'], 500);
+            api_response(['error' => 'Could not upload avatar. ImgBB is unreachable and local save failed. Please try again.'], 500);
         }
 
         $relativeUrl = 'uploads/avatars/' . $filename;
 
-        $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
-        $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+        try { $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
+        try { $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
         try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
 
         api_response([
@@ -313,8 +335,8 @@ class Members extends Controller
     {
         $user = require_auth_user();
 
-        $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]);
-        $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ? OR username = ? OR email = ?", [$user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+        try { $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]); } catch (\Throwable $e) {}
+        try { $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ? OR username = ? OR email = ?", [$user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
         try { $this->db->raw("UPDATE users SET avatar = NULL WHERE id = ?", [$user['id']]); } catch (\Throwable $e) {}
 
         api_response([
