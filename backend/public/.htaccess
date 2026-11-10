@@ -20,6 +20,10 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(api(/.*)?)$ index.php/$1 [L,QSA]
 
+    # Missing uploads return 404 directly instead of falling back to index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^uploads/ - [R=404,L]
+
     # Everything else that isn't a real file goes to the React app
     # (fixes refresh on /events, /login, etc.)
     RewriteCond %{REQUEST_FILENAME} !-d

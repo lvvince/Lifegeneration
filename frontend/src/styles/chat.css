@@ -105,6 +105,9 @@
 .fc-img { display: block; max-width: min(100%, 360px); margin-top: 6px; padding: 0; border: 1px solid var(--cl-edge, rgba(60,40,20,.13)); border-radius: var(--rd-m, 16px); background: var(--c-tint); overflow: hidden; }
 .fc-img img { display: block; width: 100%; max-height: 300px; object-fit: cover; transition: transform 0.4s var(--c-ease); }
 @media (hover: hover) { .fc-img:hover img { transform: scale(1.03); } }
+.fc-img .fc-img-fallback { display: none; }
+.fc-img.is-broken { padding: 10px 14px; background: var(--c-tint); color: var(--c-ink3); font-size: 13px; font-weight: 700; cursor: default; }
+.fc-img.is-broken .fc-img-fallback { display: inline-flex; align-items: center; gap: 6px; }
 .fc-pinned { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--c-ord); font-size: 11px; font-weight: 800; }
 
 /* reactions + hover toolbar */

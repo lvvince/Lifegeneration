@@ -45,9 +45,14 @@ const roleName = (r) => ({ admin: 'Admin', officer: 'Officer', secretary: 'Secre
 const LEVEL = { active: 'Active', casual: 'Casual', quiet: 'Quiet' }
 
 function Avatar({ name, src, size = 36, online }) {
+  const [broken, setBroken] = useState(false)
   return (
     <span className="fc-av" style={{ '--s': `${size}px` }} aria-hidden="true">
-      {src ? <img src={resolveImageUrl(src)} alt="" draggable="false" loading="lazy" /> : <b>{initials(name)}</b>}
+      {src && !broken ? (
+        <img src={resolveImageUrl(src)} alt="" draggable="false" loading="lazy" onError={() => setBroken(true)} />
+      ) : (
+        <b>{initials(name)}</b>
+      )}
       {online !== undefined && <i className={online ? 'is-on' : ''} />}
     </span>
   )
@@ -679,7 +684,12 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
         </header>
         <h3>{m.title}</h3>
         {m.body && <p><RichText text={m.body} mentions={m.mentions} /></p>}
-        {m.image && <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}><img src={resolveImageUrl(m.image)} alt="Announcement photo" loading="lazy" decoding="async" /></button>}
+        {m.image && (
+          <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}>
+            <img src={resolveImageUrl(m.image)} alt="Announcement photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
+            <span className="fc-img-fallback">📷 Photo unavailable</span>
+          </button>
+        )}
         <footer onClick={(e) => e.stopPropagation()}>
           <button type="button" className="fc-by" onClick={onProfile}>{m.name}{rn && <small>{rn}</small>}</button>
           <time>{hhmm(m.created_at)}</time>
@@ -715,7 +725,12 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
           <button type="button" className="fc-quote" onClick={(e) => { e.stopPropagation(); onJump(m.reply.id) }}><Reply size={12} aria-hidden="true" /><b>{m.reply.name}</b><span>{m.reply.snippet}</span></button>
         )}
         {m.body && <p className="fc-text"><RichText text={m.body} mentions={m.mentions} />{m.edited && <small className="fc-edited"> (edited)</small>}</p>}
-        {m.image && <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}><img src={resolveImageUrl(m.image)} alt={`Photo from ${m.name}`} loading="lazy" decoding="async" /></button>}
+        {m.image && (
+          <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}>
+            <img src={resolveImageUrl(m.image)} alt={`Photo from ${m.name}`} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
+            <span className="fc-img-fallback">📷 Photo unavailable</span>
+          </button>
+        )}
         {m.pinned && <span className="fc-pinned"><Pin size={12} aria-hidden="true" /> Pinned</span>}
         {rx}
       </div>

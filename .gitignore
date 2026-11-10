@@ -30,13 +30,9 @@ ehthumbs.db
 !database.sql
 !**/database.sql
 
-# ---------- User uploads (keep folders via .gitkeep) ----------
+# ---------- User uploads (receipts remain private) ----------
 /backend/public/uploads/receipts/*
 !/backend/public/uploads/receipts/.gitkeep
-/backend/public/uploads/chat/*
-!/backend/public/uploads/chat/.gitkeep
-/backend/public/uploads/prayers/*
-!/backend/public/uploads/prayers/.gitkeep
 
 # ---------- Runtime ----------
 /backend/runtime/*
