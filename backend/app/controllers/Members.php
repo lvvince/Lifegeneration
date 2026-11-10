@@ -274,6 +274,8 @@ class Members extends Controller
         if ($cloudUrl) {
             $relativeUrl = $cloudUrl;
             $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
+            $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+            try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
             api_response([
                 'success' => true,
                 'message' => 'Profile picture updated successfully!',
@@ -297,6 +299,8 @@ class Members extends Controller
         $relativeUrl = 'uploads/avatars/' . $filename;
 
         $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
+        $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+        try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
 
         api_response([
             'success' => true,
@@ -310,6 +314,8 @@ class Members extends Controller
         $user = require_auth_user();
 
         $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]);
+        $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ? OR username = ? OR email = ?", [$user['id'], $user['username'] ?? '', $user['email'] ?? '']);
+        try { $this->db->raw("UPDATE users SET avatar = NULL WHERE id = ?", [$user['id']]); } catch (\Throwable $e) {}
 
         api_response([
             'success' => true,

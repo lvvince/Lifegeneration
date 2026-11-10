@@ -171,7 +171,7 @@ export default function GodToday() {
               <li key={p.id} className={`gt-note t-${tone(p.id)}${p.image ? ' has-img' : ''}${freshId === p.id ? ' is-new' : ''}`} style={{ '--r': `${tilt(p.id)}deg`, '--i': Math.min(i, 12) }}>
                 <i className="fh-pin" aria-hidden="true" />
                 <button type="button" className="fh-open" onClick={() => setOpenId(p.id)} aria-label={`Open note by ${p.author_name}`} />
-                {p.image && <img className="gt-photo" src={photoUrl(p.image)} alt="" loading="lazy" decoding="async" />}
+                {p.image && <img className="gt-photo" src={photoUrl(p.image)} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
                 <p className="gt-text">{p.body}</p>
                 <footer>
                   <span className="fh-by"><b>{p.author_name}</b><time dateTime={p.created_at}>{when(p.created_at)}</time></span>
@@ -248,7 +248,7 @@ function Reader({ post, user, onClose, onAmen, onDelete, onBump, toast }) {
       <article className={`fh-big gt-read t-${tone(post.id)}`} role="dialog" aria-modal="true" aria-label={`Note by ${post.author_name}`}>
         <i className="fh-pin" aria-hidden="true" />
         <button type="button" className="pw-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
-        {post.image && <img className="gt-photo is-big" src={photoUrl(post.image)} alt="Photo shared with this note" decoding="async" />}
+        {post.image && <img className="gt-photo is-big" src={photoUrl(post.image)} alt="Photo shared with this note" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
         <p className="gt-big-text">{post.body}</p>
         <footer><span>{post.author_name}</span><time dateTime={post.created_at}>{when(post.created_at)}</time></footer>
         <div className="fh-pray-row">

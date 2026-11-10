@@ -26,10 +26,21 @@ function Logo({ className }) {
 }
 
 function Avatar({ user, name }) {
+  const [broken, setBroken] = useState(false)
   const src = user?.avatar || user?.member?.avatar
   return (
     <span className="sk-avatar" aria-hidden="true">
-      {src ? <img src={resolveImageUrl(src)} alt="" draggable="false" /> : initials(name)}
+      {src && !broken ? (
+        <img
+          src={resolveImageUrl(src)}
+          alt=""
+          draggable="false"
+          referrerPolicy="no-referrer"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        initials(name)
+      )}
     </span>
   )
 }

@@ -398,7 +398,16 @@ export default function PrayerWall() {
               {answered(current) && <span className="fh-ans"><Sparkles size={12} aria-hidden="true" /> Answered</span>}
             </div>
             <h2>{current.title}</h2>
-            {current.image && <img className="pw-big-img" src={photoUrl(current.image)} alt={`Photo shared with: ${current.title}`} decoding="async" />}
+            {current.image && (
+              <img
+                className="pw-big-img"
+                src={photoUrl(current.image)}
+                alt={`Photo shared with: ${current.title}`}
+                decoding="async"
+                referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
+            )}
             <p>{current.body}</p>
             {answered(current) && current.testimony && (
               <div className="fh-testi-big"><b><Sparkles size={14} aria-hidden="true" /> How God answered</b><p>{current.testimony}</p></div>
