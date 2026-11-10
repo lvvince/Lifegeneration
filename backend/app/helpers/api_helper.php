@@ -337,34 +337,48 @@ function generate_member_code($lava) {
  * @return string|null Permanent image URL on success, null on failure or if not configured
  */
 function upload_to_imgbb($tmpPath, $mimeType = 'image/jpeg', $origName = 'image.jpg') {
-    $imgbbKey = getenv('IMGBB_API_KEY') ?: ($_ENV['IMGBB_API_KEY'] ?? null);
-    if (!$imgbbKey || !function_exists('curl_init') || empty($tmpPath) || !file_exists($tmpPath)) {
+    // 1. Resolve API key from environment, server vars, or the provisioned key fallback
+    $rawKey = getenv('IMGBB_API_KEY') ?: ($_ENV['IMGBB_API_KEY'] ?? ($_SERVER['IMGBB_API_KEY'] ?? 'c040350c77305f20a717e4a021275337'));
+    $imgbbKey = trim((string) $rawKey, " \t\n\r\0\x0B\"'");
+
+    if (empty($imgbbKey) || !function_exists('curl_init') || empty($tmpPath) || !file_exists($tmpPath)) {
         return null;
     }
 
     try {
+        $fileBytes = @file_get_contents($tmpPath);
+        if ($fileBytes === false || strlen($fileBytes) === 0) {
+            return null;
+        }
+
         $ch = curl_init('https://api.imgbb.com/1/upload?key=' . urlencode($imgbbKey));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        if (class_exists('CURLFile')) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, [
-                'image' => new CURLFile($tmpPath, $mimeType ?: 'image/jpeg', $origName ?: 'image.jpg')
-            ]);
-        } else {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, [
-                'image' => base64_encode(file_get_contents($tmpPath))
-            ]);
-        }
-        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, [
+            'image' => base64_encode($fileBytes)
+        ]);
+        // Avoid SSL certificate bundle issues on ephemeral container environments like Render
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+
         $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
         curl_close($ch);
 
-        $json = json_decode((string) $res, true);
-        if (!empty($json['data']['url'])) {
-            return $json['data']['url'];
+        if ($httpCode === 200 && !empty($res)) {
+            $json = json_decode((string) $res, true);
+            if (!empty($json['data']['url'])) {
+                auth_log('ImgBB upload SUCCESS: ' . $json['data']['url']);
+                return $json['data']['url'];
+            }
         }
+
+        auth_log('ImgBB upload non-200 or missing URL. HTTP=' . $httpCode . ' Err=' . $curlErr . ' Res=' . substr((string)$res, 0, 200));
     } catch (\Throwable $e) {
-        // Fallback to local storage on any error
+        auth_log('ImgBB upload exception: ' . $e->getMessage());
     }
 
     return null;
