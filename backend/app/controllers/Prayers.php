@@ -118,15 +118,20 @@ class Prayers extends Controller
             if (!$info || !isset($map[$info[2]])) {
                 api_response(['error' => 'Please attach a JPG, PNG or WEBP photo.'], 422);
             }
-            $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'prayers' . DIRECTORY_SEPARATOR;
-            if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+            $cloudUrl = upload_to_imgbb($f['tmp_name'], $f['type'] ?? 'image/jpeg', $f['name'] ?? 'prayer.jpg');
+            if ($cloudUrl) {
+                $image = $cloudUrl;
+            } else {
+                $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'prayers' . DIRECTORY_SEPARATOR;
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0755, true);
+                }
+                $name = 'prayer_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
+                if (!move_uploaded_file($f['tmp_name'], $dir . $name)) {
+                    api_response(['error' => 'Failed to save the photo.'], 500);
+                }
+                $image = 'uploads/prayers/' . $name;
             }
-            $name = 'prayer_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
-            if (!move_uploaded_file($f['tmp_name'], $dir . $name)) {
-                api_response(['error' => 'Failed to save the photo.'], 500);
-            }
-            $image = 'uploads/prayers/' . $name;
         }
 
         $memberName = $anonymous ? 'Anonymous' : ($user['full_name'] ?: $user['username']);

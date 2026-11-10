@@ -307,6 +307,15 @@ class Events extends Controller
             api_response(['error' => 'File size exceeds 60MB limit.'], 422);
         }
 
+        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'banner.jpg');
+        if ($cloudUrl) {
+            api_response([
+                'success' => true,
+                'url'     => $cloudUrl,
+                'message' => 'Event banner uploaded successfully.'
+            ]);
+        }
+
         $filename = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         
         // Base public path

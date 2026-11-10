@@ -477,20 +477,10 @@ class Chat extends Controller
         $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp', IMAGETYPE_GIF => 'gif'];
         if (!$info || !isset($map[$info[2]])) api_response(['error' => 'Please attach a JPG, PNG, WEBP or GIF photo.'], 422);
 
-        // Optional cloud storage (ImgBB) for ephemeral hosts like Render
-        $imgbbKey = getenv('IMGBB_API_KEY') ?: ($_ENV['IMGBB_API_KEY'] ?? null);
-        if ($imgbbKey && function_exists('curl_init')) {
-            $ch = curl_init('https://api.imgbb.com/1/upload?key=' . urlencode($imgbbKey));
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, ['image' => base64_encode(file_get_contents($f['tmp_name']))]);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-            $res = curl_exec($ch);
-            curl_close($ch);
-            $json = json_decode((string) $res, true);
-            if (!empty($json['data']['url'])) {
-                return $json['data']['url'];
-            }
+        // Cloud storage (ImgBB) for ephemeral hosts like Render
+        $cloudUrl = upload_to_imgbb($f['tmp_name'], $f['type'] ?? 'image/jpeg', $f['name'] ?? 'chat.jpg');
+        if ($cloudUrl) {
+            return $cloudUrl;
         }
 
         $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'chat' . DIRECTORY_SEPARATOR;

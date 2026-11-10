@@ -188,6 +188,12 @@ class Api_members extends Controller {
         if (!@getimagesize($file["tmp_name"]))
             $this->api->respond_error("Not a valid image.", 422);
 
+        $cloudUrl = upload_to_imgbb($file["tmp_name"], $file["type"] ?? "image/jpeg", $file["name"] ?? "avatar.jpg");
+        if ($cloudUrl) {
+            $this->Member_model->update_member($userId, ["avatar" => $cloudUrl]);
+            $this->api->respond(["message" => "Avatar updated.", "avatar" => $cloudUrl]);
+        }
+
         $uploadDir = ROOT_DIR . "public" . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "avatars" . DIRECTORY_SEPARATOR;
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 

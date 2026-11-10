@@ -270,6 +270,17 @@ class Members extends Controller
             api_response(['error' => 'File size exceeds 25MB limit.'], 422);
         }
 
+        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'avatar.jpg');
+        if ($cloudUrl) {
+            $relativeUrl = $cloudUrl;
+            $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]);
+            api_response([
+                'success' => true,
+                'message' => 'Profile picture updated successfully!',
+                'avatar'  => $relativeUrl
+            ]);
+        }
+
         $filename = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
 
         $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';

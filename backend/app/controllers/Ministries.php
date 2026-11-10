@@ -290,6 +290,15 @@ class Ministries extends Controller
             api_response(['error' => 'File size exceeds 20MB limit.'], 422);
         }
 
+        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'ministry.jpg');
+        if ($cloudUrl) {
+            api_response([
+                'success' => true,
+                'url'     => $cloudUrl,
+                'message' => 'Ministry image uploaded successfully.'
+            ]);
+        }
+
         $filename  = 'ministry_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
         $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'ministries' . DIRECTORY_SEPARATOR;

@@ -84,11 +84,16 @@ class Sightings extends Controller
             $info = @getimagesize($f['tmp_name']);
             $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
             if (!$info || !isset($map[$info[2]])) api_response(['error' => 'Please attach a JPG, PNG or WEBP photo.'], 422);
-            $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sightings' . DIRECTORY_SEPARATOR;
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
-            $name = 'sight_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
-            if (!move_uploaded_file($f['tmp_name'], $dir . $name)) api_response(['error' => 'Failed to save the photo.'], 500);
-            $image = 'uploads/sightings/' . $name;
+            $cloudUrl = upload_to_imgbb($f['tmp_name'], $f['type'] ?? 'image/jpeg', $f['name'] ?? 'sighting.jpg');
+            if ($cloudUrl) {
+                $image = $cloudUrl;
+            } else {
+                $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sightings' . DIRECTORY_SEPARATOR;
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $name = 'sight_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
+                if (!move_uploaded_file($f['tmp_name'], $dir . $name)) api_response(['error' => 'Failed to save the photo.'], 500);
+                $image = 'uploads/sightings/' . $name;
+            }
         }
 
         $author = $anon ? 'Anonymous' : ($user['full_name'] ?: $user['username']);

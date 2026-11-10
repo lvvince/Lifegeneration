@@ -326,3 +326,46 @@ function generate_member_code($lava) {
 
     return $code;
 }
+
+/**
+ * Upload an image to ImgBB cloud storage if IMGBB_API_KEY is configured.
+ * Ideal for free cloud hosts with ephemeral filesystems (e.g., Render, Railway, Heroku).
+ *
+ * @param string $tmpPath Path to the local temporary file
+ * @param string $mimeType Optional MIME type
+ * @param string $origName Optional original file name
+ * @return string|null Permanent image URL on success, null on failure or if not configured
+ */
+function upload_to_imgbb($tmpPath, $mimeType = 'image/jpeg', $origName = 'image.jpg') {
+    $imgbbKey = getenv('IMGBB_API_KEY') ?: ($_ENV['IMGBB_API_KEY'] ?? null);
+    if (!$imgbbKey || !function_exists('curl_init') || empty($tmpPath) || !file_exists($tmpPath)) {
+        return null;
+    }
+
+    try {
+        $ch = curl_init('https://api.imgbb.com/1/upload?key=' . urlencode($imgbbKey));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        if (class_exists('CURLFile')) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, [
+                'image' => new CURLFile($tmpPath, $mimeType ?: 'image/jpeg', $origName ?: 'image.jpg')
+            ]);
+        } else {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, [
+                'image' => base64_encode(file_get_contents($tmpPath))
+            ]);
+        }
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        $res = curl_exec($ch);
+        curl_close($ch);
+
+        $json = json_decode((string) $res, true);
+        if (!empty($json['data']['url'])) {
+            return $json['data']['url'];
+        }
+    } catch (\Throwable $e) {
+        // Fallback to local storage on any error
+    }
+
+    return null;
+}

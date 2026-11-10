@@ -116,16 +116,25 @@ class Donations extends Controller
                 api_response(['error' => 'Receipt file size exceeds 15MB limit.'], 422);
             }
 
-            $filename = 'receipt_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-            $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
-            $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'receipts' . DIRECTORY_SEPARATOR;
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'receipt.jpg');
+                if ($cloudUrl) {
+                    $receiptPath = $cloudUrl;
+                }
             }
 
-            if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-                $receiptPath = 'uploads/receipts/' . $filename;
+            if (!$receiptPath) {
+                $filename = 'receipt_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+                $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
+                $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'receipts' . DIRECTORY_SEPARATOR;
+
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+                    $receiptPath = 'uploads/receipts/' . $filename;
+                }
             }
         }
 
