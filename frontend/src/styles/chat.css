@@ -227,6 +227,8 @@
 .fc-facts div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--rd-s, 10px); background: var(--c-tint); }
 .fc-facts dt { display: inline-flex; align-items: center; gap: 6px; color: var(--c-ink2); font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
 .fc-facts dd { margin: 0; font-size: 14px; font-weight: 800; text-align: right; }
+.fc-bio { padding: 12px 14px; border-radius: var(--rd-s, 10px); border-left: 3px solid var(--c-or, #e85d04); background: var(--c-tint); }
+.fc-bio p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--c-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .fc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .fc-stats div { display: grid; gap: 2px; padding: 10px 6px; border: 1px solid var(--cl-edge, rgba(60,40,20,.13)); border-radius: var(--rd-s, 10px); text-align: center; }
 .fc-stats strong { font-size: 1.25rem; font-weight: 900; }

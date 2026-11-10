@@ -668,8 +668,15 @@ class Chat extends Controller
     public function profile($userId = 0)
     {
         $me = $this->me();
+        // bio column may not exist on older deployments — catch gracefully
+        $bioCol = '';
+        try {
+            $hasBio = $this->db->raw("SHOW COLUMNS FROM `members` LIKE 'bio'")->fetch(PDO::FETCH_NUM);
+            if ($hasBio) $bioCol = ', m.bio';
+        } catch (\Throwable $e) {}
+
         $u = $this->db->raw(
-            "SELECT u.id, COALESCE(m.full_name, u.full_name, u.username) AS name, u.role, m.avatar, m.joined_at,
+            "SELECT u.id, COALESCE(m.full_name, u.full_name, u.username) AS name, u.role, m.avatar, m.joined_at{$bioCol},
                     d.id AS dgroup_id, d.name AS dgroup, mi.id AS ministry_id, mi.name AS ministry, p.last_seen,
                     (p.last_seen IS NOT NULL AND p.last_seen > (NOW() - INTERVAL 2 MINUTE)) AS online
              FROM users u
@@ -685,6 +692,7 @@ class Chat extends Controller
         $mute = $this->db->raw("SELECT until_at FROM chat_mutes WHERE user_id = ? AND until_at > NOW()", [(int) $userId])->fetchColumn();
         api_response([
             'id' => (int) $u['id'], 'name' => $u['name'], 'role' => $u['role'], 'avatar' => $u['avatar'],
+            'bio' => !empty($u['bio']) ? $u['bio'] : null,
             'joined_at' => $u['joined_at'], 'dgroup' => $u['dgroup'], 'ministry' => $u['ministry'],
             'online' => (int) $u['online'] === 1, 'last_seen' => $u['last_seen'],
             'stats' => $st,

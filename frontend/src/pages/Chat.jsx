@@ -865,6 +865,11 @@ function Profile({ id, me, onClose, onMention, canMention, toast }) {
               <div><dt><Network size={14} aria-hidden="true" /> D-Group</dt><dd>{p.dgroup || 'Not in a D-Group yet'}</dd></div>
               {p.joined_at && <div><dt>Joined</dt><dd>{new Date(String(p.joined_at).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })}</dd></div>}
             </dl>
+            {p.bio && (
+              <div className="fc-bio">
+                <p>{p.bio}</p>
+              </div>
+            )}
             <div className="fc-stats">
               <div><strong>{p.stats.messages}</strong><span>Messages</span></div>
               <div><strong>{p.stats.active_days}</strong><span>Active days</span></div>
