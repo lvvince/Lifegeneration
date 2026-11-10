@@ -7,6 +7,7 @@ class Members extends Controller
     {
         parent::__construct();
         $this->call->database();
+        $this->ensure_avatar_columns();
     }
 
     // Awtomatikong gumagawa ng `bio` column kung wala pa sa members/users (iwas "Unknown column 'bio'")
@@ -32,6 +33,63 @@ class Members extends Controller
                     $this->db->raw("ALTER TABLE `$t` ADD COLUMN `avatar` VARCHAR(255) NULL");
                 }
             } catch (\Throwable $e) {}
+        }
+
+        // Auto-heal: if a non-admin member got contaminated with an admin's avatar due to the previous ID collision bug
+        try {
+            $adminAvatars = $this->db->raw("SELECT avatar FROM admins WHERE avatar IS NOT NULL AND avatar <> ''")->fetchAll(PDO::FETCH_COLUMN);
+            if ($adminAvatars) {
+                foreach ($adminAvatars as $aUrl) {
+                    if (!empty($aUrl)) {
+                        $this->db->raw(
+                            "UPDATE members SET avatar = NULL WHERE avatar = ? AND (member_id IS NULL OR member_id <> 'LG-2026-ADMIN') AND (email IS NULL OR email NOT LIKE '%admin%')",
+                            [$aUrl]
+                        );
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    // Persist avatar to the correct table(s) without ID collision and without touching non-existent users.avatar column
+    private function persist_avatar($user, $relativeUrl)
+    {
+        $this->ensure_avatar_columns();
+
+        $role     = $user['role'] ?? 'user';
+        $email    = trim((string) ($user['email'] ?? ''));
+        $username = trim((string) ($user['username'] ?? ''));
+        $isAdmin  = ($role === 'admin') || (($user['member_id'] ?? '') === 'LG-ADMIN');
+
+        if ($isAdmin) {
+            // 1. Update admins table safely
+            $this->db->raw(
+                "UPDATE admins SET avatar = ? WHERE id = ? OR (email <> '' AND email = ?) OR (username <> '' AND username = ?)",
+                [$relativeUrl, (int) $user['id'], $email, $username]
+            );
+
+            // 2. Resolve true users.id for this admin (do NOT blindly use $user['id'] because it is from admins table)
+            $adminUserId = null;
+            if ($email !== '') {
+                $row = $this->db->raw("SELECT id FROM users WHERE email = ? LIMIT 1", [$email])->fetch(PDO::FETCH_ASSOC);
+                if ($row) $adminUserId = (int) $row['id'];
+            }
+            if (!$adminUserId && $username !== '') {
+                $row = $this->db->raw("SELECT id FROM users WHERE username = ? LIMIT 1", [$username])->fetch(PDO::FETCH_ASSOC);
+                if ($row) $adminUserId = (int) $row['id'];
+            }
+
+            // 3. Update the admin's row in members table
+            if ($adminUserId) {
+                $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $adminUserId]);
+            }
+            if ($email !== '') {
+                $this->db->raw("UPDATE members SET avatar = ? WHERE email = ? AND (member_id = 'LG-2026-ADMIN' OR member_code = 'LG-2026-ADMIN')", [$relativeUrl, $email]);
+            }
+            $this->db->raw("UPDATE members SET avatar = ? WHERE member_id = 'LG-2026-ADMIN' OR member_code = 'LG-2026-ADMIN'", [$relativeUrl]);
+        } else {
+            // Regular member or officer: $user['id'] is a valid users.id
+            $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, (int) $user['id']]);
         }
     }
 
@@ -310,14 +368,11 @@ class Members extends Controller
         }
 
         if ($cloudUrl) {
-            $relativeUrl = $cloudUrl;
-            try { $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
-            try { $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
-            try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
+            $this->persist_avatar($user, $cloudUrl);
             api_response([
                 'success' => true,
                 'message' => 'Profile picture updated successfully!',
-                'avatar'  => $relativeUrl
+                'avatar'  => $cloudUrl
             ]);
         }
 
@@ -335,10 +390,7 @@ class Members extends Controller
         }
 
         $relativeUrl = 'uploads/avatars/' . $filename;
-
-        try { $this->db->raw("UPDATE members SET avatar = ? WHERE user_id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
-        try { $this->db->raw("UPDATE admins SET avatar = ? WHERE id = ? OR username = ? OR email = ?", [$relativeUrl, $user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
-        try { $this->db->raw("UPDATE users SET avatar = ? WHERE id = ?", [$relativeUrl, $user['id']]); } catch (\Throwable $e) {}
+        $this->persist_avatar($user, $relativeUrl);
 
         api_response([
             'success' => true,
@@ -350,13 +402,7 @@ class Members extends Controller
     public function remove_avatar()
     {
         $user = require_auth_user();
-
-        // Ensure avatar column exists on live DB
-        $this->ensure_avatar_columns();
-
-        try { $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]); } catch (\Throwable $e) {}
-        try { $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ? OR username = ? OR email = ?", [$user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}
-        try { $this->db->raw("UPDATE users SET avatar = NULL WHERE id = ?", [$user['id']]); } catch (\Throwable $e) {}
+        $this->persist_avatar($user, null);
 
         api_response([
             'success' => true,

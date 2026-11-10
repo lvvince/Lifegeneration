@@ -63,6 +63,14 @@ class Auth extends Controller
         $user['member_id']   = $code;
         $user['full_name']   = $member['full_name'] ?? ($user['full_name'] ?? $user['username']);
         $user['avatar']      = $member['avatar'] ?? ($user['avatar'] ?? null);
+        if ($isAdmin && empty($user['avatar'])) {
+            try {
+                $aRow = $this->db->raw("SELECT avatar FROM admins WHERE (email <> '' AND email = ?) OR (username <> '' AND username = ?) LIMIT 1", [$user['email'] ?? '', $user['username'] ?? ''])->fetch(PDO::FETCH_ASSOC);
+                if (!empty($aRow['avatar'])) {
+                    $user['avatar'] = $aRow['avatar'];
+                }
+            } catch (\Throwable $e) {}
+        }
         $user['age']         = $member['age'] ?? ($user['age'] ?? null);
         $user['gender']      = $member['gender'] ?? ($user['gender'] ?? null);
         $user['address']     = $member['address'] ?? ($user['address'] ?? null);
