@@ -22,7 +22,15 @@ const MUTES = [[15, '15 minutes'], [60, '1 hour'], [1440, '1 day'], [10080, '7 d
 const POLL_MS = 5000
 
 /* ---------- small helpers ---------- */
-const parse = (d) => new Date(String(d).replace(' ', 'T'))
+const parse = (d) => {
+  if (!d) return new Date()
+  let s = String(d).trim().replace(' ', 'T')
+  if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) {
+    s += 'Z'
+  }
+  const x = new Date(s)
+  return isNaN(x) ? new Date() : x
+}
 const hhmm = (d) => parse(d).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
 const dayKey = (d) => parse(d).toDateString()
 function dayLabel(d) {
@@ -686,7 +694,7 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
         {m.body && <p><RichText text={m.body} mentions={m.mentions} /></p>}
         {m.image && (
           <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}>
-            <img src={resolveImageUrl(m.image)} alt="Announcement photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
+            <img src={resolveImageUrl(m.image)} alt="Announcement photo" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
             <span className="fc-img-fallback">📷 Photo unavailable</span>
           </button>
         )}
@@ -727,7 +735,7 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
         {m.body && <p className="fc-text"><RichText text={m.body} mentions={m.mentions} />{m.edited && <small className="fc-edited"> (edited)</small>}</p>}
         {m.image && (
           <button type="button" className="fc-img" onClick={(e) => { e.stopPropagation(); onImage(resolveImageUrl(m.image)) }}>
-            <img src={resolveImageUrl(m.image)} alt={`Photo from ${m.name}`} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
+            <img src={resolveImageUrl(m.image)} alt={`Photo from ${m.name}`} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement.classList.add('is-broken') }} />
             <span className="fc-img-fallback">📷 Photo unavailable</span>
           </button>
         )}

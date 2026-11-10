@@ -13,7 +13,9 @@ export function fmtDate(d, opts = { month: 'short', day: 'numeric', year: 'numer
 
 export function fmtDateTime(dt) {
   if (!dt) return '—'
-  const x = new Date(String(dt).replace(' ', 'T'))
+  let s = String(dt).trim().replace(' ', 'T')
+  if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) s += 'Z'
+  const x = new Date(s)
   if (isNaN(x)) return '—'
   return x.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
@@ -61,9 +63,13 @@ export function fmtCurrency(amount) {
 /**
  * Resolves local upload paths and external URLs into valid image sources.
  * Uses API_URL from api.js so there is only one backend base URL to maintain.
+ * Proxies any ibb.co cloud URLs through our backend so Philippine ISPs won't block them.
  */
 export function resolveImageUrl(path) {
   if (!path) return null
+  if (/ibb\.co/i.test(path)) {
+    return `${API_URL.replace(/\/+$/, '')}/api/chat/media?url=${encodeURIComponent(path)}`
+  }
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
     return path
   }

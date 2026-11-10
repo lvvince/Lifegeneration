@@ -14,6 +14,7 @@ $router->post('/api/chat/messages/{id}/pin',        'Chat::pin');
 $router->post('/api/chat/messages/{id}/react',      'Chat::react');
 $router->post('/api/chat/messages/{id}/ack',        'Chat::ack');
 $router->get('/api/chat/messages/{id}/acks',        'Chat::ack_list');
+$router->get('/api/chat/media',                     'Chat::media');
 $router->get('/api/chat/members',                   'Chat::members');
 $router->get('/api/chat/profile/{id}',              'Chat::profile');
 $router->get('/api/chat/activity',                  'Chat::activity');

@@ -29,8 +29,20 @@ const SORTS = [
   ['old', 'Oldest first'],
 ]
 
-const photoUrl = (p) => (/^(https?:|data:|blob:)/.test(String(p)) ? p : p ? `${API_URL}/${String(p).replace(/^\/+/, '')}` : '')
-const when = (d) => new Date(String(d).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+const photoUrl = (p) => {
+  if (!p) return ''
+  if (/ibb\.co/i.test(String(p))) {
+    return `${API_URL.replace(/\/+$/, '')}/api/chat/media?url=${encodeURIComponent(p)}`
+  }
+  return /^(https?:|data:|blob:)/.test(String(p)) ? p : `${API_URL}/${String(p).replace(/^\/+/, '')}`
+}
+const when = (d) => {
+  if (!d) return '—'
+  let s = String(d).trim().replace(' ', 'T')
+  if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) s += 'Z'
+  const x = new Date(s)
+  return isNaN(x) ? '—' : x.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+}
 const tilt = (id, i) => ((((Number(id) || i + 1) * 37) % 9) - 4) * 0.55
 
 export default function PrayerWall() {

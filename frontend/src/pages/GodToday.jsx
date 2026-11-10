@@ -11,8 +11,20 @@ import '../styles/faith.css'
 import '../styles/godtoday.css'
 
 const TONES = ['sage', 'cream', 'blue', 'butter', 'blush']
-const photoUrl = (p) => (/^(https?:|data:|blob:)/.test(String(p)) ? p : p ? `${API_URL}/${String(p).replace(/^\/+/, '')}` : '')
-const parse = (d) => new Date(String(d).replace(' ', 'T'))
+const photoUrl = (p) => {
+  if (!p) return ''
+  if (/ibb\.co/i.test(String(p))) {
+    return `${API_URL.replace(/\/+$/, '')}/api/chat/media?url=${encodeURIComponent(p)}`
+  }
+  return /^(https?:|data:|blob:)/.test(String(p)) ? p : `${API_URL}/${String(p).replace(/^\/+/, '')}`
+}
+const parse = (d) => {
+  if (!d) return new Date()
+  let s = String(d).trim().replace(' ', 'T')
+  if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) s += 'Z'
+  const x = new Date(s)
+  return isNaN(x) ? new Date() : x
+}
 const when = (d) => parse(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 const MAX = 400
 const DRAFT = 'lgy_god_today_draft'
