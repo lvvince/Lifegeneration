@@ -22,6 +22,19 @@ class Members extends Controller
         }
     }
 
+    // Ensures avatar column exists on members and admins tables (older Render DBs may not have it)
+    private function ensure_avatar_columns()
+    {
+        foreach (['members', 'admins'] as $t) {
+            try {
+                $has = $this->db->raw("SHOW COLUMNS FROM `$t` LIKE 'avatar'")->fetch(PDO::FETCH_NUM);
+                if (!$has) {
+                    $this->db->raw("ALTER TABLE `$t` ADD COLUMN `avatar` VARCHAR(255) NULL");
+                }
+            } catch (\Throwable $e) {}
+        }
+    }
+
     // Officers at admins ang pwedeng tumingin ng buong listahan ng members
     public function index()
     {
@@ -254,6 +267,9 @@ class Members extends Controller
     {
         $user = require_auth_user();
 
+        // Ensure avatar column exists on live DB (older Render deployments may be missing it)
+        $this->ensure_avatar_columns();
+
         // Check upload error code — give descriptive messages per PHP error constant
         if (!isset($_FILES['avatar'])) {
             api_response(['error' => 'No file received. Please try again.'], 400);
@@ -334,6 +350,9 @@ class Members extends Controller
     public function remove_avatar()
     {
         $user = require_auth_user();
+
+        // Ensure avatar column exists on live DB
+        $this->ensure_avatar_columns();
 
         try { $this->db->raw("UPDATE members SET avatar = NULL WHERE user_id = ?", [$user['id']]); } catch (\Throwable $e) {}
         try { $this->db->raw("UPDATE admins SET avatar = NULL WHERE id = ? OR username = ? OR email = ?", [$user['id'], $user['username'] ?? '', $user['email'] ?? '']); } catch (\Throwable $e) {}

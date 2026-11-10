@@ -323,9 +323,19 @@ export default function Dashboard() {
       try {
         data = text ? JSON.parse(text) : {}
       } catch {
-        // Server returned HTML (PHP exception page) — show readable message
-        const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
-        throw new Error(stripped || `Server error (${res.status}). Please try again.`)
+        // Server returned HTML (PHP/LavaLust error page)
+        // Strip <style> and <script> blocks first, then all tags, then decode entities
+        const cleaned = text
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&mdash;/g, '— ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#\d+;/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+        // Extract first meaningful sentence mentioning Error/Warning/etc.
+        const match = cleaned.match(/(?:Database |PHP |Fatal |Parse )?(?:Error|Warning|Notice|Exception)[^.!?]{0,200}/i)
+        const summary = match ? match[0].trim() : cleaned.slice(0, 180)
+        throw new Error(summary || `Server error (${res.status}). Please try again.`)
       }
 
       if (!res.ok || data.error) {
