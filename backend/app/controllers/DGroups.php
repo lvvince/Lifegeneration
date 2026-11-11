@@ -73,9 +73,10 @@ class DGroups extends Controller
         }
 
         $stmt = $this->db->raw(
-            "SELECT d.*, COUNT(m.id) AS member_count
+            "SELECT d.*, COUNT(DISTINCT COALESCE(dr.user_id, mem.user_id)) AS member_count
              FROM dgroups d
-             LEFT JOIN members m ON m.dgroup_id = d.id AND m.is_active = 1
+             LEFT JOIN dgroup_requests dr ON dr.dgroup_id = d.id AND dr.status = 'approved'
+             LEFT JOIN members mem ON mem.dgroup_id = d.id AND mem.is_active = 1
              GROUP BY d.id
              ORDER BY d.id ASC"
         );
@@ -83,7 +84,7 @@ class DGroups extends Controller
 
         foreach ($groups as &$g) {
             $g['member_count'] = (int) $g['member_count'];
-            $isMember = ($userDgroupId && (int)$userDgroupId === (int)$g['id']);
+            $isMember = ($userDgroupId && (int)$userDgroupId === (int)$g['id']) || (($userRequests[$g['id']] ?? '') === 'approved');
             $g['is_joined'] = $isMember;
 
             $reqStatus = $userRequests[$g['id']] ?? ($isMember ? 'approved' : null);
@@ -145,22 +146,20 @@ class DGroups extends Controller
         }
 
         // Already an active member of this exact D-Group?
-        if ($mem && !empty($mem['dgroup_id']) && (int)$mem['dgroup_id'] === $dgroupId) {
-            api_response(['error' => "You are already a member of {$check['name']}!"], 400);
-        }
-
-        // Automatically cancel any pending requests for other groups so switching/requesting is seamless
-        $this->db->raw(
-            "DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND dgroup_id <> ?",
-            [$userId, $dgroupId]
-        );
-
-        // Upsert join request
         $existing = $this->db->raw(
             "SELECT id, status FROM dgroup_requests WHERE dgroup_id = ? AND user_id = ? LIMIT 1",
             [$dgroupId, $userId]
         )->fetch(PDO::FETCH_ASSOC);
 
+        if (($existing && $existing['status'] === 'approved') || ($mem && (int)($mem['dgroup_id'] ?? 0) === $dgroupId)) {
+            api_response(['error' => "You are already an approved member of {$check['name']}!"], 400);
+        }
+
+        if ($existing && $existing['status'] === 'pending') {
+            api_response(['error' => "You already have a pending request for {$check['name']}!"], 400);
+        }
+
+        // Upsert join request (supports multiple D-Groups simultaneously)
         if ($existing) {
             $this->db->raw(
                 "UPDATE dgroup_requests SET status = 'pending', request_note = ?, updated_at = NOW() WHERE id = ?",
@@ -188,7 +187,7 @@ class DGroups extends Controller
     public function cancel_request()
     {
         $user = require_auth_user();
-        $userId = (int) $user['id'];
+        $userId = (int) ($user['user_id'] ?? $user['id']);
         $input = api_input();
         $dgroupId = (int) ($input['dgroup_id'] ?? $input['id'] ?? 0);
 
@@ -207,21 +206,34 @@ class DGroups extends Controller
     public function leave()
     {
         $user = require_auth_user();
-        $userId = (int) $user['id'];
+        $userId = (int) ($user['user_id'] ?? $user['id']);
+        $input = api_input();
+        $dgroupId = (int) ($input['dgroup_id'] ?? $input['id'] ?? 0);
 
-        $this->db->raw(
-            "UPDATE members SET dgroup_id = NULL, updated_at = NOW() WHERE user_id = ?",
-            [$userId]
-        );
-
-        $this->db->raw(
-            "DELETE FROM dgroup_requests WHERE user_id = ?",
-            [$userId]
-        );
+        if ($dgroupId > 0) {
+            $this->db->raw(
+                "DELETE FROM dgroup_requests WHERE user_id = ? AND dgroup_id = ?",
+                [$userId, $dgroupId]
+            );
+            $this->db->raw(
+                "UPDATE members SET dgroup_id = NULL WHERE user_id = ? AND dgroup_id = ?",
+                [$userId, $dgroupId]
+            );
+            $nextGroup = $this->db->raw(
+                "SELECT dgroup_id FROM dgroup_requests WHERE user_id = ? AND status = 'approved' LIMIT 1",
+                [$userId]
+            )->fetch(PDO::FETCH_ASSOC);
+            if ($nextGroup) {
+                $this->db->raw("UPDATE members SET dgroup_id = ? WHERE user_id = ?", [$nextGroup['dgroup_id'], $userId]);
+            }
+        } else {
+            $this->db->raw("UPDATE members SET dgroup_id = NULL, updated_at = NOW() WHERE user_id = ?", [$userId]);
+            $this->db->raw("DELETE FROM dgroup_requests WHERE user_id = ?", [$userId]);
+        }
 
         api_response([
             'success' => true,
-            'message' => 'You have left your D-Group.'
+            'message' => 'You have left the D-Group.'
         ]);
     }
 
@@ -305,19 +317,13 @@ class DGroups extends Controller
             [$requestId]
         );
 
-        // 2. Assign to member profile
+        // 2. Assign to member profile as primary dgroup_id if not yet set
         $this->db->raw(
-            "UPDATE members SET dgroup_id = ?, updated_at = NOW() WHERE user_id = ?",
+            "UPDATE members SET dgroup_id = COALESCE(dgroup_id, ?), updated_at = NOW() WHERE user_id = ?",
             [$req['dgroup_id'], $req['user_id']]
         );
 
-        // 3. Clear this user's other pending requests (they can only be in one D-Group)
-        $this->db->raw(
-            "DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND id <> ?",
-            [$req['user_id'], $requestId]
-        );
-
-        // 4. Ensure chat channel exists for this D-Group
+        // 3. Ensure chat channel exists for this D-Group
         try {
             $slug = "dgroup-{$req['dgroup_id']}";
             $this->db->raw(

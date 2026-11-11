@@ -32,12 +32,13 @@ class Ministries extends Controller
     public function index()
     {
         $user = get_auth_user();
+        $userId = (int) ($user['user_id'] ?? ($user['id'] ?? 0));
         $userMinistryId = $user['ministry_id'] ?? null;
-        $userId = $user['id'] ?? 0;
 
         $stmt = $this->db->raw(
-            "SELECT m.*, COUNT(mem.id) AS volunteer_count
+            "SELECT m.*, COUNT(DISTINCT COALESCE(ma.user_id, mem.user_id)) AS volunteer_count
              FROM ministries m
+             LEFT JOIN ministry_applications ma ON ma.ministry_id = m.id AND ma.status = 'approved'
              LEFT JOIN members mem ON mem.ministry_id = m.id AND mem.is_active = 1
              WHERE m.is_active = 1
              GROUP BY m.id
@@ -60,7 +61,8 @@ class Ministries extends Controller
 
         foreach ($ministries as &$m) {
             $m['volunteer_count'] = (int) $m['volunteer_count'];
-            $m['is_member'] = ($userMinistryId && (int)$userMinistryId === (int)$m['id']);
+            $isMember = ($userMinistryId && (int)$userMinistryId === (int)$m['id']) || (($applications[$m['id']] ?? '') === 'approved');
+            $m['is_member'] = $isMember;
             $m['application_status'] = $applications[$m['id']] ?? null;
         }
 
@@ -70,6 +72,7 @@ class Ministries extends Controller
     public function apply()
     {
         $user = require_auth_user();
+        $userId = (int) ($user['user_id'] ?? $user['id']);
         $input = api_input();
         $ministryId = (int) ($input['ministry_id'] ?? 0);
         $message    = trim($input['message'] ?? '');
@@ -83,11 +86,15 @@ class Ministries extends Controller
             api_response(['error' => 'Ministry not found.'], 404);
         }
 
-        // Check if already applied and pending
+        // Check if already applied and pending or approved
         $existing = $this->db->raw(
             "SELECT id, status FROM ministry_applications WHERE user_id = ? AND ministry_id = ? LIMIT 1",
-            [$user['id'], $ministryId]
+            [$userId, $ministryId]
         )->fetch();
+
+        if ($existing && $existing['status'] === 'approved') {
+            api_response(['error' => "You are already a volunteer of {$min['name']}!"], 400);
+        }
 
         if ($existing && $existing['status'] === 'pending') {
             api_response(['error' => 'You already have a pending application for this ministry.'], 409);
@@ -104,7 +111,7 @@ class Ministries extends Controller
             $this->db->raw(
                 "INSERT INTO ministry_applications (user_id, ministry_id, member_name, message, status, created_at)
                  VALUES (?, ?, ?, ?, 'pending', NOW())",
-                [$user['id'], $ministryId, $memberName, $message]
+                [$userId, $ministryId, $memberName, $message]
             );
         }
 
@@ -117,6 +124,7 @@ class Ministries extends Controller
     public function cancel()
     {
         $user = require_auth_user();
+        $userId = (int) ($user['user_id'] ?? $user['id']);
         $input = api_input();
         $ministryId = (int) ($input['ministry_id'] ?? 0);
 
@@ -126,7 +134,7 @@ class Ministries extends Controller
 
         $this->db->raw(
             "DELETE FROM ministry_applications WHERE user_id = ? AND ministry_id = ? AND status = 'pending'",
-            [$user['id'], $ministryId]
+            [$userId, $ministryId]
         );
 
         api_response(['success' => true, 'message' => 'Application cancelled.']);
@@ -168,12 +176,24 @@ class Ministries extends Controller
             [$status, $appId]
         );
 
-        // If approved, update member's ministry_id
+        // If approved, update member's primary ministry_id if not yet set
         if ($status === 'approved') {
             $this->db->raw(
-                "UPDATE members SET ministry_id = ?, updated_at = NOW() WHERE user_id = ?",
+                "UPDATE members SET ministry_id = COALESCE(ministry_id, ?), updated_at = NOW() WHERE user_id = ?",
                 [$app['ministry_id'], $app['user_id']]
             );
+
+            // Ensure chat channel exists for this Ministry
+            try {
+                $slug = "ministry-{$app['ministry_id']}";
+                $minName = $this->db->raw("SELECT name FROM ministries WHERE id = ?", [$app['ministry_id']])->fetchColumn() ?: 'Ministry';
+                $this->db->raw(
+                    "INSERT INTO chat_channels (slug, name, description, kind, ref_id, sort_order)
+                     VALUES (?, ?, 'Private room for the Ministry.', 'ministry', ?, 6)
+                     ON DUPLICATE KEY UPDATE name = VALUES(name)",
+                    [$slug, $minName, $app['ministry_id']]
+                );
+            } catch (\Throwable $e) {}
 
             // Send automated acceptance email
             try {

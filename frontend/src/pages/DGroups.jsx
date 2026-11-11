@@ -75,14 +75,14 @@ export default function DGroups() {
       'Failed to cancel request.'
     )
 
-  const handleLeave = () => {
-    if (!window.confirm('Are you sure you want to leave your D-Group?')) {
+  const handleLeave = (id, groupName) => {
+    if (!window.confirm(`Are you sure you want to leave ${groupName || 'this D-Group'}?`)) {
       return
     }
     runAction(
-      'leave',
-      () => apiPost('/api/dgroups/leave'),
-      'You have left your D-Group.',
+      `leave-${id}`,
+      () => apiPost('/api/dgroups/leave', { dgroup_id: id }),
+      `You have left ${groupName || 'the D-Group'}.`,
       'Failed to leave group.'
     )
   }
@@ -289,10 +289,10 @@ export default function DGroups() {
                         <button
                           type="button"
                           className="dg-btn-leave-text"
-                          onClick={handleLeave}
-                          disabled={processingId === 'leave'}
+                          onClick={() => handleLeave(g.id, g.name)}
+                          disabled={processingId === `leave-${g.id}`}
                         >
-                          {processingId === 'leave' ? 'Leaving…' : 'Leave D-Group'}
+                          {processingId === `leave-${g.id}` ? 'Leaving…' : 'Leave D-Group'}
                         </button>
                       </div>
                     ) : isPending ? (

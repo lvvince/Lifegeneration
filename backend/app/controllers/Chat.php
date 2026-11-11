@@ -169,10 +169,47 @@ class Chat extends Controller
         }
         $role = (string) ($u['role'] ?? 'user');
         $info = null;
+        $dgroupIds = [];
+        $ministryIds = [];
         if ($uid > 0) {
             $info = $this->db->raw(
                 "SELECT m.dgroup_id, m.ministry_id FROM members m WHERE m.user_id = ? LIMIT 1", [$uid]
             )->fetch(PDO::FETCH_ASSOC);
+
+            if (!empty($info['dgroup_id'])) {
+                $dgroupIds[] = (int) $info['dgroup_id'];
+            }
+            if (!empty($info['ministry_id'])) {
+                $ministryIds[] = (int) $info['ministry_id'];
+            }
+
+            // Load all approved D-Groups (supports multiple D-Groups!)
+            try {
+                $reqGroups = $this->db->raw(
+                    "SELECT dgroup_id FROM dgroup_requests WHERE user_id = ? AND status = 'approved'",
+                    [$uid]
+                )->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($reqGroups as $dg) {
+                    $dgInt = (int) $dg;
+                    if (!in_array($dgInt, $dgroupIds, true)) {
+                        $dgroupIds[] = $dgInt;
+                    }
+                }
+            } catch (\Throwable $e) {}
+
+            // Load all approved Ministries (supports multiple Ministries!)
+            try {
+                $appMins = $this->db->raw(
+                    "SELECT ministry_id FROM ministry_applications WHERE user_id = ? AND status = 'approved'",
+                    [$uid]
+                )->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($appMins as $mi) {
+                    $miInt = (int) $mi;
+                    if (!in_array($miInt, $ministryIds, true)) {
+                        $ministryIds[] = $miInt;
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
         $mute = null;
         if ($uid > 0) {
@@ -185,15 +222,49 @@ class Chat extends Controller
             'staff' => in_array($role, $this->staffRoles, true),
             'dgroup_id' => $info['dgroup_id'] ?? null,
             'ministry_id' => $info['ministry_id'] ?? null,
+            'dgroup_ids' => $dgroupIds,
+            'ministry_ids' => $ministryIds,
             'mute' => $mute,
         ];
+    }
+
+    private function user_dgroup_ids($uid)
+    {
+        if ($uid <= 0) return [];
+        $ids = [];
+        $p = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$uid])->fetchColumn();
+        if ($p) $ids[] = (int) $p;
+        try {
+            $reqs = $this->db->raw("SELECT dgroup_id FROM dgroup_requests WHERE user_id = ? AND status = 'approved'", [$uid])->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($reqs as $id) {
+                $idInt = (int) $id;
+                if (!in_array($idInt, $ids, true)) $ids[] = $idInt;
+            }
+        } catch (\Throwable $e) {}
+        return $ids;
+    }
+
+    private function user_ministry_ids($uid)
+    {
+        if ($uid <= 0) return [];
+        $ids = [];
+        $p = $this->db->raw("SELECT ministry_id FROM members WHERE user_id = ? LIMIT 1", [$uid])->fetchColumn();
+        if ($p) $ids[] = (int) $p;
+        try {
+            $apps = $this->db->raw("SELECT ministry_id FROM ministry_applications WHERE user_id = ? AND status = 'approved'", [$uid])->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($apps as $id) {
+                $idInt = (int) $id;
+                if (!in_array($idInt, $ids, true)) $ids[] = $idInt;
+            }
+        } catch (\Throwable $e) {}
+        return $ids;
     }
 
     private function can_see($me, $ch)
     {
         if ((int) $ch['staff_only'] === 1) return $me['staff'];
-        if ($ch['kind'] === 'dgroup') return $me['staff'] || (int) $ch['ref_id'] === (int) $me['dgroup_id'];
-        if ($ch['kind'] === 'ministry') return $me['staff'] || (int) $ch['ref_id'] === (int) $me['ministry_id'];
+        if ($ch['kind'] === 'dgroup') return $me['staff'] || in_array((int) $ch['ref_id'], $me['dgroup_ids'] ?? [], true);
+        if ($ch['kind'] === 'ministry') return $me['staff'] || in_array((int) $ch['ref_id'], $me['ministry_ids'] ?? [], true);
         return true;
     }
 
@@ -210,8 +281,8 @@ class Chat extends Controller
     {
         // Every D-Group and Ministry gets its own room, created the first time someone needs it.
         $want = [];
-        if ($me['dgroup_id']) $want[] = ['dgroup', (int) $me['dgroup_id']];
-        if ($me['ministry_id']) $want[] = ['ministry', (int) $me['ministry_id']];
+        foreach (($me['dgroup_ids'] ?? []) as $dgId) $want[] = ['dgroup', (int) $dgId];
+        foreach (($me['ministry_ids'] ?? []) as $minId) $want[] = ['ministry', (int) $minId];
         if ($me['staff']) {
             foreach ($this->db->raw("SELECT id FROM dgroups")->fetchAll(PDO::FETCH_COLUMN) as $id) $want[] = ['dgroup', (int) $id];
             foreach ($this->db->raw("SELECT id FROM ministries WHERE is_active = 1")->fetchAll(PDO::FETCH_COLUMN) as $id) $want[] = ['ministry', (int) $id];
@@ -462,7 +533,7 @@ class Chat extends Controller
             if ($uid <= 0 || $uid === $me['id']) continue;
             $u = $this->db->raw("SELECT u.id, u.role, m.dgroup_id, m.ministry_id FROM users u LEFT JOIN members m ON m.user_id = u.id WHERE u.id = ? AND u.is_active = 1", [$uid])->fetch(PDO::FETCH_ASSOC);
             if (!$u) continue;
-            $probe = ['staff' => in_array($u['role'], $this->staffRoles, true), 'dgroup_id' => $u['dgroup_id'], 'ministry_id' => $u['ministry_id']];
+            $probe = ['staff' => in_array($u['role'], $this->staffRoles, true), 'dgroup_ids' => $this->user_dgroup_ids($uid), 'ministry_ids' => $this->user_ministry_ids($uid)];
             if (!$this->can_see($probe, $ch)) continue;
             $this->db->raw("INSERT IGNORE INTO chat_mentions (message_id, user_id) VALUES (?, ?)", [$mid, $uid]);
         }
