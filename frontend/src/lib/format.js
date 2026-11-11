@@ -67,10 +67,13 @@ export function fmtCurrency(amount) {
  */
 export function resolveImageUrl(path) {
   if (!path) return null
+  if (/\/api\/chat\/media/i.test(path)) {
+    return path
+  }
   if (/ibb\.co/i.test(path)) {
     return `${API_URL.replace(/\/+$/, '')}/api/chat/media?url=${encodeURIComponent(path)}`
   }
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
     return path
   }
   return `${API_URL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`

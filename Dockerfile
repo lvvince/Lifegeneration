@@ -34,7 +34,7 @@ RUN if [ -f composer.json ]; then composer install --no-dev --optimize-autoloade
 # React build -> public/
 COPY --from=frontend-build /app/dist/ /var/www/html/public/
 
-RUN mkdir -p public/uploads/receipts public/uploads/chat public/uploads/prayers public/uploads/avatars runtime
+RUN mkdir -p public/uploads/receipts public/uploads/chat public/uploads/prayers public/uploads/avatars public/uploads/ministries public/uploads/dgroups runtime
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 

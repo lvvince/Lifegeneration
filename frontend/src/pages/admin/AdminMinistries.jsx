@@ -6,7 +6,7 @@ import {
   RotateCcw, UserMinus, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { API_URL, apiGet, apiPost } from '../../api.js'
-import { fmtDate } from '../../lib/format.js'
+import { fmtDate, resolveImageUrl } from '../../lib/format.js'
 import {
   PageHeader, Empty, Loading, Modal, Field,
   ConfirmDialog, Badge, Tabs, useToast,
@@ -32,20 +32,18 @@ const ICON_OPTIONS = [
 const STATUS_TONE = { pending: 'warn', approved: 'ok', rejected: 'bad' }
 const blank = { id: null, name: '', description: '', slots_available: '', icon: 'star', image: '' }
 
-function getImageUrl(image) {
-  if (!image) return null
-  if (image.startsWith('http')) return image
-  return `${API_URL}/${image}`
-}
-
 /* ════════════════════════════════════════
    IMAGE UPLOADER
 ════════════════════════════════════════ */
 function ImageUploader({ currentImage, onUploaded, onRemoved }) {
   const inputRef = useRef()
   const [uploading, setUploading] = useState(false)
-  const [preview, setPreview] = useState(getImageUrl(currentImage))
+  const [preview, setPreview] = useState(resolveImageUrl(currentImage))
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setPreview(resolveImageUrl(currentImage))
+  }, [currentImage])
 
   const handleFile = async (file) => {
     if (!file) return
@@ -62,7 +60,7 @@ function ImageUploader({ currentImage, onUploaded, onRemoved }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
-      setPreview(getImageUrl(data.url))
+      setPreview(resolveImageUrl(data.url))
       onUploaded(data.url)
     } catch (e) {
       setErr(e.message || 'Upload failed')
@@ -77,7 +75,15 @@ function ImageUploader({ currentImage, onUploaded, onRemoved }) {
     <div className="mi-uploader">
       {preview ? (
         <div className="mi-preview-wrap">
-          <img src={preview} alt="Team" className="mi-preview-img" />
+          <img
+            src={preview}
+            alt="Team"
+            className="mi-preview-img"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
           <button type="button" className="mi-preview-remove" onClick={handleRemove} title="Remove image"><X size={14} /></button>
         </div>
       ) : (
@@ -181,10 +187,25 @@ function TeamsTab({ items, loading, onNew, onEdit, onDelete }) {
       {items.map((m) => (
         <div key={m.id} className="mi-admin-card">
           <div className="mi-admin-card-img">
-            {getImageUrl(m.image)
-              ? <img src={getImageUrl(m.image)} alt={m.name} />
-              : <div className="mi-admin-card-img-empty"><ImageIcon size={24} strokeWidth={1.5} /></div>
-            }
+            {resolveImageUrl(m.image) ? (
+              <img
+                src={resolveImageUrl(m.image)}
+                alt={m.name}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  const ph = e.currentTarget.parentElement?.querySelector('.mi-admin-card-img-empty')
+                  if (ph) ph.style.display = 'grid'
+                }}
+              />
+            ) : null}
+            <div
+              className="mi-admin-card-img-empty"
+              style={resolveImageUrl(m.image) ? { display: 'none' } : undefined}
+            >
+              <ImageIcon size={24} strokeWidth={1.5} />
+            </div>
           </div>
           <div className="mi-admin-card-body">
             <div className="mi-admin-card-title">{m.name}</div>
@@ -312,10 +333,18 @@ function VolunteersTab({ teams }) {
                     onClick={() => setExpandedTeam(isOpen ? null : team.id)}
                   >
                     <div className="mi-team-row-info">
-                      {getImageUrl(team.image)
-                        ? <img src={getImageUrl(team.image)} alt="" className="mi-team-thumb" />
-                        : <div className="mi-team-thumb mi-team-thumb-empty"><Users size={14} /></div>
-                      }
+                      {resolveImageUrl(team.image) ? (
+                        <img
+                          src={resolveImageUrl(team.image)}
+                          alt=""
+                          className="mi-team-thumb"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        />
+                      ) : (
+                        <div className="mi-team-thumb mi-team-thumb-empty"><Users size={14} /></div>
+                      )}
                       <div>
                         <div className="mi-team-name">{team.name}</div>
                         <div className="mi-team-count">{volunteers.length} active volunteer{volunteers.length !== 1 ? 's' : ''}</div>

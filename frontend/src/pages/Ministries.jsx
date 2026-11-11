@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { API_URL, apiGet, apiPost, getUser } from '../api.js'
+import { resolveImageUrl } from '../lib/format.js'
 import {
   CheckCircle, Clock, HeartHandshake, X, Users, Mic2,
   Monitor, UserCheck, Globe, Music, Star, Megaphone,
@@ -32,9 +33,7 @@ function MinistryIcon({ name, size = 28 }) {
 }
 
 function getImageUrl(image) {
-  if (!image) return null
-  if (image.startsWith('http')) return image
-  return `${API_URL}/${image}`
+  return resolveImageUrl(image)
 }
 
 export default function Ministries() {
@@ -211,11 +210,7 @@ export default function Ministries() {
               {/* Card image */}
               <div className="min-vol-card-img-wrap">
                 {getImageUrl(m.image) ? (
-                  <img
-                    src={getImageUrl(m.image)}
-                    alt={m.name}
-                    className="min-vol-card-img"
-                  />
+                  <img src={getImageUrl(m.image)} alt={m.name} className="min-vol-card-img" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; const ph = e.currentTarget.parentElement?.querySelector(".min-vol-card-img-placeholder"); if (ph) ph.style.display = "grid"; }} />
                 ) : (
                   <div className="min-vol-card-img-placeholder">
                     <MinistryIcon name={m.icon} size={40} />

@@ -7,6 +7,26 @@ class Ministries extends Controller
     {
         parent::__construct();
         $this->call->database();
+        $this->ensure_ministry_columns();
+    }
+
+    private function ensure_ministry_columns()
+    {
+        try {
+            $cols = [
+                'image'           => "ALTER TABLE `ministries` ADD COLUMN `image` VARCHAR(255) NULL",
+                'icon'            => "ALTER TABLE `ministries` ADD COLUMN `icon` VARCHAR(50) NULL DEFAULT 'star'",
+                'description'     => "ALTER TABLE `ministries` ADD COLUMN `description` TEXT NULL",
+                'slots_available' => "ALTER TABLE `ministries` ADD COLUMN `slots_available` INT NULL",
+                'is_active'       => "ALTER TABLE `ministries` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1",
+            ];
+            foreach ($cols as $col => $sql) {
+                $has = $this->db->raw("SHOW COLUMNS FROM `ministries` LIKE '{$col}'")->fetch(PDO::FETCH_NUM);
+                if (!$has) {
+                    $this->db->raw($sql);
+                }
+            }
+        } catch (\Throwable $e) {}
     }
 
     public function index()
@@ -203,6 +223,7 @@ class Ministries extends Controller
     public function create()
     {
         require_admin_user();
+        $this->ensure_ministry_columns();
         $input = api_input();
         $name        = trim($input['name'] ?? '');
         $icon        = trim($input['icon'] ?? '✦');
@@ -214,18 +235,22 @@ class Ministries extends Controller
             api_response(['error' => 'Ministry name is required.'], 422);
         }
 
-        $this->db->raw(
-            "INSERT INTO ministries (name, icon, image, description, slots_available, is_active, created_at)
-             VALUES (?, ?, ?, ?, ?, 1, NOW())",
-            [$name, $icon, $image ?: null, $description, $slots]
-        );
-
-        api_response(['success' => true, 'message' => 'Ministry created successfully.', 'id' => $this->db->last_id()], 201);
+        try {
+            $this->db->raw(
+                "INSERT INTO ministries (name, icon, image, description, slots_available, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW())",
+                [$name, $icon, $image ?: null, $description, $slots]
+            );
+            api_response(['success' => true, 'message' => 'Ministry created successfully.', 'id' => $this->db->last_id()], 201);
+        } catch (\Throwable $e) {
+            api_response(['error' => 'Could not create ministry: ' . $e->getMessage()], 500);
+        }
     }
 
     public function update()
     {
         require_admin_user();
+        $this->ensure_ministry_columns();
         $input = api_input();
         $id = (int) ($input['id'] ?? 0);
         $name        = trim($input['name'] ?? '');
@@ -237,21 +262,24 @@ class Ministries extends Controller
             api_response(['error' => 'Ministry ID and name are required.'], 422);
         }
 
-        // If image key present, update it; otherwise leave it unchanged
-        if (array_key_exists('image', $input)) {
-            $image = trim($input['image'] ?? '');
-            $this->db->raw(
-                "UPDATE ministries SET name = ?, icon = ?, image = ?, description = ?, slots_available = ? WHERE id = ?",
-                [$name, $icon, $image ?: null, $description, $slots, $id]
-            );
-        } else {
-            $this->db->raw(
-                "UPDATE ministries SET name = ?, icon = ?, description = ?, slots_available = ? WHERE id = ?",
-                [$name, $icon, $description, $slots, $id]
-            );
+        try {
+            // If image key present, update it; otherwise leave it unchanged
+            if (array_key_exists('image', $input)) {
+                $image = trim($input['image'] ?? '');
+                $this->db->raw(
+                    "UPDATE ministries SET name = ?, icon = ?, image = ?, description = ?, slots_available = ? WHERE id = ?",
+                    [$name, $icon, $image ?: null, $description, $slots, $id]
+                );
+            } else {
+                $this->db->raw(
+                    "UPDATE ministries SET name = ?, icon = ?, description = ?, slots_available = ? WHERE id = ?",
+                    [$name, $icon, $description, $slots, $id]
+                );
+            }
+            api_response(['success' => true, 'message' => 'Ministry updated successfully.']);
+        } catch (\Throwable $e) {
+            api_response(['error' => 'Could not update ministry: ' . $e->getMessage()], 500);
         }
-
-        api_response(['success' => true, 'message' => 'Ministry updated successfully.']);
     }
 
     public function delete()
@@ -264,18 +292,32 @@ class Ministries extends Controller
             api_response(['error' => 'Ministry ID required.'], 422);
         }
 
-        $this->db->raw("UPDATE members SET ministry_id = NULL WHERE ministry_id = ?", [$id]);
-        $this->db->raw("DELETE FROM ministries WHERE id = ?", [$id]);
-
-        api_response(['success' => true, 'message' => 'Ministry deleted.']);
+        try {
+            $this->db->raw("UPDATE members SET ministry_id = NULL WHERE ministry_id = ?", [$id]);
+            $this->db->raw("DELETE FROM ministries WHERE id = ?", [$id]);
+            api_response(['success' => true, 'message' => 'Ministry deleted.']);
+        } catch (\Throwable $e) {
+            api_response(['error' => 'Could not delete ministry: ' . $e->getMessage()], 500);
+        }
     }
 
     public function upload_image()
     {
         require_admin_user();
+        $this->ensure_ministry_columns();
 
         if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+            $code = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
+            $errMap = [
+                UPLOAD_ERR_INI_SIZE   => 'File exceeds server upload limit (upload_max_filesize).',
+                UPLOAD_ERR_FORM_SIZE  => 'File exceeds form MAX_FILE_SIZE.',
+                UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded.',
+                UPLOAD_ERR_NO_FILE    => 'No image file uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder on server.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION  => 'A PHP extension blocked the upload.',
+            ];
+            api_response(['error' => $errMap[$code] ?? 'No image file uploaded or upload error occurred.'], 400);
         }
 
         $file = $_FILES['image'];
@@ -290,7 +332,11 @@ class Ministries extends Controller
             api_response(['error' => 'File size exceeds 20MB limit.'], 422);
         }
 
-        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'ministry.jpg');
+        $cloudUrl = null;
+        try {
+            $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'ministry.jpg');
+        } catch (\Throwable $e) {}
+
         if ($cloudUrl) {
             api_response([
                 'success' => true,
@@ -304,11 +350,11 @@ class Ministries extends Controller
         $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'ministries' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0775, true);
         }
 
         if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-            api_response(['error' => 'Failed to save uploaded image.'], 500);
+            api_response(['error' => 'Could not save image. Cloud upload failed and local storage is not writable.'], 500);
         }
 
         $relativeUrl = 'uploads/ministries/' . $filename;
