@@ -795,54 +795,216 @@ html[data-theme='dark'] .pg-root {
 }
 
 /* ── Gifts Matcher card flip animations ── */
-/* Perspective wrapper — must be on the PARENT of the flipping element */
+/* Perspective wrapper — 3D scene */
 .gm-card-scene {
-  perspective: 1200px;
-  perspective-origin: 50% 40%;
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
 }
 
-/* The card flips like a physical paper turning over */
+/* Realistic 3D paper turning animations */
 @keyframes gm-flip-out {
-  0%   { transform: rotateY(0deg) scale(1);    opacity: 1; }
-  40%  { transform: rotateY(-90deg) scale(0.96); opacity: 0.3; }
-  100% { transform: rotateY(-90deg) scale(0.96); opacity: 0;   }
+  0% {
+    transform: rotateY(0deg) translateZ(0) scale(1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    opacity: 1;
+  }
+  45% {
+    transform: rotateY(-85deg) translateZ(60px) scale(0.97);
+    box-shadow: -20px 20px 45px rgba(0, 0, 0, 0.5);
+    opacity: 0.45;
+  }
+  100% {
+    transform: rotateY(-90deg) translateZ(30px) scale(0.95);
+    box-shadow: 0 0 0 transparent;
+    opacity: 0;
+  }
 }
+
 @keyframes gm-flip-in {
-  0%   { transform: rotateY(90deg) scale(0.96);  opacity: 0;   }
-  60%  { transform: rotateY(90deg) scale(0.96);  opacity: 0.3; }
-  100% { transform: rotateY(0deg) scale(1);    opacity: 1; }
+  0% {
+    transform: rotateY(90deg) translateZ(30px) scale(0.95);
+    box-shadow: 0 0 0 transparent;
+    opacity: 0;
+  }
+  55% {
+    transform: rotateY(15deg) translateZ(40px) scale(0.98);
+    box-shadow: 20px 20px 45px rgba(0, 0, 0, 0.45);
+    opacity: 0.85;
+  }
+  100% {
+    transform: rotateY(0deg) translateZ(0) scale(1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    opacity: 1;
+  }
 }
-/* Back flip — going to previous question */
+
 @keyframes gm-flip-out-back {
-  0%   { transform: rotateY(0deg) scale(1);    opacity: 1; }
-  40%  { transform: rotateY(90deg) scale(0.96);  opacity: 0.3; }
-  100% { transform: rotateY(90deg) scale(0.96);  opacity: 0;   }
+  0% {
+    transform: rotateY(0deg) translateZ(0) scale(1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    opacity: 1;
+  }
+  45% {
+    transform: rotateY(85deg) translateZ(60px) scale(0.97);
+    box-shadow: 20px 20px 45px rgba(0, 0, 0, 0.5);
+    opacity: 0.45;
+  }
+  100% {
+    transform: rotateY(90deg) translateZ(30px) scale(0.95);
+    box-shadow: 0 0 0 transparent;
+    opacity: 0;
+  }
 }
+
 @keyframes gm-flip-in-back {
-  0%   { transform: rotateY(-90deg) scale(0.96); opacity: 0;   }
-  60%  { transform: rotateY(-90deg) scale(0.96); opacity: 0.3; }
-  100% { transform: rotateY(0deg) scale(1);    opacity: 1; }
+  0% {
+    transform: rotateY(-90deg) translateZ(30px) scale(0.95);
+    box-shadow: 0 0 0 transparent;
+    opacity: 0;
+  }
+  55% {
+    transform: rotateY(-15deg) translateZ(40px) scale(0.98);
+    box-shadow: -20px 20px 45px rgba(0, 0, 0, 0.45);
+    opacity: 0.85;
+  }
+  100% {
+    transform: rotateY(0deg) translateZ(0) scale(1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    opacity: 1;
+  }
 }
 
 .gm-card--flip-out {
-  animation: gm-flip-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: center center;
+  animation: gm-flip-out 0.34s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: 30% center;
   backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 .gm-card--flip-in {
-  animation: gm-flip-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: center center;
+  animation: gm-flip-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: 70% center;
   backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 .gm-card--flip-out-back {
-  animation: gm-flip-out-back 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: center center;
+  animation: gm-flip-out-back 0.34s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: 70% center;
   backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 .gm-card--flip-in-back {
-  animation: gm-flip-in-back 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: center center;
+  animation: gm-flip-in-back 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: 30% center;
   backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+/* ── Gifts Matcher Notebook Card (Light & Dark Mode Responsive) ── */
+.pg-root .gm-notebook-stack-1 {
+  background: #e2ddd3;
+  border-radius: 24px;
+}
+.pg-root .gm-notebook-stack-2 {
+  background: #ede8df;
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.pg-root .gm-notebook-card {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1.5px solid var(--p-border, #e5e8f1);
+  box-shadow: 0 4px 14px rgba(30, 45, 90, 0.08), 0 20px 40px -15px rgba(30, 45, 90, 0.12);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 30px,
+      rgba(100, 130, 215, 0.12) 30px,
+      rgba(100, 130, 215, 0.12) 31px
+    ),
+    linear-gradient(
+      to right,
+      #ffffff 0px,
+      #ffffff 52px,
+      rgba(255, 90, 10, 0.35) 52px,
+      rgba(255, 90, 10, 0.35) 54px,
+      #ffffff 54px
+    );
+  padding: 34px 28px 28px 70px;
+  min-height: 330px;
+  color: var(--p-text);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.pg-root .gm-notebook-num {
+  color: rgba(100, 130, 215, 0.38);
+}
+
+.pg-root .gm-option-btn {
+  border: 1.5px solid var(--p-border, #e5e8f1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--p-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+.pg-root .gm-option-btn:hover {
+  background: #ffffff;
+  border-color: rgba(255, 90, 10, 0.4);
+}
+.pg-root .gm-option-btn.selected {
+  border: 2px solid #ff5a0a;
+  background: rgba(255, 90, 10, 0.08);
+  box-shadow: 0 4px 14px rgba(255, 90, 10, 0.15);
+}
+
+/* Dark Mode Overrides */
+html[data-theme='dark'] .pg-root .gm-notebook-stack-1 {
+  background: #0f121a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+html[data-theme='dark'] .pg-root .gm-notebook-stack-2 {
+  background: #171c28;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+html[data-theme='dark'] .pg-root .gm-notebook-card {
+  border: 1.5px solid var(--p-border, #2a3144);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 24px 50px -12px rgba(0, 0, 0, 0.6);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 30px,
+      rgba(255, 255, 255, 0.05) 30px,
+      rgba(255, 255, 255, 0.05) 31px
+    ),
+    linear-gradient(
+      to right,
+      #1a202c 0px,
+      #1a202c 52px,
+      rgba(255, 90, 10, 0.45) 52px,
+      rgba(255, 90, 10, 0.45) 54px,
+      #1a202c 54px
+    );
+  color: var(--p-text);
+}
+html[data-theme='dark'] .pg-root .gm-notebook-num {
+  color: rgba(255, 255, 255, 0.22);
+}
+html[data-theme='dark'] .pg-root .gm-option-btn {
+  border: 1.5px solid var(--p-border, #2a3144);
+  background: rgba(26, 32, 44, 0.75);
+  color: var(--p-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+html[data-theme='dark'] .pg-root .gm-option-btn:hover {
+  background: #222938;
+  border-color: rgba(255, 90, 10, 0.5);
+}
+html[data-theme='dark'] .pg-root .gm-option-btn.selected {
+  border: 2px solid #ff5a0a;
+  background: rgba(255, 90, 10, 0.18);
+  box-shadow: 0 4px 14px rgba(255, 90, 10, 0.25);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -852,8 +1014,6 @@ html[data-theme='dark'] .pg-root {
     opacity: 1 !important;
     transform: none !important;
   }
-}
-@media (prefers-reduced-motion: reduce) {
   .pg-root .pg-hero, .pg-root .dg-hero, .pg-root .min-vol-hero,
   .pg-root .pg-card, .pg-root .dg-card, .pg-root .min-vol-card,
   .pg-root .min-vol-modal { animation: none; }

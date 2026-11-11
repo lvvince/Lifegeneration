@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, Check, ArrowRight, Loader2,
   HeartHandshake, Sparkles, Crown, GraduationCap,
   Navigation, UsersRound, Cpu, Rocket, Handshake,
-  Flame, Building2
+  Flame, Building2, Paperclip
 } from 'lucide-react'
 import { apiGet, apiPost } from '../api.js'
 import '../styles/pages.css'
@@ -682,230 +682,269 @@ export default function GiftsMatcher() {
   const QuestionIcon = getQuestionIcon(question.key)
 
   return (
-    <div className="pg-root" style={{ maxWidth: 620, margin: '0 auto', padding: '32px 20px 48px' }}>
+    <div
+      className="pg-root"
+      style={{
+        maxWidth: 660,
+        margin: '0 auto',
+        padding: '16px 20px 60px',
+        background: 'transparent',
+      }}
+    >
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'rgba(255,90,10,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Sparkles size={17} color="#ff5a0a" />
-          </div>
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.07em',
+      {/* ══════════════════════════════════════════════
+          HERO — "FIND MY PLACE" (Theme-Adaptive Title)
+         ══════════════════════════════════════════════ */}
+      <div style={{
+        textAlign: 'center',
+        padding: '24px 0 20px',
+        marginBottom: 8,
+      }}>
+
+        {/* Handcrafted Title (Responsive Light & Dark Mode) */}
+        <h1 style={{ margin: '0 0 12px', lineHeight: 1.05, letterSpacing: '-0.03em' }}>
+          <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', flexWrap: 'wrap', gap: '0 10px' }}>
+            <span style={{
+              fontSize: 'clamp(42px, 9vw, 68px)',
+              fontWeight: 900,
+              color: 'var(--p-text, #1a1a1a)',
+              letterSpacing: '-0.045em',
+              lineHeight: 1,
+            }}>
+              FIND
+            </span>
+            <span style={{
+              fontSize: 'clamp(42px, 9vw, 68px)',
+              fontWeight: 900,
+              fontStyle: 'italic',
               color: '#ff5a0a',
-            }}
-          >
-            Spiritual Gifts Matcher
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+            }}>
+              MY
+            </span>
+            <span style={{
+              fontSize: 'clamp(42px, 9vw, 68px)',
+              fontWeight: 900,
+              color: '#ffffff',
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+              background: 'var(--p-text, #1a1a1a)',
+              padding: '2px 14px 6px',
+              borderRadius: 12,
+              display: 'inline-block',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+              border: '1.5px solid var(--p-border, rgba(0,0,0,0.1))',
+            }}>
+              PLACE
+            </span>
           </span>
-        </div>
-
-        <h1
-          style={{
-            margin: '0 0 8px',
-            fontSize: 'clamp(22px, 4vw, 28px)',
-            fontWeight: 900,
-            color: '#1a1f2e',
-            lineHeight: 1.2,
-          }}
-        >
-          Find where you{' '}
-          <span style={{ color: '#ff5a0a' }}>belong</span>
         </h1>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            color: 'var(--p-text-2, #586079)',
-            lineHeight: 1.55,
-          }}
-        >
-          Answer {totalQ} quick questions and we'll recommend the right Volunteer Team and D-Group for you.
+
+        <p style={{
+          margin: '0 auto',
+          fontSize: 14,
+          color: 'var(--p-text-2, #657088)',
+          maxWidth: 400,
+          lineHeight: 1.6,
+        }}>
+          Answer {totalQ} quick questions to discover your best-fit Volunteer Team and D-Group.
         </p>
       </div>
 
-      {/* Progress */}
-      <div style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--p-text-2)' }}>
-            Question {currentQ + 1} of {totalQ}
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#ff5a0a' }}>
-            {progressPct}%
-          </span>
-        </div>
-        <div style={{ height: 5, borderRadius: 4, background: 'rgba(0,0,0,0.07)', overflow: 'hidden' }}>
-          <div
-            style={{
-              width: progressPct + '%',
-              height: '100%',
+      {/* ══════════════════════════════════════════════
+          PROGRESS — 5-Page Indicators (Responsive)
+         ══════════════════════════════════════════════ */}
+      <div style={{ marginBottom: 22, textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+          {questions.map((_, i) => (
+            <div key={i} style={{
+              width: i === currentQ ? 28 : 8,
+              height: 7,
               borderRadius: 4,
-              background: '#ff5a0a',
-              transition: 'width 0.4s ease',
-            }}
-          />
+              background: i < currentQ
+                ? '#ff5a0a'
+                : i === currentQ
+                ? '#ff5a0a'
+                : 'var(--p-border, #d1d5db)',
+              opacity: i > currentQ ? 0.45 : 1,
+              transition: 'all 0.3s ease',
+            }} />
+          ))}
         </div>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--p-text-3, #8a92a8)', letterSpacing: '0.04em' }}>
+          Question {currentQ + 1} of {totalQ}
+          <span style={{ color: '#ff5a0a', marginLeft: 8 }}>· {progressPct}%</span>
+        </span>
       </div>
 
-      {/* ── Question card — wrapped in 3D perspective scene for flip effect ── */}
-      <div className="gm-card-scene" style={{ marginBottom: 16 }}>
+      {/* ══════════════════════════════════════════════
+          NOTEBOOK PAPER STACK (Light & Dark Responsive)
+         ══════════════════════════════════════════════ */}
+      <div className="gm-card-scene" style={{ position: 'relative', marginBottom: 24 }}>
+
+        {/* Stacked layers behind */}
         <div
-          className={cardFlipClass}
+          className="gm-notebook-stack-1"
           style={{
-            ...card,
-            padding: '26px 24px',
-            /* Paper-like feel: subtle warm tint + light grain via box-shadow */
-            background: 'linear-gradient(145deg, #fffdf9 0%, #fff8f3 100%)',
-            boxShadow:
-              '0 2px 1px rgba(255,90,10,0.04), 0 8px 24px -8px rgba(30,45,90,0.14), 0 32px 48px -20px rgba(30,45,90,0.10)',
-            /* Slight top-left page curl hint */
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 4,
+            position: 'absolute', inset: 0,
+            transform: 'rotate(-2.2deg) translateY(7px) translateX(-3px)',
+            zIndex: 0,
+          }}
+        />
+        <div
+          className="gm-notebook-stack-2"
+          style={{
+            position: 'absolute', inset: 0,
+            transform: 'rotate(1.4deg) translateY(4px) translateX(2px)',
+            zIndex: 1,
+          }}
+        />
+
+        {/* ── Main Lined Notebook Card (Light White / Dark Mode Responsive) ── */}
+        <div
+          className={`gm-notebook-card ${cardFlipClass}`}
+          style={{
+            position: 'relative',
+            zIndex: 2,
           }}
         >
-          {/* Question label */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 20,
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(255,90,10,0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <QuestionIcon size={22} color="#ff5a0a" />
+          {/* Burnished Metal Paperclip Icon clamped on top */}
+          <div style={{
+            position: 'absolute',
+            top: -4,
+            right: 38,
+            width: 32,
+            height: 38,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.22))',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            transform: 'rotate(12deg)',
+          }}>
+            <Paperclip size={28} color="#e07a2a" strokeWidth={2.4} />
+          </div>
+
+          {/* Line numbers on left margin */}
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0, width: 52,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center',
+            paddingTop: 36,
+            pointerEvents: 'none',
+          }}>
+            {Array.from({ length: 14 }, (_, i) => (
+              <div
+                key={i}
+                className="gm-notebook-num"
+                style={{
+                  fontSize: 9.5,
+                  height: 31,
+                  lineHeight: '31px',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {i + 1}
+              </div>
+            ))}
+          </div>
+
+          {/* Question title */}
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+            marginBottom: 22,
+          }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 12,
+              background: 'rgba(255,90,10,0.12)',
+              border: '1px solid rgba(255,90,10,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, marginTop: 1,
+            }}>
+              <QuestionIcon size={21} color="#ff5a0a" />
             </div>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 'clamp(16px, 2.5vw, 19px)',
-                fontWeight: 800,
-                color: '#1a1f2e',
-                lineHeight: 1.3,
-              }}
-            >
+            <h2 style={{
+              margin: 0,
+              fontSize: 'clamp(15px, 2.5vw, 18.5px)',
+              fontWeight: 800,
+              color: 'var(--p-text, #1a1f2e)',
+              lineHeight: 1.35,
+              letterSpacing: '-0.01em',
+            }}>
               {question.question}
             </h2>
           </div>
 
           {/* Options */}
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'grid', gap: 9 }}>
             {question.options?.map(opt => {
-              const selected    = answers[question.key] === opt.key
-              const OptionIcon  = getOptionIcon(opt.key)
+              const selected   = answers[question.key] === opt.key
+              const OptionIcon = getOptionIcon(opt.key)
               return (
                 <button
                   key={opt.key}
                   type="button"
                   onClick={() => flipPhase === 'idle' && handleSelect(opt.key)}
+                  className={`gm-option-btn ${selected ? 'selected' : ''}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 14px',
-                    borderRadius: 12,
-                    border: selected
-                      ? '1.5px solid #ff5a0a'
-                      : '1.5px solid var(--p-border, #e5e8f1)',
-                    background: selected ? 'rgba(255,90,10,0.06)' : 'rgba(255,255,255,0.7)',
+                    borderRadius: 14,
                     cursor: flipPhase !== 'idle' ? 'default' : 'pointer',
                     textAlign: 'left',
                     width: '100%',
-                    transition: 'border-color 0.15s, background 0.15s, transform 0.12s',
                     outline: 'none',
-                    transform: selected ? 'scale(1.012)' : 'scale(1)',
+                    transition: 'all 0.16s ease',
+                    transform: selected ? 'translateX(4px)' : 'translateX(0)',
                   }}
                 >
-                  {/* Icon badge */}
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 9,
-                      background: selected ? 'rgba(255,90,10,0.12)' : 'rgba(0,0,0,0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <OptionIcon size={17} color={selected ? '#ff5a0a' : '#586079'} />
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: selected ? 'rgba(255,90,10,0.16)' : 'rgba(0,0,0,0.04)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'background 0.15s',
+                  }}>
+                    <OptionIcon size={17} color={selected ? '#ff5a0a' : 'var(--p-text-2, #586079)'} />
                   </div>
 
-                  {/* Text */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 13.5,
-                        color: selected ? '#ff5a0a' : '#1a1f2e',
-                        transition: 'color 0.15s',
-                      }}
-                    >
+                    <div style={{
+                      fontWeight: 700, fontSize: 13.5,
+                      color: selected ? '#ff5a0a' : 'var(--p-text, #1a1f2e)',
+                      transition: 'color 0.15s',
+                    }}>
                       {opt.label}
                     </div>
                     {opt.description && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: 'var(--p-text-2, #586079)',
-                          marginTop: 2,
-                          lineHeight: 1.4,
-                        }}
-                      >
+                      <div style={{
+                        fontSize: 12,
+                        color: 'var(--p-text-2, #586079)',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                      }}>
                         {opt.description}
                       </div>
                     )}
                   </div>
 
-                  {/* Check dot */}
-                  <div
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      border: selected ? 'none' : '1.5px solid #d1d5db',
-                      background: selected ? '#ff5a0a' : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {selected && <Check size={11} color="#fff" strokeWidth={3} />}
+                  {/* Radio circle with Check icon */}
+                  <div style={{
+                    width: 21, height: 21, borderRadius: '50%',
+                    border: selected ? 'none' : '2px solid var(--p-border, #d1d5db)',
+                    background: selected ? '#ff5a0a' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'all 0.15s',
+                    boxShadow: selected ? '0 2px 8px rgba(255,90,10,0.38)' : 'none',
+                  }}>
+                    {selected && <Check size={12} color="#ffffff" strokeWidth={3} />}
                   </div>
                 </button>
               )
@@ -916,40 +955,32 @@ export default function GiftsMatcher() {
 
       {/* Submit error */}
       {submitErr && (
-        <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: 10,
-            background: 'rgba(220,38,38,0.07)',
-            color: '#dc2626',
-            fontSize: 13,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{
+          padding: '10px 14px', borderRadius: 10,
+          background: 'rgba(220,38,38,0.08)', color: '#dc2626',
+          border: '1px solid rgba(220,38,38,0.2)',
+          fontSize: 13, marginBottom: 14,
+        }}>
           {submitErr}
         </div>
       )}
 
-      {/* Navigation */}
+      {/* ── Navigation ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
         <button
           type="button"
           onClick={handleBack}
           disabled={currentQ === 0 || flipPhase !== 'idle'}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '10px 18px',
-            borderRadius: 10,
-            border: '1px solid var(--p-border, #e5e8f1)',
-            background: '#fff',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '11px 22px', borderRadius: 13,
+            border: '1.5px solid var(--p-border, #e5e8f1)',
+            background: 'var(--p-surface, #ffffff)',
             cursor: (currentQ === 0 || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
-            fontWeight: 600,
-            fontSize: 13,
-            color: '#1a1f2e',
-            opacity: (currentQ === 0 || flipPhase !== 'idle') ? 0.4 : 1,
-            transition: 'opacity 0.2s',
+            fontWeight: 700, fontSize: 13,
+            color: 'var(--p-text, #1a1f2e)',
+            opacity: (currentQ === 0 || flipPhase !== 'idle') ? 0.35 : 1,
+            transition: 'opacity 0.2s, background 0.15s',
           }}
         >
           <ChevronLeft size={16} />
@@ -961,49 +992,26 @@ export default function GiftsMatcher() {
           onClick={handleNext}
           disabled={!canGoNext() || flipPhase !== 'idle'}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            padding: '10px 26px',
-            borderRadius: 10,
-            background: (canGoNext() && flipPhase === 'idle') ? '#ff5a0a' : '#d1d5db',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '12px 30px', borderRadius: 13,
+            background: (canGoNext() && flipPhase === 'idle') ? '#ff5a0a' : 'var(--p-border, #d1d5db)',
             color: '#fff',
             cursor: (!canGoNext() || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
-            fontWeight: 700,
-            fontSize: 14,
+            fontWeight: 800, fontSize: 14,
             border: 0,
-            transition: 'background 0.2s, transform 0.1s',
+            boxShadow: (canGoNext() && flipPhase === 'idle')
+              ? '0 4px 20px rgba(255,90,10,0.35)'
+              : 'none',
+            transition: 'all 0.2s',
             transform: (canGoNext() && flipPhase === 'idle') ? 'scale(1)' : 'scale(0.97)',
           }}
         >
           {isLastQ ? (
-            <>
-              <Award size={15} />
-              See My Matches
-            </>
+            <>See My Matches <Award size={16} /></>
           ) : (
-            <>
-              Next
-              <ChevronRight size={16} />
-            </>
+            <>Next <ChevronRight size={16} /></>
           )}
         </button>
-      </div>
-
-      {/* Step dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 22 }}>
-        {questions.map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i === currentQ ? 18 : 7,
-              height: 7,
-              borderRadius: 4,
-              background: i < currentQ ? '#fb923c' : i === currentQ ? '#ff5a0a' : '#e5e7eb',
-              transition: 'all 0.25s ease',
-            }}
-          />
-        ))}
       </div>
     </div>
   )

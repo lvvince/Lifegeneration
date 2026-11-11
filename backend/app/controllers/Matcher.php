@@ -132,26 +132,24 @@ class Matcher extends Controller
     }
 
     // ─────────────────────────────────────────────
-    // Build a weighted signal vector from quiz answers
+    // Build a weighted signal vector from quiz answers (5 Questions)
     // ─────────────────────────────────────────────
     private function buildSignals(array $answers): array
     {
-        // Signal dimensions:
-        // ministry: worship | media | hospitality | outreach
-        // dgroup:   youth | young_professional | couples | general
-        // traits:   creative | technical | relational | leadership | introverted
-
         $signals = [
             // Ministry affinity
             'worship'          => 0,
             'media'            => 0,
             'hospitality'      => 0,
             'outreach'         => 0,
+            'children'         => 0,
             // D-Group affinity
             'youth'            => 0,
             'young_professional' => 0,
-            'couples'          => 0,
-            // Personality traits (used to break ties)
+            'minsu'            => 0,
+            'boys'             => 0,
+            'girls'            => 0,
+            // Personality traits
             'creative'         => 0,
             'technical'        => 0,
             'relational'       => 0,
@@ -159,70 +157,47 @@ class Matcher extends Controller
             'introverted'      => 0,
         ];
 
-        // Scoring map: question_key => [ answer_key => [ signal => weight ] ]
+        // 5-Question Scoring Map
         $scoringMap = [
-            // Q1: Primary spiritual gift
+            // Q1: Calling & Primary Gifts
             'gift' => [
-                'worship_arts'  => ['worship' => 5, 'creative' => 3],
-                'technology'    => ['media' => 5, 'technical' => 4],
-                'hospitality'   => ['hospitality' => 5, 'relational' => 3],
-                'evangelism'    => ['outreach' => 5, 'leadership' => 2],
-                'teaching'      => ['youth' => 3, 'young_professional' => 3, 'leadership' => 3],
-                'encouragement' => ['relational' => 4, 'hospitality' => 3, 'youth' => 2],
+                'worship_arts'  => ['worship' => 6, 'creative' => 4],
+                'technology'    => ['media' => 6, 'technical' => 5],
+                'hospitality'   => ['hospitality' => 6, 'relational' => 4],
+                'evangelism'    => ['outreach' => 6, 'leadership' => 3],
+                'children_care' => ['children' => 6, 'relational' => 4, 'youth' => 2],
             ],
-            // Q2: How do you prefer to serve?
+            // Q2: How you prefer to serve during events
             'serve_style' => [
-                'on_stage'       => ['worship' => 4, 'creative' => 3, 'leadership' => 2],
-                'behind_camera'  => ['media' => 5, 'technical' => 4, 'introverted' => 2],
-                'greet_people'   => ['hospitality' => 5, 'relational' => 4],
-                'street_outreach'=> ['outreach' => 5, 'leadership' => 3],
-                'small_groups'   => ['youth' => 3, 'young_professional' => 3, 'relational' => 3],
-                'one_on_one'     => ['relational' => 4, 'introverted' => 2, 'youth' => 2],
+                'on_stage'        => ['worship' => 5, 'creative' => 4, 'leadership' => 2],
+                'behind_camera'   => ['media' => 6, 'technical' => 5, 'introverted' => 3],
+                'greet_people'    => ['hospitality' => 6, 'relational' => 5],
+                'community_hands' => ['outreach' => 6, 'leadership' => 3, 'relational' => 3],
+                'kids_teaching'   => ['children' => 6, 'relational' => 4],
             ],
-            // Q3: Which skills do you have or want to grow in?
-            'skills' => [
-                'singing_playing'  => ['worship' => 5, 'creative' => 3],
-                'video_sound_tech' => ['media' => 5, 'technical' => 5],
-                'public_speaking'  => ['outreach' => 3, 'leadership' => 4, 'young_professional' => 2],
-                'graphic_design'   => ['media' => 3, 'creative' => 5],
-                'people_skills'    => ['hospitality' => 4, 'relational' => 5],
-                'organizing'       => ['outreach' => 2, 'leadership' => 4, 'young_professional' => 3],
-            ],
-            // Q4: Availability (affects D-Group scheduling preference)
-            'availability' => [
-                'saturday_afternoon' => ['youth' => 3, 'young_professional' => 2],
-                'saturday_morning'   => ['youth' => 2, 'couples' => 2],
-                'friday_evening'     => ['couples' => 3, 'young_professional' => 2],
-                'sunday_after'       => ['youth' => 3, 'general' => 2],
-                'weekday_evening'    => ['young_professional' => 4],
-                'flexible'           => [], // no boost, neutral
-            ],
-            // Q5: Who are you in your core?
-            'personality' => [
-                'creative_expressive' => ['worship' => 3, 'media' => 2, 'creative' => 5],
-                'tech_builder'        => ['media' => 4, 'technical' => 5, 'introverted' => 2],
-                'people_lover'        => ['hospitality' => 4, 'relational' => 5, 'youth' => 2],
-                'mission_driven'      => ['outreach' => 4, 'leadership' => 4, 'young_professional' => 2],
-                'quiet_faithful'      => ['introverted' => 5, 'hospitality' => 2, 'youth' => 2],
-                'natural_leader'      => ['leadership' => 5, 'young_professional' => 3, 'outreach' => 2],
-            ],
-            // Q6: Life stage
+            // Q3: Life stage & community fit
             'life_stage' => [
-                'high_school'        => ['youth' => 6],
-                'college'            => ['youth' => 5, 'young_professional' => 2],
-                'early_career'       => ['young_professional' => 6],
-                'married'            => ['couples' => 6],
-                'married_kids'       => ['couples' => 5],
-                'single_professional'=> ['young_professional' => 5],
+                'high_school_college' => ['youth' => 6, 'relational' => 3],
+                'minsu_student'       => ['minsu' => 7, 'youth' => 3],
+                'young_professional'  => ['young_professional' => 7, 'leadership' => 3],
+                'young_men'           => ['boys' => 7, 'youth' => 3],
+                'young_women'         => ['girls' => 7, 'youth' => 3],
             ],
-            // Q7: Biggest desire in joining a community
+            // Q4: Availability & fellowship routine
+            'availability' => [
+                'sat_afternoon' => ['youth' => 4, 'girls' => 4],
+                'sat_evening'   => ['young_professional' => 5],
+                'fri_evening'   => ['boys' => 5],
+                'mon_morning'   => ['minsu' => 5],
+                'flexible'      => ['youth' => 2, 'young_professional' => 2, 'minsu' => 2],
+            ],
+            // Q5: Heart & growth desire
             'community_desire' => [
-                'grow_in_faith'       => ['youth' => 3, 'young_professional' => 3],
-                'meet_new_friends'    => ['youth' => 4, 'relational' => 4],
-                'use_my_gifts'        => ['worship' => 2, 'media' => 2, 'outreach' => 2, 'hospitality' => 2],
-                'get_accountability'  => ['young_professional' => 4, 'couples' => 3],
-                'serve_community'     => ['outreach' => 4, 'hospitality' => 3],
-                'grow_as_couple'      => ['couples' => 6],
+                'grow_in_faith'         => ['youth' => 3, 'young_professional' => 3, 'minsu' => 3],
+                'brotherhood_sisterhood'=> ['boys' => 4, 'girls' => 4, 'relational' => 5],
+                'campus_impact'         => ['minsu' => 5, 'outreach' => 4],
+                'use_gifts'             => ['worship' => 3, 'media' => 3, 'children' => 3, 'hospitality' => 3],
+                'mentor_others'         => ['young_professional' => 4, 'children' => 4, 'leadership' => 4],
             ],
         ];
 
@@ -241,7 +216,6 @@ class Matcher extends Controller
 
     // ─────────────────────────────────────────────
     // Score a Ministry based on signals
-    // Uses keyword matching on name + description as fallback boost
     // ─────────────────────────────────────────────
     private function scoreMinistry(array $ministry, array $signals): int
     {
@@ -251,42 +225,28 @@ class Matcher extends Controller
 
         $score = 0;
 
-        // Primary keyword-to-signal mapping
         $keywordSignals = [
             'worship'    => ['worship', 'music', 'sing', 'choir', 'instrument', 'band', 'praise'],
             'media'      => ['media', 'tech', 'camera', 'video', 'sound', 'livestream', 'streaming', 'presentation', 'graphic'],
             'hospitality'=> ['usher', 'greet', 'welcome', 'hospitality', 'seat', 'host'],
             'outreach'   => ['outreach', 'evangelism', 'community', 'mission', 'social'],
+            'children'   => ['children', 'kids', 'youngest', 'teach', 'nurture', 'child'],
         ];
 
         foreach ($keywordSignals as $signal => $keywords) {
             foreach ($keywords as $kw) {
                 if (strpos($combined, $kw) !== false) {
-                    $score += $signals[$signal] * 1; // semantic match boost
-                    break; // one match per signal group is enough
+                    $score += ($signals[$signal] ?? 0) * 2;
+                    break;
                 }
             }
         }
 
-        // Direct signal score sum weighted
-        $score += $signals['worship']     * (strpos($name, 'worship') !== false ? 2 : 0);
-        $score += $signals['media']       * (strpos($name, 'media') !== false || strpos($name, 'tech') !== false ? 2 : 0);
-        $score += $signals['hospitality'] * (strpos($name, 'usher') !== false || strpos($name, 'greet') !== false ? 2 : 0);
-        $score += $signals['outreach']    * (strpos($name, 'outreach') !== false ? 2 : 0);
-
-        // Personality trait boosts per ministry type
-        if (strpos($combined, 'worship') !== false || strpos($combined, 'music') !== false) {
-            $score += $signals['creative'] * 1;
-        }
-        if (strpos($combined, 'tech') !== false || strpos($combined, 'media') !== false) {
-            $score += $signals['technical'] * 1;
-        }
-        if (strpos($combined, 'usher') !== false || strpos($combined, 'greet') !== false || strpos($combined, 'welcome') !== false) {
-            $score += $signals['relational'] * 1;
-        }
-        if (strpos($combined, 'outreach') !== false) {
-            $score += $signals['leadership'] * 1;
-        }
+        if (strpos($name, 'worship') !== false)     $score += ($signals['worship'] ?? 0) * 3;
+        if (strpos($name, 'media') !== false)       $score += ($signals['media'] ?? 0) * 3;
+        if (strpos($name, 'usher') !== false || strpos($name, 'greet') !== false) $score += ($signals['hospitality'] ?? 0) * 3;
+        if (strpos($name, 'outreach') !== false)    $score += ($signals['outreach'] ?? 0) * 3;
+        if (strpos($name, 'children') !== false)    $score += ($signals['children'] ?? 0) * 3;
 
         return $score;
     }
@@ -299,41 +259,39 @@ class Matcher extends Controller
         $name = strtolower($dgroup['name'] ?? '');
         $desc = strtolower($dgroup['description'] ?? '');
         $sched = strtolower($dgroup['schedule'] ?? '');
-        $combined = $name . ' ' . $desc . ' ' . $sched;
+        $loc = strtolower($dgroup['location'] ?? '');
+        $combined = $name . ' ' . $desc . ' ' . $sched . ' ' . $loc;
 
         $score = 0;
 
-        // Keyword-signal mapping for D-Groups
-        $keywordSignals = [
-            'youth'             => ['youth', 'high school', 'college', 'student', 'teen', 'young people', 'campus'],
-            'young_professional'=> ['professional', 'career', 'working', 'adult', 'young professional', 'young adults'],
-            'couples'           => ['couple', 'married', 'marriage', 'husband', 'wife', 'family'],
-        ];
-
-        foreach ($keywordSignals as $signal => $keywords) {
-            foreach ($keywords as $kw) {
-                if (strpos($combined, $kw) !== false) {
-                    $score += $signals[$signal] * 2;
-                    break;
-                }
-            }
+        if (strpos($combined, 'minsu') !== false) {
+            $score += ($signals['minsu'] ?? 0) * 4;
+        }
+        if (strpos($combined, 'boy') !== false || strpos($combined, 'brotherhood') !== false) {
+            $score += ($signals['boys'] ?? 0) * 4;
+        }
+        if (strpos($combined, 'girl') !== false || strpos($combined, 'sisterhood') !== false) {
+            $score += ($signals['girls'] ?? 0) * 4;
+        }
+        if (strpos($combined, 'young pro') !== false || strpos($combined, 'professional') !== false || strpos($combined, 'career') !== false) {
+            $score += ($signals['young_professional'] ?? 0) * 4;
+        }
+        if (strpos($combined, 'youth ministry') !== false || strpos($combined, 'high school') !== false || strpos($combined, 'college') !== false) {
+            $score += ($signals['youth'] ?? 0) * 3;
         }
 
-        // Relational/introverted personality fit
-        $score += $signals['relational'] * 1;
-        if (strpos($combined, 'fellowship') !== false) {
-            $score += $signals['relational'];
-        }
-
-        // Schedule matching boosts
-        if (strpos($sched, 'saturday') !== false) {
-            $score += $signals['youth'] * 1;
-        }
+        // Schedule boosts
         if (strpos($sched, 'friday') !== false) {
-            $score += $signals['couples'] * 1;
+            $score += ($signals['boys'] ?? 0) * 2;
         }
-        if (strpos($sched, 'weekday') !== false || strpos($sched, 'wednesday') !== false || strpos($sched, 'thursday') !== false) {
-            $score += $signals['young_professional'] * 1;
+        if (strpos($sched, 'monday') !== false) {
+            $score += ($signals['minsu'] ?? 0) * 2;
+        }
+        if (strpos($sched, '5:00') !== false) {
+            $score += ($signals['young_professional'] ?? 0) * 2;
+        }
+        if (strpos($sched, '1:30') !== false) {
+            $score += ($signals['youth'] ?? 0) + ($signals['girls'] ?? 0);
         }
 
         return $score;
@@ -393,100 +351,70 @@ class Matcher extends Controller
     }
 
     // ─────────────────────────────────────────────
-    // Static quiz questions definition
+    // Static 5-question quiz definition
+    // Matches the 5 active Ministries & 5 active D-Groups
     // ─────────────────────────────────────────────
     private function getQuestions(): array
     {
         return [
             [
                 'key'      => 'gift',
-                'question' => 'What do you feel is your primary spiritual gift?',
-                'icon'     => '🎁',
+                'question' => 'What do you feel is your primary calling or spiritual gift?',
+                'icon'     => 'gift',
                 'options'  => [
-                    ['key' => 'worship_arts',  'label' => 'Worship & Arts',        'emoji' => '🎵', 'description' => 'I love expressing faith through music, singing, or creative arts.'],
-                    ['key' => 'technology',    'label' => 'Technology & Media',    'emoji' => '🎥', 'description' => 'I love operating cameras, livestreams, sound systems, or graphic design.'],
-                    ['key' => 'hospitality',   'label' => 'Hospitality & Service', 'emoji' => '🤝', 'description' => 'I love welcoming people and making them feel at home.'],
-                    ['key' => 'evangelism',    'label' => 'Evangelism & Outreach', 'emoji' => '📣', 'description' => 'I love sharing the Gospel and serving our community outside the church.'],
-                    ['key' => 'teaching',      'label' => 'Teaching & Discipleship','emoji' => '📖', 'description' => 'I love mentoring others and helping people grow spiritually.'],
-                    ['key' => 'encouragement', 'label' => 'Encouragement & Care',  'emoji' => '💛', 'description' => 'I love uplifting and supporting people in their daily walk.'],
+                    ['key' => 'worship_arts',  'label' => 'Worship & Music',           'description' => 'Expressing praise through instruments, vocals, singing, or creative arts.'],
+                    ['key' => 'technology',    'label' => 'Media & Production Tech',   'description' => 'Operating cameras, livestream, audio boards, or graphic visuals.'],
+                    ['key' => 'hospitality',   'label' => 'Ushers & Hospitality',      'description' => 'Welcoming guests, guiding seating, and creating a hospitable environment.'],
+                    ['key' => 'evangelism',    'label' => 'Outreach & Missions',       'description' => 'Community outreach, evangelism drives, and blessing families in need.'],
+                    ['key' => 'children_care', 'label' => 'Children’s Ministry',        'description' => 'Nurturing the faith of the youngest generation through teaching and care.'],
                 ],
             ],
             [
                 'key'      => 'serve_style',
-                'question' => 'How do you prefer to serve during events and gatherings?',
-                'icon'     => '⚡',
+                'question' => 'How do you prefer to serve during gatherings and events?',
+                'icon'     => 'serve_style',
                 'options'  => [
-                    ['key' => 'on_stage',        'label' => 'On Stage',            'emoji' => '🎤', 'description' => 'Leading worship, speaking, or performing in front of people.'],
-                    ['key' => 'behind_camera',   'label' => 'Behind the Scenes',   'emoji' => '📸', 'description' => 'Running tech, cameras, sound board, or presentations.'],
-                    ['key' => 'greet_people',    'label' => 'Greeting People',     'emoji' => '🙌', 'description' => 'Welcoming, ushering, and guiding people during events.'],
-                    ['key' => 'street_outreach', 'label' => 'Community Outreach',  'emoji' => '🌍', 'description' => 'Going out to serve communities, feed programs, or evangelism drives.'],
-                    ['key' => 'small_groups',    'label' => 'Small Group Facilitation', 'emoji' => '👥', 'description' => 'Leading discussions and facilitating group discipleship.'],
-                    ['key' => 'one_on_one',      'label' => 'One-on-One',          'emoji' => '💬', 'description' => 'Deep personal mentoring, counseling, and prayer partnerships.'],
-                ],
-            ],
-            [
-                'key'      => 'skills',
-                'question' => 'Which skill best represents you or what you want to grow in?',
-                'icon'     => '🛠️',
-                'options'  => [
-                    ['key' => 'singing_playing',  'label' => 'Singing / Playing an Instrument', 'emoji' => '🎸'],
-                    ['key' => 'video_sound_tech', 'label' => 'Video, Sound & Tech Production',  'emoji' => '🎬'],
-                    ['key' => 'public_speaking',  'label' => 'Public Speaking & Communication', 'emoji' => '🗣️'],
-                    ['key' => 'graphic_design',   'label' => 'Graphic Design & Visual Arts',    'emoji' => '🎨'],
-                    ['key' => 'people_skills',    'label' => 'People Skills & Relationship',    'emoji' => '🤗'],
-                    ['key' => 'organizing',       'label' => 'Organizing & Project Planning',   'emoji' => '📋'],
-                ],
-            ],
-            [
-                'key'      => 'availability',
-                'question' => 'When are you usually free to commit to regular fellowship?',
-                'icon'     => '📅',
-                'options'  => [
-                    ['key' => 'saturday_afternoon', 'label' => 'Saturdays (Afternoon)', 'emoji' => '☀️'],
-                    ['key' => 'saturday_morning',   'label' => 'Saturdays (Morning)',   'emoji' => '🌤️'],
-                    ['key' => 'friday_evening',     'label' => 'Fridays (Evening)',      'emoji' => '🌆'],
-                    ['key' => 'sunday_after',       'label' => 'Sundays (After Service)','emoji' => '⛪'],
-                    ['key' => 'weekday_evening',    'label' => 'Weekday Evenings',       'emoji' => '🌙'],
-                    ['key' => 'flexible',           'label' => 'Flexible / Varies',      'emoji' => '🔄'],
-                ],
-            ],
-            [
-                'key'      => 'personality',
-                'question' => 'Which best describes who you are at your core?',
-                'icon'     => '🌟',
-                'options'  => [
-                    ['key' => 'creative_expressive', 'label' => 'Creative & Expressive',    'emoji' => '🎨', 'description' => 'I thrive in creative expression—music, visuals, stories, and art.'],
-                    ['key' => 'tech_builder',         'label' => 'Tech Tinkerer & Builder',  'emoji' => '⚙️', 'description' => 'I love systems, gadgets, and building things that just work.'],
-                    ['key' => 'people_lover',         'label' => 'People Person',             'emoji' => '🤝', 'description' => 'I get energy from people and love connecting with everyone.'],
-                    ['key' => 'mission_driven',       'label' => 'Mission-Driven Doer',       'emoji' => '🚀', 'description' => 'I am fueled by purpose—reaching people, driving change, making impact.'],
-                    ['key' => 'quiet_faithful',       'label' => 'Quiet & Faithful',          'emoji' => '🙏', 'description' => 'I prefer depth over width. I serve quietly but with great consistency.'],
-                    ['key' => 'natural_leader',       'label' => 'Natural Leader',            'emoji' => '👑', 'description' => 'I step up naturally, can cast vision, and love guiding people toward goals.'],
+                    ['key' => 'on_stage',        'label' => 'On-Stage / Musical Worship', 'description' => 'Leading singing, band instruments, or stage platform ministry.'],
+                    ['key' => 'behind_camera',   'label' => 'Behind the Scenes & Systems', 'description' => 'Running technical production, cameras, video, sound, or media.'],
+                    ['key' => 'greet_people',    'label' => 'Welcoming Guests at the Door', 'description' => 'First impressions, warm smiles, ushers, and fellowship care.'],
+                    ['key' => 'community_hands', 'label' => 'Hands-On Community Action',  'description' => 'Active community work, relief distribution, and campus outreach.'],
+                    ['key' => 'kids_teaching',   'label' => 'Guiding & Teaching Young Kids', 'description' => 'Interactive lessons, fun faith activities, and children mentorship.'],
                 ],
             ],
             [
                 'key'      => 'life_stage',
-                'question' => 'What best describes your current life stage?',
-                'icon'     => '🧭',
+                'question' => 'Which season of life best describes you right now?',
+                'icon'     => 'life_stage',
                 'options'  => [
-                    ['key' => 'high_school',         'label' => 'High School Student',        'emoji' => '📚'],
-                    ['key' => 'college',              'label' => 'College / University',       'emoji' => '🎓'],
-                    ['key' => 'early_career',         'label' => 'Young Professional (starting career)', 'emoji' => '💼'],
-                    ['key' => 'single_professional',  'label' => 'Single Adult (established)', 'emoji' => '🙋'],
-                    ['key' => 'married',              'label' => 'Married (No Kids Yet)',      'emoji' => '💍'],
-                    ['key' => 'married_kids',         'label' => 'Married with Kids',         'emoji' => '👨‍👩‍👧'],
+                    ['key' => 'high_school_college', 'label' => 'High School or College Youth', 'description' => 'Passionate student seeking to unleash potential for Christ.'],
+                    ['key' => 'minsu_student',       'label' => 'MinSU Calapan Campus Student', 'description' => 'MinSU student looking for campus fellowship on the bleachers.'],
+                    ['key' => 'young_professional',  'label' => 'Young Working Professional',   'description' => 'Navigating career, adulthood, and purpose in the workplace.'],
+                    ['key' => 'young_men',           'label' => 'Young Man Seeking Brotherhood', 'description' => 'Focused on building Christ-centered brotherhood and accountability.'],
+                    ['key' => 'young_women',         'label' => 'Young Woman Seeking Sisterhood', 'description' => 'Focused on building Christ-centered friendships and spiritual growth.'],
+                ],
+            ],
+            [
+                'key'      => 'availability',
+                'question' => 'Which fellowship schedule fits naturally into your routine?',
+                'icon'     => 'availability',
+                'options'  => [
+                    ['key' => 'sat_afternoon', 'label' => 'Saturdays at 1:30 PM',     'description' => 'Youth Ministry & Youth Girls Fellowship schedule.'],
+                    ['key' => 'sat_evening',   'label' => 'Saturdays at 5:00 PM',     'description' => 'LifeGen Young Professionals fellowship time.'],
+                    ['key' => 'fri_evening',   'label' => 'Fridays at 7:30 PM',       'description' => 'Youth Boys Fellowship schedule.'],
+                    ['key' => 'mon_morning',   'label' => 'Mondays 8:00 AM – 10:00 AM','description' => 'Life Gen MinSU Calapan Campus bleachers schedule.'],
+                    ['key' => 'flexible',      'label' => 'Flexible / Open Routine',   'description' => 'I can adapt or attend hybrid fellowships online & in person.'],
                 ],
             ],
             [
                 'key'      => 'community_desire',
-                'question' => 'What do you most want from joining a community group?',
-                'icon'     => '💡',
+                'question' => 'What is your biggest personal goal in joining a group?',
+                'icon'     => 'community_desire',
                 'options'  => [
-                    ['key' => 'grow_in_faith',     'label' => 'Grow deeper in my faith',         'emoji' => '📖'],
-                    ['key' => 'meet_new_friends',  'label' => 'Make genuine Christ-centered friends', 'emoji' => '👫'],
-                    ['key' => 'use_my_gifts',      'label' => 'Use my gifts to serve the church', 'emoji' => '✨'],
-                    ['key' => 'get_accountability','label' => 'Get accountability and life coaching','emoji' => '🤜'],
-                    ['key' => 'serve_community',   'label' => 'Serve the community outside church', 'emoji' => '🌍'],
-                    ['key' => 'grow_as_couple',    'label' => 'Grow together as a couple',        'emoji' => '💑'],
+                    ['key' => 'grow_in_faith',          'label' => 'Grow deeper in faith & discipleship', 'description' => 'Personal mentoring and deepening my prayer life.'],
+                    ['key' => 'brotherhood_sisterhood', 'label' => 'Build authentic godly friendships',   'description' => 'Close friends who encourage, pray, and do life together.'],
+                    ['key' => 'campus_impact',          'label' => 'Impact my campus and community',      'description' => 'Being a light in school, workplace, and neighborhood.'],
+                    ['key' => 'use_gifts',              'label' => 'Serve the church with my gifts',      'description' => 'Actively contributing to weekly Sunday experiences.'],
+                    ['key' => 'mentor_others',          'label' => 'Learn leadership and mentor others',  'description' => 'Growing as a discipleship leader in God’s kingdom.'],
                 ],
             ],
         ];
