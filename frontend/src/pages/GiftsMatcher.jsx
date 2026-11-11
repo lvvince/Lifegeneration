@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Gift, Zap, Wrench, Calendar, Star, Compass, Heart,
@@ -127,6 +127,14 @@ export default function GiftsMatcher() {
   const [result, setResult]       = useState(null)
   const [submitErr, setSubmitErr] = useState('')
 
+  // ── Card flip animation state ──────────────────────────────────────────────
+  // flipPhase: 'idle' | 'out' | 'in'
+  // flipDir: 'forward' | 'back'
+  const [flipPhase, setFlipPhase]   = useState('idle')
+  const [flipDir, setFlipDir]       = useState('forward')
+  const [displayQ, setDisplayQ]     = useState(0)   // the question index SHOWN (may lag during flip)
+  const flipTimerRef                = useRef(null)
+
   useEffect(() => {
     apiGet('/api/matcher/config')
       .then(setConfig)
@@ -146,14 +154,39 @@ export default function GiftsMatcher() {
   const canGoNext = () => question && answers[question.key]
   const isLastQ   = currentQ === totalQ - 1
 
+  // ── Flip helpers ────────────────────────────────────────────────────────────
+  const triggerFlip = useCallback((dir, afterFlip) => {
+    if (flipTimerRef.current) clearTimeout(flipTimerRef.current)
+    setFlipDir(dir)
+    setFlipPhase('out')
+    // After out animation (320ms), swap question then flip in
+    flipTimerRef.current = setTimeout(() => {
+      afterFlip()
+      setFlipPhase('in')
+      flipTimerRef.current = setTimeout(() => {
+        setFlipPhase('idle')
+      }, 350)
+    }, 320)
+  }, [])
+
   const handleNext = () => {
     if (!canGoNext()) return
-    if (isLastQ) submitAnswers()
-    else setCurrentQ(q => q + 1)
+    if (isLastQ) {
+      triggerFlip('forward', () => submitAnswers())
+    } else {
+      triggerFlip('forward', () => {
+        setCurrentQ(q => q + 1)
+        setDisplayQ(q => q + 1)
+      })
+    }
   }
 
   const handleBack = () => {
-    if (currentQ > 0) setCurrentQ(q => q - 1)
+    if (currentQ === 0) return
+    triggerFlip('back', () => {
+      setCurrentQ(q => q - 1)
+      setDisplayQ(q => q - 1)
+    })
   }
 
   const submitAnswers = async () => {
@@ -173,13 +206,22 @@ export default function GiftsMatcher() {
     setStep(STEP_QUIZ)
     setAnswers({})
     setCurrentQ(0)
+    setDisplayQ(0)
     setResult(null)
     setSubmitErr('')
+    setFlipPhase('idle')
   }
 
   const progressPct = totalQ > 0
     ? Math.round(((currentQ + (answers[question?.key] ? 1 : 0)) / totalQ) * 100)
     : 0
+
+  // Determine CSS class for the card
+  const cardFlipClass = flipPhase === 'out'
+    ? (flipDir === 'forward' ? 'gm-card--flip-out' : 'gm-card--flip-out-back')
+    : flipPhase === 'in'
+    ? (flipDir === 'forward' ? 'gm-card--flip-in' : 'gm-card--flip-in-back')
+    : ''
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (step === STEP_LOADING) {
@@ -725,140 +767,150 @@ export default function GiftsMatcher() {
         </div>
       </div>
 
-      {/* Question card */}
-      <div
-        style={{
-          ...card,
-          padding: '26px 24px',
-          marginBottom: 16,
-        }}
-      >
-        {/* Question label */}
+      {/* ── Question card — wrapped in 3D perspective scene for flip effect ── */}
+      <div className="gm-card-scene" style={{ marginBottom: 16 }}>
         <div
+          className={cardFlipClass}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 20,
+            ...card,
+            padding: '26px 24px',
+            /* Paper-like feel: subtle warm tint + light grain via box-shadow */
+            background: 'linear-gradient(145deg, #fffdf9 0%, #fff8f3 100%)',
+            boxShadow:
+              '0 2px 1px rgba(255,90,10,0.04), 0 8px 24px -8px rgba(30,45,90,0.14), 0 32px 48px -20px rgba(30,45,90,0.10)',
+            /* Slight top-left page curl hint */
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 4,
           }}
         >
+          {/* Question label */}
           <div
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(255,90,10,0.08)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              gap: 12,
+              marginBottom: 20,
             }}
           >
-            <QuestionIcon size={22} color="#ff5a0a" />
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'rgba(255,90,10,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <QuestionIcon size={22} color="#ff5a0a" />
+            </div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 'clamp(16px, 2.5vw, 19px)',
+                fontWeight: 800,
+                color: '#1a1f2e',
+                lineHeight: 1.3,
+              }}
+            >
+              {question.question}
+            </h2>
           </div>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 'clamp(16px, 2.5vw, 19px)',
-              fontWeight: 800,
-              color: '#1a1f2e',
-              lineHeight: 1.3,
-            }}
-          >
-            {question.question}
-          </h2>
-        </div>
 
-        {/* Options */}
-        <div style={{ display: 'grid', gap: 8 }}>
-          {question.options?.map(opt => {
-            const selected    = answers[question.key] === opt.key
-            const OptionIcon  = getOptionIcon(opt.key)
-            return (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => handleSelect(opt.key)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  border: selected
-                    ? '1.5px solid #ff5a0a'
-                    : '1.5px solid var(--p-border, #e5e8f1)',
-                  background: selected ? 'rgba(255,90,10,0.04)' : '#fafbfd',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  outline: 'none',
-                }}
-              >
-                {/* Icon badge */}
-                <div
+          {/* Options */}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {question.options?.map(opt => {
+              const selected    = answers[question.key] === opt.key
+              const OptionIcon  = getOptionIcon(opt.key)
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => flipPhase === 'idle' && handleSelect(opt.key)}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: selected ? 'rgba(255,90,10,0.12)' : 'rgba(0,0,0,0.04)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'background 0.15s',
+                    gap: 12,
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    border: selected
+                      ? '1.5px solid #ff5a0a'
+                      : '1.5px solid var(--p-border, #e5e8f1)',
+                    background: selected ? 'rgba(255,90,10,0.06)' : 'rgba(255,255,255,0.7)',
+                    cursor: flipPhase !== 'idle' ? 'default' : 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'border-color 0.15s, background 0.15s, transform 0.12s',
+                    outline: 'none',
+                    transform: selected ? 'scale(1.012)' : 'scale(1)',
                   }}
                 >
-                  <OptionIcon size={17} color={selected ? '#ff5a0a' : '#586079'} />
-                </div>
-
-                {/* Text */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Icon badge */}
                   <div
                     style={{
-                      fontWeight: 700,
-                      fontSize: 13.5,
-                      color: selected ? '#ff5a0a' : '#1a1f2e',
-                      transition: 'color 0.15s',
+                      width: 36,
+                      height: 36,
+                      borderRadius: 9,
+                      background: selected ? 'rgba(255,90,10,0.12)' : 'rgba(0,0,0,0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'background 0.15s',
                     }}
                   >
-                    {opt.label}
+                    <OptionIcon size={17} color={selected ? '#ff5a0a' : '#586079'} />
                   </div>
-                  {opt.description && (
+
+                  {/* Text */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: 12,
-                        color: 'var(--p-text-2, #586079)',
-                        marginTop: 2,
-                        lineHeight: 1.4,
+                        fontWeight: 700,
+                        fontSize: 13.5,
+                        color: selected ? '#ff5a0a' : '#1a1f2e',
+                        transition: 'color 0.15s',
                       }}
                     >
-                      {opt.description}
+                      {opt.label}
                     </div>
-                  )}
-                </div>
+                    {opt.description && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: 'var(--p-text-2, #586079)',
+                          marginTop: 2,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {opt.description}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Check dot */}
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    border: selected ? 'none' : '1.5px solid #d1d5db',
-                    background: selected ? '#ff5a0a' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {selected && <Check size={11} color="#fff" strokeWidth={3} />}
-                </div>
-              </button>
-            )
-          })}
+                  {/* Check dot */}
+                  <div
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      border: selected ? 'none' : '1.5px solid #d1d5db',
+                      background: selected ? '#ff5a0a' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {selected && <Check size={11} color="#fff" strokeWidth={3} />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -883,7 +935,7 @@ export default function GiftsMatcher() {
         <button
           type="button"
           onClick={handleBack}
-          disabled={currentQ === 0}
+          disabled={currentQ === 0 || flipPhase !== 'idle'}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -892,11 +944,12 @@ export default function GiftsMatcher() {
             borderRadius: 10,
             border: '1px solid var(--p-border, #e5e8f1)',
             background: '#fff',
-            cursor: currentQ === 0 ? 'not-allowed' : 'pointer',
+            cursor: (currentQ === 0 || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
             fontWeight: 600,
             fontSize: 13,
             color: '#1a1f2e',
-            opacity: currentQ === 0 ? 0.4 : 1,
+            opacity: (currentQ === 0 || flipPhase !== 'idle') ? 0.4 : 1,
+            transition: 'opacity 0.2s',
           }}
         >
           <ChevronLeft size={16} />
@@ -906,20 +959,21 @@ export default function GiftsMatcher() {
         <button
           type="button"
           onClick={handleNext}
-          disabled={!canGoNext()}
+          disabled={!canGoNext() || flipPhase !== 'idle'}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 7,
             padding: '10px 26px',
             borderRadius: 10,
-            background: canGoNext() ? '#ff5a0a' : '#d1d5db',
+            background: (canGoNext() && flipPhase === 'idle') ? '#ff5a0a' : '#d1d5db',
             color: '#fff',
-            cursor: canGoNext() ? 'pointer' : 'not-allowed',
+            cursor: (!canGoNext() || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
             fontWeight: 700,
             fontSize: 14,
             border: 0,
-            transition: 'background 0.15s',
+            transition: 'background 0.2s, transform 0.1s',
+            transform: (canGoNext() && flipPhase === 'idle') ? 'scale(1)' : 'scale(0.97)',
           }}
         >
           {isLastQ ? (

@@ -94,13 +94,16 @@ export default function DGroups() {
       {/* ── Hero ── */}
       <div className="dg-hero">
         <div className="dg-hero-badge">
-          <Network size={13} />
-          <span>Small Groups</span>
+          <Network size={12} />
+          <span>Discipleship Groups</span>
         </div>
-        <h1 className="dg-hero-title">find your <em className="hl">d-group</em></h1>
+        <h1 className="dg-hero-title">
+          find your{' '}
+          <em className="hl">d-group</em>
+        </h1>
         <p className="dg-hero-sub">
           Do life together. Join a close-knit cell group where you can grow,
-          be mentored, and build genuine friendships with exclusive Group Chat (GC) access.
+          be mentored, and build genuine friendships with exclusive Group Chat access.
         </p>
         <div className="dg-hero-stats">
           <div className="dg-stat">
@@ -123,19 +126,23 @@ export default function DGroups() {
           justifyContent: 'space-between',
           gap: 16,
           flexWrap: 'wrap',
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.05) 100%)',
-          border: '1.5px solid rgba(99,102,241,0.2)',
-          borderRadius: 18,
-          padding: '16px 22px',
+          background: 'linear-gradient(135deg, rgba(255,90,10,0.07) 0%, rgba(251,146,60,0.04) 100%)',
+          border: '1.5px solid rgba(255,90,10,0.18)',
+          borderRadius: 20,
+          padding: '18px 24px',
           marginBottom: 28,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Sparkles size={22} color="#6366f1" />
+          <div style={{
+            width: 46, height: 46, borderRadius: 13,
+            background: 'rgba(255,90,10,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Sparkles size={22} color="#ff5a0a" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1f2e', marginBottom: 2 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--p-text)', marginBottom: 3 }}>
               Don't know which D-Group fits you best?
             </div>
             <div style={{ fontSize: 13, color: 'var(--p-text-2, #586079)' }}>
@@ -147,11 +154,11 @@ export default function DGroups() {
           to="/gifts-matcher"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 7,
-            padding: '10px 20px', borderRadius: 12,
-            background: '#6366f1', color: '#fff',
+            padding: '11px 22px', borderRadius: 13,
+            background: '#ff5a0a', color: '#fff',
             fontWeight: 700, fontSize: 13.5, textDecoration: 'none',
             whiteSpace: 'nowrap', flexShrink: 0,
-            boxShadow: '0 4px 14px rgba(99,102,241,0.28)'
+            boxShadow: '0 4px 16px rgba(255,90,10,0.32)'
           }}
         >
           <Sparkles size={14} />

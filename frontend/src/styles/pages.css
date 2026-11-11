@@ -62,53 +62,76 @@ html[data-theme='dark'] .pg-root {
   position: relative;
   overflow: hidden;
   margin: 0 0 22px;
-  padding: clamp(24px, 4vw, 40px);
+  padding: clamp(28px, 5vw, 48px) clamp(24px, 4vw, 44px);
   border: 0;
   border-radius: 30px;
-  background: linear-gradient(100deg, rgba(10, 10, 14, 0.85), rgba(10, 10, 14, 0.52) 65%, rgba(10, 10, 14, 0.34)),
+  background: linear-gradient(120deg, rgba(10, 10, 14, 0.90) 0%, rgba(10, 10, 14, 0.60) 60%, rgba(10, 10, 14, 0.38) 100%),
     url('/hero-bg.jpg') center 38% / cover;
   box-shadow: var(--p-shadow);
   color: #fff;
   text-align: left;
   animation: pg-rise 0.7s var(--pg-ease) both;
 }
+/* Decorative accent glow behind hero */
+.pg-root .dg-hero::after,
+.pg-root .min-vol-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  right: -40px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,90,10,0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
 .pg-root .pg-chip,
 .pg-root .dg-hero-badge,
 .pg-root .min-vol-hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  gap: 7px;
+  padding: 6px 13px;
+  border: 1px solid rgba(255, 90, 10, 0.5);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 90, 10, 0.18);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: #ffb38a;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
+/* hero title: normal weight prefix + bold orange accent word */
 .pg-root .pg-hero h1,
 .pg-root .dg-hero-title,
 .pg-root .min-vol-hero-title {
-  margin: 14px 0 8px;
+  margin: 16px 0 10px;
   background: none;
   -webkit-text-fill-color: #fff;
   color: #fff;
-  font-size: clamp(1.8rem, 4.4vw, 2.8rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+.pg-root .dg-hero-title .hl,
+.pg-root .min-vol-hero-title .hl {
+  font-style: normal;
+  font-weight: 900;
+  -webkit-text-fill-color: #ff5a0a;
+  color: #ff5a0a;
+  letter-spacing: -0.04em;
 }
 .pg-root .pg-hero p,
 .pg-root .dg-hero-sub,
 .pg-root .min-vol-hero-sub {
-  max-width: 54ch;
+  max-width: 52ch;
   margin: 0;
-  color: rgba(255, 255, 255, 0.84);
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14.5px;
+  line-height: 1.65;
 }
 .pg-root .pg-hero-row {
   display: flex;
@@ -122,31 +145,37 @@ html[data-theme='dark'] .pg-root {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 22px;
-  margin-top: 22px;
+  gap: 24px;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.14);
 }
 .pg-root .dg-stat,
 .pg-root .min-vol-stat {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 .pg-root .dg-stat strong,
 .pg-root .min-vol-stat strong {
   color: #fff;
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 1.75rem;
+  font-weight: 900;
   line-height: 1;
+  letter-spacing: -0.03em;
 }
 .pg-root .dg-stat span,
 .pg-root .min-vol-stat span {
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .pg-root .dg-stat-divider,
 .pg-root .min-vol-stat-divider {
   width: 1px;
   height: 34px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* ---------- buttons ---------- */
@@ -347,9 +376,11 @@ html[data-theme='dark'] .pg-root {
 }
 .pg-root .dg-card-leader,
 .pg-root .min-vol-card-count {
-  margin: 2px 0 0;
-  color: var(--p-text-3);
-  font-size: 13px;
+  margin: 3px 0 0;
+  color: #ff5a0a;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 .pg-root .pg-desc,
 .pg-root .dg-card-desc,
@@ -761,6 +792,66 @@ html[data-theme='dark'] .pg-root {
 }
 @keyframes pg-pulse {
   50% { opacity: 0.5; }
+}
+
+/* ── Gifts Matcher card flip animations ── */
+/* Perspective wrapper — must be on the PARENT of the flipping element */
+.gm-card-scene {
+  perspective: 1200px;
+  perspective-origin: 50% 40%;
+}
+
+/* The card flips like a physical paper turning over */
+@keyframes gm-flip-out {
+  0%   { transform: rotateY(0deg) scale(1);    opacity: 1; }
+  40%  { transform: rotateY(-90deg) scale(0.96); opacity: 0.3; }
+  100% { transform: rotateY(-90deg) scale(0.96); opacity: 0;   }
+}
+@keyframes gm-flip-in {
+  0%   { transform: rotateY(90deg) scale(0.96);  opacity: 0;   }
+  60%  { transform: rotateY(90deg) scale(0.96);  opacity: 0.3; }
+  100% { transform: rotateY(0deg) scale(1);    opacity: 1; }
+}
+/* Back flip — going to previous question */
+@keyframes gm-flip-out-back {
+  0%   { transform: rotateY(0deg) scale(1);    opacity: 1; }
+  40%  { transform: rotateY(90deg) scale(0.96);  opacity: 0.3; }
+  100% { transform: rotateY(90deg) scale(0.96);  opacity: 0;   }
+}
+@keyframes gm-flip-in-back {
+  0%   { transform: rotateY(-90deg) scale(0.96); opacity: 0;   }
+  60%  { transform: rotateY(-90deg) scale(0.96); opacity: 0.3; }
+  100% { transform: rotateY(0deg) scale(1);    opacity: 1; }
+}
+
+.gm-card--flip-out {
+  animation: gm-flip-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+.gm-card--flip-in {
+  animation: gm-flip-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+.gm-card--flip-out-back {
+  animation: gm-flip-out-back 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+.gm-card--flip-in-back {
+  animation: gm-flip-in-back 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gm-card--flip-out, .gm-card--flip-in,
+  .gm-card--flip-out-back, .gm-card--flip-in-back {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pg-root .pg-hero, .pg-root .dg-hero, .pg-root .min-vol-hero,
