@@ -33,46 +33,30 @@ const QUESTION_ICONS = {
 // Option key → Lucide icon component
 const OPTION_ICONS = {
   // Gift options
-  worship_arts:       Music,
-  technology:         Monitor,
-  hospitality:        HandHeart,
-  evangelism:         Globe,
-  teaching:           BookOpen,
-  encouragement:      Heart,
+  worship_arts:        Music,
+  technology:          Monitor,
+  hospitality:         HandHeart,
+  evangelism:          Globe,
+  children_care:       HeartHandshake,
+  teaching:            BookOpen,
+  encouragement:       Heart,
 
   // Serve style
-  on_stage:           Mic2,
-  behind_camera:      Camera,
-  greet_people:       Users,
-  street_outreach:    Navigation,
-  small_groups:       UsersRound,
-  one_on_one:         MessageCircle,
-
-  // Skills
-  singing_playing:    Music,
-  video_sound_tech:   Monitor,
-  public_speaking:    Mic2,
-  graphic_design:     Brush,
-  people_skills:      Handshake,
-  organizing:         ClipboardList,
-
-  // Availability
-  saturday_afternoon: Sun,
-  saturday_morning:   Sunrise,
-  friday_evening:     Sunset,
-  sunday_after:       Star,
-  weekday_evening:    Moon,
-  flexible:           RefreshCw,
-
-  // Personality
-  creative_expressive: Brush,
-  tech_builder:        Cpu,
-  people_lover:        Heart,
-  mission_driven:      Target,
-  quiet_faithful:      BookOpen,
-  natural_leader:      Crown,
+  on_stage:            Mic2,
+  behind_camera:       Camera,
+  greet_people:        Users,
+  community_hands:     Globe,
+  kids_teaching:       BookOpen,
+  street_outreach:     Navigation,
+  small_groups:        UsersRound,
+  one_on_one:          MessageCircle,
 
   // Life stage
+  high_school_college: GraduationCap,
+  minsu_student:       Building2,
+  young_professional:  Briefcase,
+  young_men:           Shield,
+  young_women:         Heart,
   high_school:         GraduationCap,
   college:             BookOpen,
   early_career:        Briefcase,
@@ -80,23 +64,42 @@ const OPTION_ICONS = {
   married:             Heart,
   married_kids:        Users,
 
+  // Availability
+  sat_afternoon:       Sun,
+  sat_evening:         Sunset,
+  fri_evening:         Moon,
+  mon_morning:         Sunrise,
+  saturday_afternoon:  Sun,
+  saturday_morning:    Sunrise,
+  sunday_after:        Star,
+  weekday_evening:     Moon,
+  flexible:            RefreshCw,
+
   // Community desire
-  grow_in_faith:       BookOpen,
-  meet_new_friends:    UserPlus,
-  use_my_gifts:        Sparkles,
-  get_accountability:  Shield,
-  serve_community:     Globe,
-  grow_as_couple:      Heart,
+  grow_in_faith:          BookOpen,
+  brotherhood_sisterhood: UsersRound,
+  campus_impact:          Rocket,
+  use_gifts:              Sparkles,
+  mentor_others:          Crown,
+  meet_new_friends:       UserPlus,
+  get_accountability:     Shield,
+  serve_community:        Globe,
+  grow_as_couple:         Heart,
 }
 
 // Personality key → icon + accent color
 const PERSONALITY_META = {
-  creative_expressive: { icon: Brush,     color: '#e85d04' },
-  tech_builder:        { icon: Cpu,       color: '#2563eb' },
-  people_lover:        { icon: Heart,     color: '#db2777' },
-  mission_driven:      { icon: Rocket,    color: '#16a34a' },
-  quiet_faithful:      { icon: BookOpen,  color: '#7c3aed' },
-  natural_leader:      { icon: Crown,     color: '#d97706' },
+  worship:             { icon: Music,          color: '#e85d04' },
+  media:               { icon: Monitor,        color: '#2563eb' },
+  hospitality:         { icon: HandHeart,      color: '#db2777' },
+  outreach:            { icon: Globe,          color: '#16a34a' },
+  children:            { icon: HeartHandshake, color: '#7c3aed' },
+  creative_expressive: { icon: Brush,          color: '#e85d04' },
+  tech_builder:        { icon: Cpu,            color: '#2563eb' },
+  people_lover:        { icon: Heart,          color: '#db2777' },
+  mission_driven:      { icon: Rocket,         color: '#16a34a' },
+  quiet_faithful:      { icon: BookOpen,       color: '#7c3aed' },
+  natural_leader:      { icon: Crown,          color: '#d97706' },
 }
 
 // Fallback icon for unknown keys

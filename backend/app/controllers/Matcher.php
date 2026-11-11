@@ -304,44 +304,49 @@ class Matcher extends Controller
     {
         // Top ministry signal
         $ministrySignals = [
-            'worship'     => $signals['worship'],
-            'media'       => $signals['media'],
-            'hospitality' => $signals['hospitality'],
-            'outreach'    => $signals['outreach'],
+            'worship'     => $signals['worship'] ?? 0,
+            'media'       => $signals['media'] ?? 0,
+            'hospitality' => $signals['hospitality'] ?? 0,
+            'outreach'    => $signals['outreach'] ?? 0,
+            'children'    => $signals['children'] ?? 0,
         ];
         arsort($ministrySignals);
-        $topMinistrySignal = array_key_first($ministrySignals);
+        $topMinistrySignal = array_key_first($ministrySignals) ?? 'worship';
 
         // Top dgroup signal
         $dgroupSignals = [
-            'youth'             => $signals['youth'],
-            'young_professional'=> $signals['young_professional'],
-            'couples'           => $signals['couples'],
+            'youth'              => $signals['youth'] ?? 0,
+            'young_professional' => $signals['young_professional'] ?? 0,
+            'minsu'              => $signals['minsu'] ?? 0,
+            'boys'               => $signals['boys'] ?? 0,
+            'girls'              => $signals['girls'] ?? 0,
         ];
         arsort($dgroupSignals);
-        $topDGroupSignal = array_key_first($dgroupSignals);
+        $topDGroupSignal = array_key_first($dgroupSignals) ?? 'youth';
 
         // Top personality trait
         $traitSignals = [
-            'creative'    => $signals['creative'],
-            'technical'   => $signals['technical'],
-            'relational'  => $signals['relational'],
-            'leadership'  => $signals['leadership'],
-            'introverted' => $signals['introverted'],
+            'creative'    => $signals['creative'] ?? 0,
+            'technical'   => $signals['technical'] ?? 0,
+            'relational'  => $signals['relational'] ?? 0,
+            'leadership'  => $signals['leadership'] ?? 0,
+            'introverted' => $signals['introverted'] ?? 0,
         ];
         arsort($traitSignals);
-        $topTrait = array_key_first($traitSignals);
+        $topTrait = array_key_first($traitSignals) ?? 'relational';
 
         $ministryLabels = [
-            'worship'     => ['label' => 'The Worshipper 🎵', 'description' => 'You come alive when the music starts and your heart overflows in worship. Your gift is creating an atmosphere where others encounter God.'],
-            'media'       => ['label' => 'The Technician ⚙️', 'description' => 'You see the world through a lens—literally. You love making sure everything runs perfectly behind the scenes so others can experience the moment.'],
-            'hospitality' => ['label' => 'The Host 🤝', 'description' => 'You have the rare gift of making every person feel instantly seen and welcomed. You are the warmth in every room you enter.'],
-            'outreach'    => ['label' => 'The Messenger 📣', 'description' => 'You carry a burning passion to reach the lost and serve the least. Your heart for the community is contagious and world-changing.'],
+            'worship'     => ['label' => 'The Worshipper', 'description' => 'You come alive when the music starts and your heart overflows in praise. Your gift is creating an atmosphere where others encounter God.'],
+            'media'       => ['label' => 'The Production Builder', 'description' => 'You love making sure everything runs smoothly behind the scenes so people can experience the service without distraction.'],
+            'hospitality' => ['label' => 'The Welcomer', 'description' => 'You have the gift of making every person feel immediately seen and at home. You are the warmth in every room.'],
+            'outreach'    => ['label' => 'The Messenger', 'description' => 'You carry a passion to reach the community, bless families, and share God’s love beyond the walls of the church.'],
+            'children'    => ['label' => 'The Youth Mentor', 'description' => 'You have an inspiring heart to guide, teach, and care for younger generations on their faith journey.'],
         ];
 
-        $label = $ministryLabels[$topMinistrySignal] ?? ['label' => 'The Servant ✨', 'description' => 'You are gifted in many areas and have a humble heart that is ready to serve wherever you are needed.'];
+        $label = $ministryLabels[$topMinistrySignal] ?? ['label' => 'The Servant Heart', 'description' => 'You are gifted in multiple areas with a humble heart ready to serve wherever needed.'];
 
         return [
+            'key'                => $topMinistrySignal,
             'label'              => $label['label'],
             'description'        => $label['description'],
             'top_ministry_signal'=> $topMinistrySignal,
