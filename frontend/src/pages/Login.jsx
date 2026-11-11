@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
-import { useGoogleButton } from '../lib/useGoogleButton.js'
+import { useGoogleButton, isInAppBrowser } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
 import AuthInput from '../components/auth/AuthInput.jsx'
 
@@ -12,6 +12,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [caps, setCaps] = useState(false)
+  const isWebview = isInAppBrowser()
   const gRef = useRef(null)
 
   const finish = (data) => {
@@ -85,6 +86,11 @@ export default function Login() {
 
       <div className="au-or"><span>or</span></div>
       <div className="au-google"><div ref={gRef} /></div>
+      {isWebview && (
+        <p style={{ fontSize: '0.8rem', color: '#ffaa44', textAlign: 'center', marginTop: '10px', lineHeight: 1.4 }}>
+          ⚠️ Naka-bukas sa Messenger/Facebook? I-tap ang tatlong tuldok (⋮ o •••) sa taas at piliin ang <b>Open in Chrome / Safari</b> para gumana ang Google sign-in.
+        </p>
+      )}
     </AuthShell>
   )
 }

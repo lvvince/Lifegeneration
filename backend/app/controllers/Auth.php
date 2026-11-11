@@ -11,6 +11,38 @@ class Auth extends Controller
     {
         parent::__construct();
         $this->call->database();
+        $this->ensure_auth_columns();
+    }
+
+    private function ensure_auth_columns()
+    {
+        try {
+            $hasGId = $this->db->raw("SHOW COLUMNS FROM `users` LIKE 'google_id'")->fetch(PDO::FETCH_NUM);
+            if (!$hasGId) {
+                $this->db->raw("ALTER TABLE `users` ADD COLUMN `google_id` VARCHAR(255) NULL AFTER `email`");
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            $hasPwHash = $this->db->raw("SHOW COLUMNS FROM `users` LIKE 'password_hash'")->fetch(PDO::FETCH_NUM);
+            if (!$hasPwHash) {
+                $this->db->raw("ALTER TABLE `users` ADD COLUMN `password_hash` VARCHAR(255) NULL AFTER `password`");
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            $hasAvatar = $this->db->raw("SHOW COLUMNS FROM `members` LIKE 'avatar'")->fetch(PDO::FETCH_NUM);
+            if (!$hasAvatar) {
+                $this->db->raw("ALTER TABLE `members` ADD COLUMN `avatar` VARCHAR(255) NULL");
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            $hasCode = $this->db->raw("SHOW COLUMNS FROM `members` LIKE 'member_code'")->fetch(PDO::FETCH_NUM);
+            if (!$hasCode) {
+                $this->db->raw("ALTER TABLE `members` ADD COLUMN `member_code` VARCHAR(50) NULL");
+            }
+        } catch (\Throwable $e) {}
     }
 
     /* ---------- Helpers ---------- */

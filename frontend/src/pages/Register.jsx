@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, ShieldCheck, MapPin, CalendarDays, ArrowRight, ArrowLeft, AlertCircle, Hash, Users } from 'lucide-react'
 import { apiPost, setUser, saveTokens, getUser } from '../api.js'
-import { useGoogleButton } from '../lib/useGoogleButton.js'
+import { useGoogleButton, isInAppBrowser } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
 import AuthInput from '../components/auth/AuthInput.jsx'
 
@@ -23,6 +23,7 @@ const LEVELS = ['', 'Weak', 'Okay', 'Good', 'Strong']
 /* Dalawang hakbang para kasya sa isang screen (walang scroll): 1) tungkol sa iyo  2) password */
 export default function Register() {
   const navigate = useNavigate()
+  const isWebview = isInAppBrowser()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
@@ -169,6 +170,11 @@ export default function Register() {
           </form>
           <div className="au-or"><span>or</span></div>
           <div className="au-google"><div ref={gRef} /></div>
+          {isWebview && (
+            <p style={{ fontSize: '0.8rem', color: '#ffaa44', textAlign: 'center', marginTop: '10px', lineHeight: 1.4 }}>
+              ⚠️ Naka-bukas sa Messenger/Facebook? I-tap ang tatlong tuldok (⋮ o •••) sa taas at piliin ang <b>Open in Chrome / Safari</b> para gumana ang Google sign-up.
+            </p>
+          )}
         </>
       ) : (
         <form onSubmit={submit} noValidate className="au-form au-step" key="s2">

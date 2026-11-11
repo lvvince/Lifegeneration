@@ -57,6 +57,10 @@ export default function RegisterModal({ onClose }) {
           window.google.accounts.id.initialize({
             client_id: clientId,
             callback: handleGoogleSuccess,
+            itp_support: true,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            context: 'signup',
           })
           window.google.accounts.id.renderButton(googleBtnRef.current, {
             theme: "filled_blue",
