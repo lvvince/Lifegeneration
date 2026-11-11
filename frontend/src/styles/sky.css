@@ -876,6 +876,49 @@ html.sk-loading .portal.px.lgx .hm-in { animation-play-state: paused; }
 .portal.px.lgx .pg-root .pg-date { background: var(--sk-ink) !important; box-shadow: none !important; color: #fff; }
 .portal.px.lgx .pg-root .pg-date > span { background: transparent !important; }
 
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-date,
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-date > span {
+  background: #1a202c !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-date b {
+  color: #ffffff !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-date small {
+  color: #ff5a0a !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-chip, .dg-hero-badge, .min-vol-hero-badge) {
+  background: rgba(255, 90, 10, 0.18) !important;
+  border: 1px solid rgba(255, 90, 10, 0.5) !important;
+  color: #ffb38a !important;
+  box-shadow: none !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title) .hl {
+  color: #ff5a0a !important;
+  -webkit-text-fill-color: #ff5a0a !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub) {
+  color: rgba(255, 255, 255, 0.78) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.78) !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs {
+  background: #171c26 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs button {
+  color: #aab1c5 !important;
+}
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs button.is-on {
+  background: #ff5a0a !important;
+  color: #ffffff !important;
+}
+
 /* ---------- checkbox / radio ---------- */
 .portal.px.lgx input[type='checkbox'],
 .portal.px.lgx input[type='radio'] { -webkit-appearance: none; appearance: none; display: inline-grid; place-content: center; flex: none; width: 22px; height: 22px; margin: 0; padding: 0; border: 1px solid var(--cl-edge, rgba(60,40,20,.13)); background: var(--sk-surface); cursor: pointer; transition: background 0.15s; }

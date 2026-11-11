@@ -1513,3 +1513,68 @@ a.pf-btn.pf-btn-ghost.pf-btn-ghost { color: var(--p-text); }
   outline: 2px solid var(--p-accent);
   outline-offset: 2px;
 }
+
+/* ── Gifts Matcher Hero Title "PLACE" Badge ── */
+.gm-hero-place-badge {
+  font-size: clamp(42px, 9vw, 68px);
+  font-weight: 900;
+  color: #ffffff !important;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  background: #1a1a1a;
+  padding: 2px 14px 6px;
+  border-radius: 12px;
+  display: inline-block;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+}
+html[data-theme='dark'] .gm-hero-place-badge {
+  background: #1f2533 !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 90, 10, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(255, 90, 10, 0.2) !important;
+}
+
+/* ── Dark Mode Guarantees across Events, D-Groups & Ministries ── */
+html[data-theme='dark'] .pg-root .pg-hero h1,
+html[data-theme='dark'] .pg-root .dg-hero-title,
+html[data-theme='dark'] .pg-root .min-vol-hero-title {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-theme='dark'] .pg-root .pg-hero p,
+html[data-theme='dark'] .pg-root .dg-hero-sub,
+html[data-theme='dark'] .pg-root .min-vol-hero-sub {
+  color: rgba(255, 255, 255, 0.78) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.78) !important;
+}
+html[data-theme='dark'] .pg-root .pg-chip,
+html[data-theme='dark'] .pg-root .dg-hero-badge,
+html[data-theme='dark'] .pg-root .min-vol-hero-badge {
+  background: rgba(255, 90, 10, 0.18) !important;
+  border: 1px solid rgba(255, 90, 10, 0.5) !important;
+  color: #ffb38a !important;
+  box-shadow: none !important;
+}
+html[data-theme='dark'] .pg-root .pg-date {
+  background: #1a202c !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+html[data-theme='dark'] .pg-root .pg-date b {
+  color: #ffffff !important;
+}
+html[data-theme='dark'] .pg-root .pg-date small {
+  color: #ff5a0a !important;
+}
+html[data-theme='dark'] .pg-root .pg-tabs {
+  background: #171c26 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) inset !important;
+}
+html[data-theme='dark'] .pg-root .pg-tabs button {
+  color: #aab1c5 !important;
+}
+html[data-theme='dark'] .pg-root .pg-tabs button.is-on {
+  background: #ff5a0a !important;
+  color: #ffffff !important;
+}

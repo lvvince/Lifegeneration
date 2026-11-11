@@ -235,6 +235,44 @@ html[data-theme='dark'] {
 :root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero)::before,:root .portal.px.lgx .pg-root :is(.pg-hero, .dg-hero, .min-vol-hero)::after{ display: none; }
 :root .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title){ color: #1c1812; -webkit-text-fill-color: #1c1812; }
 :root .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub){ color: #5b5349; }
+html[data-theme='dark'] :root .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title),
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title){
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title) .hl,
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero h1, .dg-hero-title, .min-vol-hero-title) .hl{
+  color: #ff5a0a !important;
+  -webkit-text-fill-color: #ff5a0a !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub),
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-hero p, .dg-hero-sub, .min-vol-hero-sub){
+  color: rgba(255, 255, 255, 0.78) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.78) !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .pg-root .pg-tabs,
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs{
+  background: #171c26 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) inset !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .pg-root .pg-tabs button,
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs button{
+  color: #aab1c5 !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .pg-root .pg-tabs button.is-on,
+html[data-theme='dark'] .portal.px.lgx .pg-root .pg-tabs button.is-on{
+  background: #ff5a0a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+html[data-theme='dark'] :root .portal.px.lgx .sk-main :is(.pg-chip, .dg-hero-badge, .min-vol-hero-badge),
+html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-chip, .dg-hero-badge, .min-vol-hero-badge){
+  background: rgba(255, 90, 10, 0.18) !important;
+  border: 1px solid rgba(255, 90, 10, 0.5) !important;
+  color: #ffb38a !important;
+  box-shadow: none !important;
+}
 :root .portal.px.lgx .pg-root .dg-stat strong{ color: #ff5a0a; }
 :root .portal.px.lgx .pg-root .dg-stat span{ color: #5b5349; }
 :root .portal.px.lgx .pg-root .dg-stat-divider{ background: linear-gradient(180deg, transparent, rgba(60, 40, 20, 0.28), transparent); }

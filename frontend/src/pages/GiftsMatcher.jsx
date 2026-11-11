@@ -726,19 +726,7 @@ export default function GiftsMatcher() {
             }}>
               MY
             </span>
-            <span style={{
-              fontSize: 'clamp(42px, 9vw, 68px)',
-              fontWeight: 900,
-              color: '#ffffff',
-              letterSpacing: '-0.04em',
-              lineHeight: 1,
-              background: 'var(--p-text, #1a1a1a)',
-              padding: '2px 14px 6px',
-              borderRadius: 12,
-              display: 'inline-block',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-              border: '1.5px solid var(--p-border, rgba(0,0,0,0.1))',
-            }}>
+            <span className="gm-hero-place-badge">
               PLACE
             </span>
           </span>

@@ -146,7 +146,7 @@ export default function DGroups() {
               Don't know which D-Group fits you best?
             </div>
             <div style={{ fontSize: 13, color: 'var(--p-text-2, #586079)' }}>
-              Answer 7 quick questions and we'll match you to the right community group for your season of life.
+              Answer 5 quick questions and we'll match you to the right community group for your season of life.
             </div>
           </div>
         </div>
