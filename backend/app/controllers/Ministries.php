@@ -276,6 +276,14 @@ class Ministries extends Controller
                     [$name, $icon, $description, $slots, $id]
                 );
             }
+            // Sync chat channel name immediately
+            try {
+                $this->db->raw(
+                    "UPDATE chat_channels SET name = ? WHERE kind = 'ministry' AND ref_id = ?",
+                    [$name, $id]
+                );
+            } catch (\Throwable $e) {}
+
             api_response(['success' => true, 'message' => 'Ministry updated successfully.']);
         } catch (\Throwable $e) {
             api_response(['error' => 'Could not update ministry: ' . $e->getMessage()], 500);
@@ -295,6 +303,9 @@ class Ministries extends Controller
         try {
             $this->db->raw("UPDATE members SET ministry_id = NULL WHERE ministry_id = ?", [$id]);
             $this->db->raw("DELETE FROM ministries WHERE id = ?", [$id]);
+            try {
+                $this->db->raw("DELETE FROM chat_channels WHERE kind = 'ministry' AND ref_id = ?", [$id]);
+            } catch (\Throwable $e) {}
             api_response(['success' => true, 'message' => 'Ministry deleted.']);
         } catch (\Throwable $e) {
             api_response(['error' => 'Could not delete ministry: ' . $e->getMessage()], 500);

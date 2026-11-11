@@ -181,7 +181,50 @@ function get_auth_user() {
 
             if ($admin) {
                 $admin['role'] = 'admin';
-                auth_log('get_auth_user: admins row found id=' . $admin['id']);
+                $admin['admin_id'] = (int) $admin['id'];
+
+                // Link admin's corresponding account in users and members tables to prevent ID collisions
+                if (!empty($admin['email']) || !empty($admin['username'])) {
+                    $uRow = $lava->db->raw(
+                        "SELECT u.id AS user_id, m.id AS member_record_id, m.dgroup_id, m.ministry_id,
+                                COALESCE(m.member_code, m.member_id) AS member_code
+                         FROM users u
+                         LEFT JOIN members m ON m.user_id = u.id
+                         WHERE (u.email = ? AND u.email <> '') OR (u.username = ? AND u.username <> '')
+                         LIMIT 1",
+                        [$admin['email'] ?? '', $admin['username'] ?? '']
+                    )->fetch(PDO::FETCH_ASSOC);
+
+                    if ($uRow) {
+                        $admin['id'] = (int) $uRow['user_id'];
+                        $admin['user_id'] = (int) $uRow['user_id'];
+                        $admin['member_record_id'] = $uRow['member_record_id'];
+                        $admin['dgroup_id'] = $uRow['dgroup_id'];
+                        $admin['ministry_id'] = $uRow['ministry_id'];
+                        if (!empty($uRow['member_code'])) {
+                            $admin['member_id'] = $uRow['member_code'];
+                        }
+                    } else {
+                        try {
+                            $now = date('Y-m-d H:i:s');
+                            $lava->db->raw(
+                                "INSERT INTO users (member_id, username, full_name, email, role, is_active, created_at)
+                                 VALUES ('LG-2026-ADMIN', ?, ?, ?, 'admin', 1, ?)",
+                                [$admin['username'] ?: 'admin', $admin['full_name'] ?: 'Administrator', $admin['email'] ?: 'admin@example.com', $now]
+                            );
+                            $newUid = (int) $lava->db->last_id();
+                            $lava->db->raw(
+                                "INSERT INTO members (user_id, member_id, member_code, full_name, email, is_active, joined_at)
+                                 VALUES (?, 'LG-2026-ADMIN', 'LG-2026-ADMIN', ?, ?, 1, ?)",
+                                [$newUid, $admin['full_name'] ?: 'Administrator', $admin['email'] ?: 'admin@example.com', $now]
+                            );
+                            $admin['id'] = $newUid;
+                            $admin['user_id'] = $newUid;
+                        } catch (\Throwable $e) {}
+                    }
+                }
+
+                auth_log('get_auth_user: admins row found admin_id=' . $admin['admin_id'] . ' user_id=' . ($admin['id'] ?? 'none'));
                 return $admin;
             }
 

@@ -218,14 +218,22 @@ class Chat extends Controller
         }
         foreach ($want as $w) {
             $slug = $w[0] . '-' . $w[1];
-            $exists = $this->db->raw("SELECT id FROM chat_channels WHERE slug = ?", [$slug])->fetch();
-            if ($exists) continue;
             $tbl = $w[0] === 'dgroup' ? 'dgroups' : 'ministries';
             $row = $this->db->raw("SELECT name FROM {$tbl} WHERE id = ?", [$w[1]])->fetch(PDO::FETCH_ASSOC);
             if (!$row) continue;
             $label = $w[0] === 'dgroup' ? 'D-Group' : 'Ministry';
+
+            $existing = $this->db->raw("SELECT id, name FROM chat_channels WHERE slug = ? LIMIT 1", [$slug])->fetch(PDO::FETCH_ASSOC);
+            if ($existing) {
+                // Keep channel name synchronized with current D-Group or Ministry name
+                if ($existing['name'] !== $row['name']) {
+                    $this->db->raw("UPDATE chat_channels SET name = ? WHERE id = ?", [$row['name'], $existing['id']]);
+                }
+                continue;
+            }
+
             $this->db->raw(
-                "INSERT IGNORE INTO chat_channels (slug, name, description, kind, ref_id, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO chat_channels (slug, name, description, kind, ref_id, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
                 [$slug, $row['name'], "Private room for the {$label}.", $w[0], $w[1], $w[0] === 'dgroup' ? 5 : 6]
             );
         }

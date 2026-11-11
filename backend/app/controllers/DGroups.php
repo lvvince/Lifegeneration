@@ -7,13 +7,50 @@ class DGroups extends Controller
     {
         parent::__construct();
         $this->call->database();
+        $this->ensure_dgroup_tables();
+    }
+
+    private function ensure_dgroup_tables()
+    {
+        try {
+            $this->db->raw(
+                "CREATE TABLE IF NOT EXISTS dgroup_requests (
+                  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                  dgroup_id    INT UNSIGNED NOT NULL,
+                  user_id      INT UNSIGNED NOT NULL,
+                  status       ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+                  request_note TEXT NULL,
+                  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at   DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (id),
+                  UNIQUE KEY unique_dgroup_user (dgroup_id, user_id),
+                  KEY idx_status (status),
+                  KEY idx_user (user_id),
+                  KEY idx_dgroup (dgroup_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+        } catch (\Throwable $e) {}
+
+        try {
+            $hasImg = $this->db->raw("SHOW COLUMNS FROM `dgroups` LIKE 'image'")->fetch(PDO::FETCH_NUM);
+            if (!$hasImg) {
+                $this->db->raw("ALTER TABLE `dgroups` ADD COLUMN `image` VARCHAR(255) NULL");
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            $hasGc = $this->db->raw("SHOW COLUMNS FROM `dgroups` LIKE 'gc_link'")->fetch(PDO::FETCH_NUM);
+            if (!$hasGc) {
+                $this->db->raw("ALTER TABLE `dgroups` ADD COLUMN `gc_link` VARCHAR(255) NULL");
+            }
+        } catch (\Throwable $e) {}
     }
 
     public function index()
     {
         $user = get_auth_user();
-        $userId = $user['id'] ?? 0;
-        $userRole = $user['role'] ?? '';
+        $userId = (int) ($user['user_id'] ?? ($user['id'] ?? 0));
+        $userRole = normalize_role($user['role'] ?? '');
         $isAdmin = ($userRole === 'admin');
 
         $userDgroupId = null;
@@ -77,7 +114,7 @@ class DGroups extends Controller
     public function request_join()
     {
         $user = require_auth_user();
-        $userId = (int) $user['id'];
+        $userId = (int) ($user['user_id'] ?? $user['id']);
         $input = api_input();
         $dgroupId = (int) ($input['dgroup_id'] ?? $input['id'] ?? 0);
         $note = trim($input['note'] ?? $input['request_note'] ?? '');
@@ -92,24 +129,31 @@ class DGroups extends Controller
             api_response(['error' => 'D-Group not found.'], 404);
         }
 
-        // Already in a D-Group? (members.dgroup_id holds only one)
-        $mem = $this->db->raw("SELECT dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId])->fetch(PDO::FETCH_ASSOC);
-        if ($mem && !empty($mem['dgroup_id'])) {
-            if ((int)$mem['dgroup_id'] === $dgroupId) {
-                api_response(['error' => "You are already an approved member of {$check['name']}!"], 400);
+        // Ensure user has a member profile row so they can be identified
+        $mem = $this->db->raw("SELECT id, dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId])->fetch(PDO::FETCH_ASSOC);
+        if (!$mem) {
+            $uRow = $this->db->raw("SELECT * FROM users WHERE id = ? LIMIT 1", [$userId])->fetch(PDO::FETCH_ASSOC);
+            if ($uRow) {
+                $code = $uRow['member_id'] ?: ('LG-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3))));
+                $this->db->raw(
+                    "INSERT INTO members (user_id, member_id, member_code, full_name, email, is_active, joined_at)
+                     VALUES (?, ?, ?, ?, ?, 1, NOW())",
+                    [$userId, $code, $code, $uRow['full_name'] ?: $uRow['username'], $uRow['email']]
+                );
+                $mem = $this->db->raw("SELECT id, dgroup_id FROM members WHERE user_id = ? LIMIT 1", [$userId])->fetch(PDO::FETCH_ASSOC);
             }
-            api_response(['error' => 'You are already in a D-Group. Leave it first before joining another.'], 409);
         }
 
-        // Only one pending request at a time
-        $otherPending = $this->db->raw(
-            "SELECT id FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND dgroup_id <> ? LIMIT 1",
+        // Already an active member of this exact D-Group?
+        if ($mem && !empty($mem['dgroup_id']) && (int)$mem['dgroup_id'] === $dgroupId) {
+            api_response(['error' => "You are already a member of {$check['name']}!"], 400);
+        }
+
+        // Automatically cancel any pending requests for other groups so switching/requesting is seamless
+        $this->db->raw(
+            "DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND dgroup_id <> ?",
             [$userId, $dgroupId]
-        )->fetch(PDO::FETCH_ASSOC);
-
-        if ($otherPending) {
-            api_response(['error' => 'You already have a pending request for another D-Group. Cancel it first before requesting a new one.'], 409);
-        }
+        );
 
         // Upsert join request
         $existing = $this->db->raw(
@@ -244,10 +288,15 @@ class DGroups extends Controller
             api_response(['error' => 'Request not found.'], 404);
         }
 
-        // The user must have a member profile, otherwise the approval would do nothing
+        // Auto-create member record if missing
         $hasMember = $this->db->raw("SELECT id FROM members WHERE user_id = ? LIMIT 1", [$req['user_id']])->fetch(PDO::FETCH_ASSOC);
         if (!$hasMember) {
-            api_response(['error' => 'This user has no member profile yet, so they cannot be added to a D-Group.'], 422);
+            $code = 'LG-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $this->db->raw(
+                "INSERT INTO members (user_id, member_id, member_code, full_name, email, is_active, joined_at)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW())",
+                [$req['user_id'], $code, $code, $req['full_name'], $req['email']]
+            );
         }
 
         // 1. Mark request approved
@@ -267,6 +316,17 @@ class DGroups extends Controller
             "DELETE FROM dgroup_requests WHERE user_id = ? AND status = 'pending' AND id <> ?",
             [$req['user_id'], $requestId]
         );
+
+        // 4. Ensure chat channel exists for this D-Group
+        try {
+            $slug = "dgroup-{$req['dgroup_id']}";
+            $this->db->raw(
+                "INSERT INTO chat_channels (slug, name, description, kind, ref_id, sort_order)
+                 VALUES (?, ?, 'Private room for the D-Group.', 'dgroup', ?, 5)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name)",
+                [$slug, $req['dgroup_name'], $req['dgroup_id']]
+            );
+        } catch (\Throwable $e) {}
 
         // Automated Gmail SMTP Acceptance Notification
         try {
@@ -313,6 +373,7 @@ class DGroups extends Controller
     public function create()
     {
         require_admin_user();
+        $this->ensure_dgroup_tables();
         $input = api_input();
 
         $name        = trim($input['name'] ?? '');
@@ -334,6 +395,18 @@ class DGroups extends Controller
         );
 
         $newId = (int) $this->db->last_id();
+
+        // Create or sync chat channel for this D-Group
+        try {
+            $slug = "dgroup-{$newId}";
+            $this->db->raw(
+                "INSERT INTO chat_channels (slug, name, description, kind, ref_id, sort_order)
+                 VALUES (?, ?, 'Private room for the D-Group.', 'dgroup', ?, 5)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name)",
+                [$slug, $name, $newId]
+            );
+        } catch (\Throwable $e) {}
+
         api_response([
             'success' => true,
             'message' => 'D-Group created successfully.',
@@ -344,6 +417,7 @@ class DGroups extends Controller
     public function update()
     {
         require_admin_user();
+        $this->ensure_dgroup_tables();
         $input = api_input();
         $id = (int) ($input['id'] ?? 0);
 
@@ -381,6 +455,14 @@ class DGroups extends Controller
             );
         }
 
+        // Sync channel name in chat_channels immediately!
+        try {
+            $this->db->raw(
+                "UPDATE chat_channels SET name = ? WHERE kind = 'dgroup' AND ref_id = ?",
+                [$name, $id]
+            );
+        } catch (\Throwable $e) {}
+
         api_response(['success' => true, 'message' => 'D-Group updated successfully.']);
     }
 
@@ -397,6 +479,11 @@ class DGroups extends Controller
         $this->db->raw("UPDATE members SET dgroup_id = NULL WHERE dgroup_id = ?", [$id]);
         $this->db->raw("DELETE FROM dgroup_requests WHERE dgroup_id = ?", [$id]);
         $this->db->raw("DELETE FROM dgroups WHERE id = ?", [$id]);
+
+        // Remove chat channel
+        try {
+            $this->db->raw("DELETE FROM chat_channels WHERE kind = 'dgroup' AND ref_id = ?", [$id]);
+        } catch (\Throwable $e) {}
 
         api_response(['success' => true, 'message' => 'D-Group deleted successfully.']);
     }
