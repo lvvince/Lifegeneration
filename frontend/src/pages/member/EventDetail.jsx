@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { apiGet, apiPost, getUser } from '../../api.js'
 import { Calendar, Clock, MapPin, Users, Ticket, ArrowLeft, CheckCircle, Navigation, Copy, Check, ExternalLink } from 'lucide-react'
 import ShareEventModal from '../../components/ShareEventModal.jsx'
-import { resolveImageUrl } from '../../lib/format.js'
+import { resolveImageUrl, isUpcoming } from '../../lib/format.js'
 import AddToCalendarButton from '../../components/AddToCalendarButton.jsx'
 import { getGoogleMapEmbedUrl, getGoogleMapsDirectionsUrl, isOnlineOnly } from '../../utils/maps.js'
 
@@ -318,6 +318,10 @@ export default function EventDetail() {
               <Link to="/login" className="btn" style={{ padding: '10px 24px' }}>
                 Sign In to RSVP
               </Link>
+            ) : !isUpcoming(event.event_date) ? (
+              <div style={{ color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.92rem' }}>
+                <CheckCircle size={18} style={{ opacity: 0.45 }} /> This event has already ended.
+              </div>
             ) : event.user_rsvp === 'attending' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ color: '#1e7a46', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -80,9 +80,26 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
-        $event = $this->db->raw("SELECT id, title, event_date, event_time, location, capacity FROM events WHERE id = ? LIMIT 1", [$eventId])->fetch(PDO::FETCH_ASSOC);
+        $event = $this->db->raw("SELECT id, title, event_date, event_time, location, capacity FROM events WHERE id = ? AND is_active = 1 LIMIT 1", [$eventId])->fetch(PDO::FETCH_ASSOC);
         if (!$event) {
             api_response(['error' => 'Event not found.'], 404);
+        }
+
+        // Block RSVP on past events
+        if (strtotime($event['event_date']) < strtotime('today')) {
+            api_response(['error' => 'You cannot RSVP to a past event.'], 422);
+        }
+
+        // Block RSVP when event is at capacity
+        if (!empty($event['capacity'])) {
+            $countStmt = $this->db->raw(
+                "SELECT COUNT(*) AS cnt FROM event_attendances WHERE event_id = ? AND rsvp_status = 'attending'",
+                [$eventId]
+            );
+            $currentCount = (int) $countStmt->fetch(PDO::FETCH_ASSOC)['cnt'];
+            if ($currentCount >= (int) $event['capacity']) {
+                api_response(['error' => 'Sorry, this event is full. No more spots available.'], 422);
+            }
         }
 
         $memberId = $user['member_id'] ?: 'LG-USER';
@@ -128,6 +145,15 @@ class Events extends Controller
             api_response(['error' => 'Event ID is required.'], 422);
         }
 
+        // Block cancel on past events — no point, keeps records clean
+        $event = $this->db->raw("SELECT id, event_date FROM events WHERE id = ? LIMIT 1", [$eventId])->fetch(PDO::FETCH_ASSOC);
+        if (!$event) {
+            api_response(['error' => 'Event not found.'], 404);
+        }
+        if (strtotime($event['event_date']) < strtotime('today')) {
+            api_response(['error' => 'You cannot cancel RSVP for a past event.'], 422);
+        }
+
         $this->db->raw(
             "UPDATE event_attendances SET rsvp_status = 'cancelled' WHERE event_id = ? AND user_id = ?",
             [$eventId, $user['id']]
@@ -145,6 +171,29 @@ class Events extends Controller
 
         if ($eventId <= 0 || empty($memberId)) {
             api_response(['error' => 'Event ID and Member ID are required for check-in.'], 422);
+        }
+
+        // Validate event exists
+        $evStmt = $this->db->raw(
+            "SELECT id, title, event_date, capacity FROM events WHERE id = ? LIMIT 1",
+            [$eventId]
+        );
+        $ev = $evStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$ev) {
+            api_response(['error' => 'Event not found.'], 404);
+        }
+
+        // Enforce capacity for walk-ins (members with no prior attendance row)
+        // We check this before looking up attendance so walk-ins can't exceed capacity
+        if (!empty($ev['capacity'])) {
+            $capStmt = $this->db->raw(
+                "SELECT COUNT(*) AS cnt FROM event_attendances WHERE event_id = ? AND checked_in = 1",
+                [$eventId]
+            );
+            $checkedInCount = (int) $capStmt->fetch(PDO::FETCH_ASSOC)['cnt'];
+            if ($checkedInCount >= (int) $ev['capacity']) {
+                api_response(['error' => "Event is at full capacity ({$ev['capacity']} attendees). Walk-in check-in cannot be accepted."], 422);
+            }
         }
 
         // Look up member

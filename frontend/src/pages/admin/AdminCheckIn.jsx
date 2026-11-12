@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { apiGet, apiPost } from '../../api.js'
-import { fmtDate, fmtDateTime, initials } from '../../lib/format.js'
+import { fmtDate, fmtDateTime, initials, isUpcoming } from '../../lib/format.js'
 import { PageHeader, Empty, Loading, Tabs, Badge, useToast } from '../../components/portal/ui.jsx'
 import '../../styles/pages.css'
 import '../../styles/staffui.css'
@@ -46,7 +46,12 @@ export default function AdminCheckIn() {
       .then((evs) => {
         const list = Array.isArray(evs) ? evs : []
         setEvents(list)
-        if (!eventId && list.length) setEventId(String(list[0].id))
+        if (!eventId && list.length) {
+          // Auto-select the nearest upcoming event; fall back to the most recent past event
+          const upcoming = list.filter((e) => isUpcoming(e.event_date))
+          const best = upcoming.length ? upcoming[0] : list[list.length - 1]
+          setEventId(String(best.id))
+        }
       })
       .catch((e) => setResult({ tone: 'bad', text: e.message }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,9 +317,15 @@ export default function AdminCheckIn() {
               <select id="ci-event" className="p-input" value={eventId} onChange={(e) => setEventId(e.target.value)} aria-label="Event">
                 {events.length === 0 && <option value="">No events yet</option>}
                 {events.map((e) => (
-                  <option key={e.id} value={e.id}>{e.title} — {fmtDate(e.event_date)}</option>
+                  <option key={e.id} value={e.id}>{e.title} — {fmtDate(e.event_date)}{!isUpcoming(e.event_date) ? ' (Past)' : ''}</option>
                 ))}
               </select>
+              {current && !isUpcoming(current.event_date) && (
+                <div className="p-banner warn" style={{ marginTop: 8, fontSize: 12.5 }}>
+                  <AlertCircle size={15} style={{ flex: 'none' }} />
+                  <span>This event already passed. Check-ins will still be recorded for record-keeping.</span>
+                </div>
+              )}
               <p><b>{checked}</b> of {attendees.length} checked in{current ? ` · ${fmtDate(current.event_date)}` : ''}</p>
             </div>
           </section>
