@@ -82,18 +82,21 @@ class Reports extends Controller
         foreach ($genderBreakdown as &$g) { $g['total'] = (int) $g['total']; }
         unset($g);
 
-        // Application status breakdown
+        // Ministry application status breakdown — only if table exists
         $applications = [];
         try {
-            $applications = $this->db->raw(
-                "SELECT COALESCE(NULLIF(TRIM(status), ''), 'unknown') AS label, COUNT(*) AS total
-                 FROM applications
-                 GROUP BY label
-                 ORDER BY total DESC"
-            )->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($applications as &$ap) { $ap['total'] = (int) $ap['total']; }
-            unset($ap);
-        } catch (Exception $e) { $applications = []; }
+            $tblExists = $this->db->raw("SHOW TABLES LIKE 'ministry_applications'")->fetch();
+            if ($tblExists) {
+                $applications = $this->db->raw(
+                    "SELECT COALESCE(NULLIF(TRIM(status), ''), 'unknown') AS label, COUNT(*) AS total
+                     FROM ministry_applications
+                     GROUP BY label
+                     ORDER BY total DESC"
+                )->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($applications as &$ap) { $ap['total'] = (int) $ap['total']; }
+                unset($ap);
+            }
+        } catch (Throwable $e) { $applications = []; }
 
         // Giving totals (verified donations)
         $givingTotal     = 0.0;
@@ -109,7 +112,7 @@ class Reports extends Controller
             )->fetch(PDO::FETCH_ASSOC);
             $givingTotal     = (float) ($gv['total_all']   ?? 0);
             $givingThisMonth = (float) ($gv['total_month'] ?? 0);
-        } catch (Exception $e) {}
+        } catch (Throwable $e) {}
 
         api_response([
             'members' => [
@@ -246,7 +249,7 @@ class Reports extends Controller
                  GROUP BY month"
             )->fetchAll(PDO::FETCH_KEY_PAIR);
             foreach ($keys as $i => $k) $giving[$i] = (float) ($g[$k] ?? 0);
-        } catch (Exception $e) {}
+        } catch (Throwable $e) {}
         $givingFc = $this->forecast($giving, 3);
 
         /* 5. At-risk members: huling 5 past events, bumaba ang attendance */

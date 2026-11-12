@@ -169,7 +169,7 @@ export default function AdminReports() {
         }}>
           <StatCard icon={Heart}         label="Total giving (verified)"  value={peso(data.giving_total)}      color="#ff5a0a" />
           <StatCard icon={TrendingUp}    label="Giving this month"         value={peso(data.giving_this_month)} color="#16a34a" />
-          <StatCard icon={ClipboardList} label="Applications total"        value={data.applications?.reduce((s, x) => s + x.total, 0) ?? 0} color="#1d4ed8" />
+          <StatCard icon={ClipboardList} label="Ministry applications"     value={data.applications?.reduce((s, x) => s + x.total, 0) ?? 0} color="#1d4ed8" />
           <StatCard icon={Users}         label="Gender entries recorded"   value={data.gender_breakdown?.reduce((s, x) => s + x.total, 0) ?? 0} color="#9333ea" />
         </div>
       )}
@@ -300,7 +300,7 @@ export default function AdminReports() {
             {/* Application status */}
             {appPie.length > 0 && (
               <section className="p-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-                <div className="p-panel-head"><h2 className="p-h2">Applications by Status</h2></div>
+                <div className="p-panel-head"><h2 className="p-h2">Ministry Applications</h2></div>
                 <div className="p-panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <PieChart
                     data={appPie}
