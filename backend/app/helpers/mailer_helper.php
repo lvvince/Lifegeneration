@@ -7,6 +7,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  */
 class SmtpMailer
 {
+    private $env;
     private $host;
     private $port;
     private $user;
@@ -17,13 +18,13 @@ class SmtpMailer
 
     public function __construct()
     {
-        $env = self::loadEnv();
-        $this->host      = $env['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'smtp.gmail.com');
-        $this->port      = (int) ($env['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 465));
-        $this->user      = $env['SMTP_USER'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? '');
-        $this->pass      = $env['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? '');
-        $this->fromEmail = $env['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: ($_ENV['SMTP_FROM_EMAIL'] ?? ($this->user ?: 'lifegenerationcalapan@gmail.com'));
-        $this->fromName  = $env['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: ($_ENV['SMTP_FROM_NAME'] ?? 'Life Generation Calapan');
+        $this->env       = self::loadEnv();
+        $this->host      = $this->env['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'smtp.gmail.com');
+        $this->port      = (int) ($this->env['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 587));
+        $this->user      = $this->env['SMTP_USER'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? '');
+        $this->pass      = $this->env['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? '');
+        $this->fromEmail = $this->env['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: ($_ENV['SMTP_FROM_EMAIL'] ?? ($this->user ?: 'lifegenerationcalapan@gmail.com'));
+        $this->fromName  = $this->env['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: ($_ENV['SMTP_FROM_NAME'] ?? 'Life Generation Calapan');
         $this->timeout   = 10;
     }
 
@@ -147,7 +148,7 @@ class SmtpMailer
     }
 
     /**
-     * Sends an email via Gmail SMTP (or logs to file if credentials are not set)
+     * Sends an email via Gmail SMTP or HTTPS Mail API (Brevo / Resend / Google Apps Script)
      * @return array [ 'success' => bool, 'message' => string, 'simulated' => bool ]
      */
     public function send($to, $subject, $htmlBody)
@@ -157,6 +158,23 @@ class SmtpMailer
             return ['success' => false, 'message' => 'Invalid recipient email address.', 'simulated' => false];
         }
 
+        // ── 1. Check HTTPS mail APIs first (Port 443 — 100% bypasses Render Free SMTP block) ──
+        $brevoKey = $this->env['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
+        if (!empty($brevoKey)) {
+            return $this->sendViaBrevo($brevoKey, $to, $subject, $htmlBody);
+        }
+
+        $resendKey = $this->env['RESEND_API_KEY'] ?? getenv('RESEND_API_KEY') ?: ($_ENV['RESEND_API_KEY'] ?? '');
+        if (!empty($resendKey)) {
+            return $this->sendViaResend($resendKey, $to, $subject, $htmlBody);
+        }
+
+        $gmailWebhook = $this->env['GMAIL_WEBHOOK_URL'] ?? getenv('GMAIL_WEBHOOK_URL') ?: ($_ENV['GMAIL_WEBHOOK_URL'] ?? '');
+        if (!empty($gmailWebhook)) {
+            return $this->sendViaGmailWebhook($gmailWebhook, $to, $subject, $htmlBody);
+        }
+
+        // ── 2. Direct SMTP fallback ──
         // If no SMTP password configured, run in safe simulation mode
         if (empty($this->user) || empty($this->pass) || $this->pass === 'your-app-password') {
             self::logEmail($to, $subject, $htmlBody, 'SIMULATED (No Gmail App Password set in .env)');
@@ -264,6 +282,131 @@ class SmtpMailer
             self::logEmail($to, $subject, $htmlBody, "FAILED: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage(), 'simulated' => false];
         }
+    }
+
+    /**
+     * Send email via Brevo REST API (HTTPS port 443 — works on Render Free Tier)
+     */
+    private function sendViaBrevo($apiKey, $to, $subject, $htmlBody)
+    {
+        $payload = [
+            'sender'      => ['name' => $this->fromName, 'email' => $this->fromEmail],
+            'to'          => [['email' => $to]],
+            'subject'     => $subject,
+            'htmlContent' => $htmlBody,
+            'textContent' => self::htmlToText($htmlBody),
+        ];
+
+        $res = $this->httpPost('https://api.brevo.com/v3/smtp/email', json_encode($payload), [
+            'api-key: ' . $apiKey,
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ]);
+
+        if ($res['status'] >= 200 && $res['status'] < 300) {
+            self::logEmail($to, $subject, $htmlBody, 'SUCCESS: Sent via Brevo HTTPS API');
+            return ['success' => true, 'message' => 'Email sent successfully via Brevo API!', 'simulated' => false];
+        }
+
+        self::logEmail($to, $subject, $htmlBody, "FAILED (Brevo {$res['status']}): " . $res['body']);
+        return ['success' => false, 'message' => "Brevo error ({$res['status']}): " . $res['body'], 'simulated' => false];
+    }
+
+    /**
+     * Send email via Resend REST API (HTTPS port 443 — works on Render Free Tier)
+     */
+    private function sendViaResend($apiKey, $to, $subject, $htmlBody)
+    {
+        $payload = [
+            'from'    => "{$this->fromName} <{$this->fromEmail}>",
+            'to'      => [$to],
+            'subject' => $subject,
+            'html'    => $htmlBody,
+            'text'    => self::htmlToText($htmlBody),
+        ];
+
+        $res = $this->httpPost('https://api.resend.com/emails', json_encode($payload), [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+
+        if ($res['status'] >= 200 && $res['status'] < 300) {
+            self::logEmail($to, $subject, $htmlBody, 'SUCCESS: Sent via Resend HTTPS API');
+            return ['success' => true, 'message' => 'Email sent successfully via Resend API!', 'simulated' => false];
+        }
+
+        self::logEmail($to, $subject, $htmlBody, "FAILED (Resend {$res['status']}): " . $res['body']);
+        return ['success' => false, 'message' => "Resend error ({$res['status']}): " . $res['body'], 'simulated' => false];
+    }
+
+    /**
+     * Send email via Google Apps Script Web App Webhook (HTTPS port 443 — 100% Free, sends from official Gmail)
+     */
+    private function sendViaGmailWebhook($url, $to, $subject, $htmlBody)
+    {
+        $payload = [
+            'to'        => $to,
+            'subject'   => $subject,
+            'htmlBody'  => $htmlBody,
+            'plainBody' => self::htmlToText($htmlBody),
+            'fromName'  => $this->fromName,
+        ];
+
+        $res = $this->httpPost($url, json_encode($payload), [
+            'Content-Type: application/json',
+        ]);
+
+        if ($res['status'] >= 200 && $res['status'] < 400) {
+            self::logEmail($to, $subject, $htmlBody, 'SUCCESS: Sent via Gmail Webhook');
+            return ['success' => true, 'message' => 'Email sent successfully via Gmail Webhook!', 'simulated' => false];
+        }
+
+        self::logEmail($to, $subject, $htmlBody, "FAILED (Gmail Webhook {$res['status']}): " . $res['body']);
+        return ['success' => false, 'message' => "Gmail Webhook error ({$res['status']}): " . $res['body'], 'simulated' => false];
+    }
+
+    /**
+     * Reusable native HTTP POST helper using curl (or stream fallback)
+     */
+    private function httpPost($url, $jsonBody, array $headers)
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonBody);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            $body = curl_exec($ch);
+            $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            curl_close($ch);
+            return ['status' => $status, 'body' => $body ?: $err];
+        }
+
+        // Stream context fallback if curl is not available
+        $opts = [
+            'http' => [
+                'method'  => 'POST',
+                'header'  => implode("\r\n", $headers),
+                'content' => $jsonBody,
+                'timeout' => 12,
+                'ignore_errors' => true,
+            ]
+        ];
+        $ctx = stream_context_create($opts);
+        $prev = set_error_handler(function() { return true; });
+        $body = file_get_contents($url, false, $ctx);
+        if ($prev !== null) set_error_handler($prev); else restore_error_handler();
+
+        $status = 0;
+        if (isset($http_response_header) && is_array($http_response_header) && isset($http_response_header[0])) {
+            if (preg_match('#HTTP/\S+\s+(\d{3})#', $http_response_header[0], $m)) {
+                $status = (int) $m[1];
+            }
+        }
+        return ['status' => $status, 'body' => (string) $body];
     }
 
     private function sendCommand($socket, $cmd, $expectedCode)
