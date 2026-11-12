@@ -72,6 +72,45 @@ class Reports extends Controller
              ORDER BY total DESC"
         )->fetchAll(PDO::FETCH_ASSOC);
 
+        // Gender breakdown
+        $genderBreakdown = $this->db->raw(
+            "SELECT COALESCE(NULLIF(TRIM(gender), ''), 'Unspecified') AS label, COUNT(*) AS total
+             FROM members
+             GROUP BY label
+             ORDER BY total DESC"
+        )->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($genderBreakdown as &$g) { $g['total'] = (int) $g['total']; }
+        unset($g);
+
+        // Application status breakdown
+        $applications = [];
+        try {
+            $applications = $this->db->raw(
+                "SELECT COALESCE(NULLIF(TRIM(status), ''), 'unknown') AS label, COUNT(*) AS total
+                 FROM applications
+                 GROUP BY label
+                 ORDER BY total DESC"
+            )->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($applications as &$ap) { $ap['total'] = (int) $ap['total']; }
+            unset($ap);
+        } catch (Exception $e) { $applications = []; }
+
+        // Giving totals (verified donations)
+        $givingTotal     = 0.0;
+        $givingThisMonth = 0.0;
+        try {
+            $gv = $this->db->raw(
+                "SELECT COALESCE(SUM(amount), 0) AS total_all,
+                        COALESCE(SUM(CASE WHEN MONTH(created_at) = MONTH(CURDATE())
+                                           AND YEAR(created_at)  = YEAR(CURDATE())
+                                     THEN amount END), 0) AS total_month
+                 FROM donations
+                 WHERE status = 'verified'"
+            )->fetch(PDO::FETCH_ASSOC);
+            $givingTotal     = (float) ($gv['total_all']   ?? 0);
+            $givingThisMonth = (float) ($gv['total_month'] ?? 0);
+        } catch (Exception $e) {}
+
         api_response([
             'members' => [
                 'total'       => (int) ($m['total'] ?? 0),
@@ -79,10 +118,14 @@ class Reports extends Controller
                 'inactive'    => (int) ($m['total'] ?? 0) - (int) ($m['active'] ?? 0),
                 'new_30_days' => (int) ($m['new_30_days'] ?? 0),
             ],
-            'members_by_month' => $byMonth,
-            'events'           => $events,
-            'dgroups'          => $dgroups,
-            'ministries'       => $ministries,
+            'members_by_month'  => $byMonth,
+            'events'            => $events,
+            'dgroups'           => $dgroups,
+            'ministries'        => $ministries,
+            'gender_breakdown'  => $genderBreakdown,
+            'applications'      => $applications,
+            'giving_total'      => $givingTotal,
+            'giving_this_month' => $givingThisMonth,
         ]);
     }
 
