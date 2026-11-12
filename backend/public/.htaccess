@@ -15,10 +15,10 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # API requests go through LavaLust (index.php)
+    # API and Share requests go through LavaLust (index.php)
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^(api(/.*)?)$ index.php/$1 [L,QSA]
+    RewriteRule ^(api|share)(/.*)?$ index.php/$1$2 [L,QSA]
 
     # Missing uploads return 404 directly instead of falling back to index.html
     RewriteCond %{REQUEST_FILENAME} !-f
