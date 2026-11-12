@@ -65,3 +65,150 @@
 :root .fc .fc-mention{padding:1px 7px;border-radius:99px;font-weight:700}
 :root .fc .fc-rx{gap:6px;margin-top:6px}
 :root .fc .fc-rx button{min-height:28px;padding:0 10px;gap:5px;font-size:12.5px}
+
+
+/* ============================================================
+   DARK MODE — members.css (Admin Members)
+   ============================================================ */
+html[data-theme='dark'] .mb-search input,
+:root[data-theme='dark'] .mb-search input {
+  background: #1e2230 !important;
+  color: #f3f1ed !important;
+  border: 1px solid #2a3045 !important;
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.5) !important;
+}
+html[data-theme='dark'] .mb-search input:focus,
+:root[data-theme='dark'] .mb-search input:focus {
+  border-color: #fb923c !important;
+  box-shadow: 0 0 0 3px rgba(251,146,60,.35) !important;
+}
+html[data-theme='dark'] .mb-search svg,
+:root[data-theme='dark'] .mb-search svg {
+  color: #8f8a81 !important;
+}
+
+/* Tabs / Segments */
+html[data-theme='dark'] .mb-tabs,
+:root[data-theme='dark'] .mb-tabs {
+  background: #151822 !important;
+  border: 1px solid #232838 !important;
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4) !important;
+}
+html[data-theme='dark'] .mb-tabs button,
+:root[data-theme='dark'] .mb-tabs button {
+  color: #8f8a81 !important;
+}
+html[data-theme='dark'] .mb-tabs button em,
+:root[data-theme='dark'] .mb-tabs button em {
+  background: rgba(255,255,255,.08) !important;
+  color: #b8b3aa !important;
+}
+html[data-theme='dark'] .mb-tabs button.is-on,
+:root[data-theme='dark'] .mb-tabs button.is-on {
+  background: #2a3045 !important;
+  color: #f3f1ed !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+}
+html[data-theme='dark'] .mb-tabs button.is-on em,
+:root[data-theme='dark'] .mb-tabs button.is-on em {
+  background: #ea580c !important;
+  color: #fff !important;
+}
+
+/* Header row labels */
+html[data-theme='dark'] .mb-head,
+:root[data-theme='dark'] .mb-head {
+  color: #8f8a81 !important;
+}
+
+/* Member rows */
+html[data-theme='dark'] .mb-row,
+:root[data-theme='dark'] .mb-row {
+  background: #151822 !important;
+  color: #f3f1ed !important;
+  border: 1px solid #232838 !important;
+  box-shadow: 0 2px 3px rgba(255,255,255,.03) inset,
+              0 -5px 10px rgba(0,0,0,.25) inset,
+              0 14px 24px -16px rgba(0,0,0,.6) !important;
+}
+html[data-theme='dark'] .mb-who h3,
+:root[data-theme='dark'] .mb-who h3 {
+  color: #f3f1ed !important;
+}
+html[data-theme='dark'] .mb-who p,
+:root[data-theme='dark'] .mb-who p {
+  color: #8f8a81 !important;
+}
+html[data-theme='dark'] .mb-who code,
+:root[data-theme='dark'] .mb-who code {
+  color: #b8b3aa !important;
+}
+
+/* Avatars */
+html[data-theme='dark'] .mb-av,
+:root[data-theme='dark'] .mb-av {
+  background: #2a3045 !important;
+  color: #b8b3aa !important;
+  box-shadow: none !important;
+}
+html[data-theme='dark'] .mb-av.is-officer,
+:root[data-theme='dark'] .mb-av.is-officer {
+  background: #2a1d12 !important;
+  color: #fb923c !important;
+}
+html[data-theme='dark'] .mb-av.is-admin,
+:root[data-theme='dark'] .mb-av.is-admin {
+  background: #3d3a34 !important;
+  color: #fff !important;
+}
+
+/* Groups, roles, joined */
+html[data-theme='dark'] .mb-grp::before,
+html[data-theme='dark'] .mb-role::before,
+html[data-theme='dark'] .mb-joined::before,
+:root[data-theme='dark'] .mb-grp::before,
+:root[data-theme='dark'] .mb-role::before,
+:root[data-theme='dark'] .mb-joined::before {
+  color: #8f8a81 !important;
+}
+html[data-theme='dark'] .mb-grp b,
+:root[data-theme='dark'] .mb-grp b {
+  color: #f3f1ed !important;
+}
+html[data-theme='dark'] .mb-grp span,
+:root[data-theme='dark'] .mb-grp span {
+  color: #8f8a81 !important;
+}
+html[data-theme='dark'] .mb-grp .is-none,
+:root[data-theme='dark'] .mb-grp .is-none {
+  color: #6a645c !important;
+}
+html[data-theme='dark'] .mb-joined,
+:root[data-theme='dark'] .mb-joined {
+  color: #b8b3aa !important;
+}
+
+/* Role dropdown select */
+html[data-theme='dark'] .mb-role select,
+:root[data-theme='dark'] .mb-role select {
+  background: #1e2230 !important;
+  color: #f3f1ed !important;
+  border: 1px solid #2a3045 !important;
+}
+
+/* State divider & toggle */
+html[data-theme='dark'] .mb-state,
+:root[data-theme='dark'] .mb-state {
+  border-top-color: rgba(255,255,255,.08) !important;
+  color: #f3f1ed !important;
+}
+html[data-theme='dark'] .mb-hist,
+:root[data-theme='dark'] .mb-hist {
+  background: #2a1d12 !important;
+  color: #fb923c !important;
+  box-shadow: 0 2px 3px rgba(255,255,255,.04) inset, 0 5px 10px -6px rgba(0,0,0,.5) !important;
+}
+html[data-theme='dark'] .mb-count,
+:root[data-theme='dark'] .mb-count {
+  color: #8f8a81 !important;
+}

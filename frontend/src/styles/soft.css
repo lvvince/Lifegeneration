@@ -282,3 +282,47 @@ html[data-theme='dark'] .portal.px.lgx .pg-root :is(.pg-chip, .dg-hero-badge, .m
 :root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .p-panel, .pg-card, .dg-card){ animation: fx-lift linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
 }
 }
+
+
+/* ============================================================
+   DARK MODE — soft.css (Inputs, Selects, Tabs, Chips)
+   ============================================================ */
+html[data-theme='dark'] .portal.px.lgx :is(input, textarea, select):not([type=checkbox]):not([type=radio]):not([type=file]),
+:root[data-theme='dark'] .portal.px.lgx :is(input, textarea, select):not([type=checkbox]):not([type=radio]):not([type=file]) {
+  background-color: #1b1f2b !important;
+  color: #f3f1ed !important;
+  border: 1px solid #2a3045 !important;
+  box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme='dark'] .portal.px.lgx :is(input, textarea, select):focus-visible,
+:root[data-theme='dark'] .portal.px.lgx :is(input, textarea, select):focus-visible {
+  border-color: #fb923c !important;
+  box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(251, 146, 60, 0.35) !important;
+  outline: 0 !important;
+}
+
+html[data-theme='dark'] .portal.px.lgx :is(.fc-btn:not(.is-or), .sk-iconbtn, .fc-iconbtn, .ao-quick a, .sk-chips, .sk-search, .p-tabs, .fc-bar-a):not(:disabled),
+:root[data-theme='dark'] .portal.px.lgx :is(.fc-btn:not(.is-or), .sk-iconbtn, .fc-iconbtn, .ao-quick a, .sk-chips, .sk-search, .p-tabs, .fc-bar-a):not(:disabled) {
+  background-color: #151822 !important;
+  color: #f3f1ed !important;
+  border: 1px solid #232838 !important;
+  box-shadow: inset 1px 1px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme='dark'] .portal.px.lgx .p-tabs button.p-tab,
+:root[data-theme='dark'] .portal.px.lgx .p-tabs button.p-tab {
+  color: #8f8a81 !important;
+}
+
+html[data-theme='dark'] .portal.px.lgx .p-tabs button.p-tab.is-active,
+:root[data-theme='dark'] .portal.px.lgx .p-tabs button.p-tab.is-active {
+  background-color: #2a3045 !important;
+  color: #f3f1ed !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme='dark'] .portal.px.lgx :is(input, textarea)::placeholder,
+:root[data-theme='dark'] .portal.px.lgx :is(input, textarea)::placeholder {
+  color: #6a728a !important;
+}

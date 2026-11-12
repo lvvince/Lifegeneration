@@ -83,3 +83,64 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%231c1812' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center; background-size: 18px; box-shadow: var(--cx-clay); font-size: 14px; font-weight: 600; cursor: pointer; }
 :root .portal.px.lgx select:not([multiple]):not([data-native]):not([data-x]):not([data-y]):focus-visible{ box-shadow: var(--cx-clay), 0 0 0 3px rgba(255,90,10,.35); }
+
+
+/* ============================================================
+   DARK MODE — controls.css (Selects, Switches, Radios, Checkboxes)
+   ============================================================ */
+html[data-theme='dark'],
+:root[data-theme='dark'] {
+  --cx-bg: #1b1f2b;
+  --cx-sunk: #151822;
+  --cx-ink: #f3f1ed;
+  --cx-clay: 0 2px 3px rgba(255,255,255,.04) inset, 0 -4px 8px rgba(0,0,0,.25) inset, 0 10px 18px -12px rgba(0,0,0,.6);
+  --cx-press: 0 3px 8px rgba(0,0,0,.5) inset, 0 1px 0 rgba(255,255,255,.05);
+}
+
+html[data-theme='dark'] :root .portal select:not([multiple]),
+html[data-theme='dark'] :root .fc select:not([multiple]),
+html[data-theme='dark'] :root .p-modal select:not([multiple]),
+html[data-theme='dark'] :root .fc-modal select:not([multiple]),
+html[data-theme='dark'] :root .portal.px.lgx select:not([multiple]):not([data-native]):not([data-x]):not([data-y]),
+:root[data-theme='dark'] select:not([multiple]) {
+  background-color: #1b1f2b !important;
+  color: #f3f1ed !important;
+  border: 1px solid #2e354a !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%23f3f1ed' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4) !important;
+}
+
+html[data-theme='dark'] :root .fx-sel,
+:root[data-theme='dark'] .fx-sel {
+  background: #151822 !important;
+  color: #f3f1ed !important;
+  border: 1px solid #2a3045 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.8) !important;
+}
+
+html[data-theme='dark'] :root .fx-opt,
+:root[data-theme='dark'] .fx-opt {
+  color: #f3f1ed !important;
+}
+
+html[data-theme='dark'] :root .fx-opt:hover:not(:disabled),
+:root[data-theme='dark'] .fx-opt:hover:not(:disabled) {
+  background: #2a3045 !important;
+}
+
+html[data-theme='dark'] :root .fx-opt[aria-selected="true"],
+:root[data-theme='dark'] .fx-opt[aria-selected="true"] {
+  background: #2a1d12 !important;
+  color: #fb923c !important;
+}
+
+html[data-theme='dark'] :root .portal button.p-switch,
+:root[data-theme='dark'] .portal button.p-switch {
+  background: #1b1f2b !important;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5) !important;
+}
+
+html[data-theme='dark'] :root .portal button.p-switch[aria-checked="true"],
+:root[data-theme='dark'] .portal button.p-switch[aria-checked="true"] {
+  background: linear-gradient(180deg, #ea580c, #c2410c) !important;
+}
