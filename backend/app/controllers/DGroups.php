@@ -338,7 +338,7 @@ class DGroups extends Controller
         try {
             require_once dirname(dirname(__FILE__)) . '/helpers/mailer_helper.php';
             send_dgroup_accepted_email($req);
-        } catch (Exception $e) {}
+        } catch (\Throwable $e) {}
 
         api_response([
             'success' => true,

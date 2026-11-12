@@ -98,6 +98,55 @@ class SmtpMailer
     }
 
     /**
+     * Connects with automatic fallback between 465 (SSL) and 587 (STARTTLS).
+     * Suppresses socket warnings so framework error handlers never crash the request.
+     */
+    private function openSocket()
+    {
+        $portsToTry = [$this->port];
+        if ($this->port === 465) {
+            $portsToTry[] = 587;
+        } elseif ($this->port === 587) {
+            $portsToTry[] = 465;
+        }
+
+        $lastErr = '';
+        foreach ($portsToTry as $port) {
+            $isSsl  = ($port === 465);
+            $remote = ($isSsl ? "ssl://" : "tcp://") . "{$this->host}:{$port}";
+
+            $ctx = stream_context_create([
+                'ssl' => [
+                    'verify_peer'       => false,
+                    'verify_peer_name'  => false,
+                    'allow_self_signed' => true,
+                ]
+            ]);
+
+            // Temporarily suppress PHP warnings so LavaLust's _error_handler doesn't intercept
+            $prev = set_error_handler(function() { return true; });
+            $errno = 0;
+            $errstr = '';
+            // Connect with a 5s timeout so retries don't hang the request
+            $socket = stream_socket_client($remote, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
+            if ($prev !== null) {
+                set_error_handler($prev);
+            } else {
+                restore_error_handler();
+            }
+
+            if ($socket) {
+                stream_set_timeout($socket, $this->timeout);
+                return [$socket, $port];
+            }
+
+            $lastErr = "Port {$port}: {$errstr} ({$errno})";
+        }
+
+        return [null, $lastErr];
+    }
+
+    /**
      * Sends an email via Gmail SMTP (or logs to file if credentials are not set)
      * @return array [ 'success' => bool, 'message' => string, 'simulated' => bool ]
      */
@@ -118,16 +167,15 @@ class SmtpMailer
             ];
         }
 
-        $socketHost = ($this->port === 465) ? "ssl://{$this->host}" : $this->host;
-        $socket = @fsockopen($socketHost, $this->port, $errno, $errstr, $this->timeout);
+        list($socket, $connectedPortOrErr) = $this->openSocket();
 
         if (!$socket) {
-            $err = "SMTP Connection failed: {$errstr} ({$errno})";
+            $err = "SMTP Connection failed: {$connectedPortOrErr}";
             self::logEmail($to, $subject, $htmlBody, "FAILED: {$err}");
             return ['success' => false, 'message' => $err, 'simulated' => false];
         }
 
-        stream_set_timeout($socket, $this->timeout);
+        $connectedPort = $connectedPortOrErr;
 
         try {
             $ehloHost = gethostname() ?: 'localhost';
@@ -136,9 +184,17 @@ class SmtpMailer
             $this->sendCommand($socket, "EHLO {$ehloHost}", '250');
 
             // STARTTLS for port 587
-            if ($this->port === 587) {
+            if ($connectedPort === 587) {
                 $this->sendCommand($socket, "STARTTLS", '220');
-                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                $cryptoMethod = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) $cryptoMethod |= STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) $cryptoMethod |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+
+                $prev = set_error_handler(function() { return true; });
+                $cryptoOk = stream_socket_enable_crypto($socket, true, $cryptoMethod);
+                if ($prev !== null) { set_error_handler($prev); } else { restore_error_handler(); }
+
+                if (!$cryptoOk) {
                     throw new Exception("STARTTLS negotiation failed");
                 }
                 $this->sendCommand($socket, "EHLO {$ehloHost}", '250');

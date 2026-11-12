@@ -211,7 +211,7 @@ class Ministries extends Controller
                 if ($applicant) {
                     send_ministry_accepted_email($applicant);
                 }
-            } catch (Exception $e) {}
+            } catch (\Throwable $e) {}
         } elseif ($status === 'rejected') {
             // If was previously connected to this ministry, remove
             $this->db->raw(
