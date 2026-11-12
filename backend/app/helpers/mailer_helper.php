@@ -297,9 +297,9 @@ class SmtpMailer
             'textContent' => self::htmlToText($htmlBody),
         ];
 
-        $res = $this->httpPost('https://api.brevo.com/v3/smtp/email', json_encode($payload), [
+        $res = $this->httpPost('https://api.brevo.com/v3/smtp/email', json_encode($payload, JSON_UNESCAPED_UNICODE), [
             'api-key: ' . $apiKey,
-            'Content-Type: application/json',
+            'Content-Type: application/json; charset=utf-8',
             'Accept: application/json',
         ]);
 
@@ -325,9 +325,9 @@ class SmtpMailer
             'text'    => self::htmlToText($htmlBody),
         ];
 
-        $res = $this->httpPost('https://api.resend.com/emails', json_encode($payload), [
+        $res = $this->httpPost('https://api.resend.com/emails', json_encode($payload, JSON_UNESCAPED_UNICODE), [
             'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json',
+            'Content-Type: application/json; charset=utf-8',
         ]);
 
         if ($res['status'] >= 200 && $res['status'] < 300) {
@@ -340,20 +340,57 @@ class SmtpMailer
     }
 
     /**
+     * Converts 4-byte SMP emojis to numeric HTML entities (e.g. &#128588;) so that
+     * every email client renders them natively and zero webhooks/proxies can corrupt them.
+     */
+    public static function emojiToEntities($html)
+    {
+        return preg_replace_callback('/[\x{10000}-\x{10FFFF}]/u', function($m) {
+            return '&#' . mb_ord($m[0], 'UTF-8') . ';';
+        }, (string) $html);
+    }
+
+    /**
+     * Cleans 4-byte emojis from email subject lines by mapping them to safe 3-byte unicode symbols (e.g. ✨, ✓, ✦)
+     * because GmailApp.sendEmail's subject header encoder corrupts 4-byte surrogate pairs into diamonds ().
+     */
+    public static function cleanSubjectForGmail($subject)
+    {
+        $map = [
+            '🎉' => '✨',
+            '🎟️' => '✓',
+            '🎟'  => '✓',
+            '🔑' => '✦',
+            '🚀' => '✦',
+            '🙌' => '✨',
+            '👶' => '✦',
+        ];
+        $s = strtr((string) $subject, $map);
+        // Fallback for any other 4-byte emoji in subject to safe 3-byte sparkle:
+        return preg_replace('/[\x{10000}-\x{10FFFF}]/u', '✨', $s);
+    }
+
+    /**
      * Send email via Google Apps Script Web App Webhook (HTTPS port 443 — 100% Free, sends from official Gmail)
      */
     private function sendViaGmailWebhook($url, $to, $subject, $htmlBody)
     {
+        // 1. Convert all 4-byte emojis in HTML to numeric HTML entities for 100% perfect visual rendering
+        $safeHtml = self::emojiToEntities($htmlBody);
+
+        // 2. Sanitize subject so GmailApp header mime-encoder never drops diamonds ()
+        $safeSubject = self::cleanSubjectForGmail($subject);
+
         $payload = [
             'to'        => $to,
-            'subject'   => $subject,
-            'htmlBody'  => $htmlBody,
-            'plainBody' => self::htmlToText($htmlBody),
+            'subject'   => $safeSubject,
+            'htmlBody'  => $safeHtml,
+            'plainBody' => self::htmlToText($safeHtml),
             'fromName'  => $this->fromName,
         ];
 
         $res = $this->httpPost($url, json_encode($payload), [
-            'Content-Type: application/json',
+            'Content-Type: text/plain;charset=utf-8',
         ]);
 
         if ($res['status'] >= 200 && $res['status'] < 400) {
