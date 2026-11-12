@@ -18,12 +18,12 @@ class SmtpMailer
     public function __construct()
     {
         $env = self::loadEnv();
-        $this->host      = $env['SMTP_HOST'] ?? 'smtp.gmail.com';
-        $this->port      = (int) ($env['SMTP_PORT'] ?? 465);
-        $this->user      = $env['SMTP_USER'] ?? '';
-        $this->pass      = $env['SMTP_PASS'] ?? '';
-        $this->fromEmail = $env['SMTP_FROM_EMAIL'] ?? ($this->user ?: 'lifegencalapan@gmail.com');
-        $this->fromName  = $env['SMTP_FROM_NAME'] ?? 'Life Generation Calapan';
+        $this->host      = $env['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'smtp.gmail.com');
+        $this->port      = (int) ($env['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 465));
+        $this->user      = $env['SMTP_USER'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? '');
+        $this->pass      = $env['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? '');
+        $this->fromEmail = $env['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: ($_ENV['SMTP_FROM_EMAIL'] ?? ($this->user ?: 'lifegenerationcalapan@gmail.com'));
+        $this->fromName  = $env['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: ($_ENV['SMTP_FROM_NAME'] ?? 'Life Generation Calapan');
         $this->timeout   = 10;
     }
 
@@ -161,6 +161,7 @@ class SmtpMailer
             $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
             $headers  = "From: =?UTF-8?B?" . base64_encode($this->fromName) . "?= <{$this->fromEmail}>\r\n";
+            $headers .= "Reply-To: =?UTF-8?B?" . base64_encode($this->fromName) . "?= <{$this->fromEmail}>\r\n";
             $headers .= "To: <{$to}>\r\n";
             $headers .= "Subject: {$encodedSubject}\r\n";
             $headers .= "Date: " . date('r') . "\r\n";
@@ -333,7 +334,7 @@ function mail_layout($from, $to, $subtitle, $badge, $bodyHtml, $headerTop = '')
     </div>
     <div class="footer">
       Life Generation Church • Calapan City, Oriental Mindoro<br>
-      Automated message sent via Gmail SMTP.
+      Direct notification for members and leaders of Life Generation.
     </div>
   </div>
 </body>

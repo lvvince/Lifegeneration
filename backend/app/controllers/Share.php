@@ -35,9 +35,23 @@ class Share extends Controller
         );
         $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // ── 2. Resolve base URLs ──────────────────────────────────────
-        $backendBase  = rtrim(config_item('base_url'), '/');
-        $frontendBase = rtrim(getenv('FRONTEND_URL') ?: 'http://localhost:5173', '/');
+        // ── 2. Resolve base URLs dynamically ──────────────────────────
+        $proto = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+                 (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+                 ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $isLocalSubfolder = str_contains($scriptName, '/LIFEGEN/backend/public') || str_contains($scriptName, '/Lifegeneration/backend/public');
+
+        if ($isLocalSubfolder) {
+            $backendBase  = $proto . '://' . $host . (str_contains($scriptName, 'Lifegeneration') ? '/Lifegeneration/backend/public' : '/LIFEGEN/backend/public');
+            $frontendBase = rtrim(getenv('FRONTEND_URL') ?: 'http://localhost:5173', '/');
+        } else {
+            // Production (Render, Docker root)
+            $backendBase  = $proto . '://' . $host;
+            $frontendBase = $proto . '://' . $host;
+        }
 
         // If event not found, redirect to events list
         if (!$event) {
@@ -61,11 +75,21 @@ class Share extends Controller
         // ── 5. Prepare text fields ────────────────────────────────────
         $title = htmlspecialchars($event['title'] ?? 'Life Generation Event', ENT_QUOTES, 'UTF-8');
 
+        $dateStr = !empty($event['event_date']) ? date('M j, Y', strtotime($event['event_date'])) : '';
+        $timeStr = !empty($event['event_time']) ? date('g:i A', strtotime($event['event_time'])) : '';
+        $locStr  = !empty($event['location']) ? $event['location'] : '';
+
+        $details = [];
+        if ($dateStr) $details[] = "📅 {$dateStr}" . ($timeStr ? " at {$timeStr}" : '');
+        if ($locStr)  $details[] = "📍 {$locStr}";
+        $metaPrefix = $details ? implode(' • ', $details) . ' — ' : '';
+
         $rawDesc = strip_tags($event['description'] ?? '');
         if ($rawDesc === '') {
-            $rawDesc = 'Join us at this Life Generation Calapan event!';
+            $rawDesc = 'Join us at this Life Generation Calapan gathering!';
         }
-        $desc = htmlspecialchars(mb_substr($rawDesc, 0, 200), ENT_QUOTES, 'UTF-8');
+        $fullDesc = $metaPrefix . $rawDesc;
+        $desc = htmlspecialchars(mb_substr($fullDesc, 0, 240), ENT_QUOTES, 'UTF-8');
 
         $canonicalEsc = htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8');
         $imgEsc       = htmlspecialchars($img,          ENT_QUOTES, 'UTF-8');

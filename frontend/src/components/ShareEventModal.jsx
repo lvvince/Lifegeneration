@@ -19,9 +19,17 @@ export default function ShareEventModal({ event, onClose }) {
   if (!event) return null
 
   // ── Build share URLs ───────────────────────────────────────────────
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost/LIFEGEN/backend/public').replace(/\/$/, '')
+  const origin = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
+    : ''
 
-  // Backend OG page — FB crawler uses this in production to get meta tags
+  // Local dev (Laragon) uses the LavaLust subfolder; Production (Render) uses root origin
+  const isLocalhost = Boolean(origin.match(/localhost|127\.0\.0\.1/i))
+  const apiBase = isLocalhost
+    ? (import.meta.env.VITE_API_URL || 'http://localhost/LIFEGEN/backend/public').replace(/\/$/, '')
+    : origin
+
+  // Backend OG page — FB crawler fetches Open Graph meta tags (title, image, desc)
   const ogUrl = `${apiBase}/share/event/${event.id}`
 
   // Facebook sharer
