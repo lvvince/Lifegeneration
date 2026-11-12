@@ -123,11 +123,11 @@ class Events extends Controller
             );
         }
 
-        // Automated Gmail SMTP Confirmation
+        // Automated Gmail Confirmation
         try {
             require_once dirname(dirname(__FILE__)) . '/helpers/mailer_helper.php';
             send_event_rsvp_email($user, $event);
-        } catch (Exception $e) {}
+        } catch (\Throwable $e) {}
 
         api_response([
             'success' => true,
