@@ -1,20 +1,20 @@
 import { useState } from 'react'
-import { X, Link2, Check, MessageCircle, Calendar, MapPin, Clock } from 'lucide-react'
+import { X, Link2, Check, MessageCircle, Calendar, MapPin, Clock, Download, Share2, Copy } from 'lucide-react'
 import { resolveImageUrl, fmtDate, to12h } from '../lib/format.js'
 
 /**
  * ShareEventModal
  *
- * Shows a beautiful event preview card with share options.
- * Works on localhost AND in production — data comes from our
- * own React state, no Facebook crawler required.
- *
- * Props:
- *   event   – the event object (must have id, title, description, banner_image, event_date, event_time, location)
- *   onClose – callback to close the modal
+ * Shows an event preview card with multi-channel share options:
+ * 1. Direct Facebook Sharer
+ * 2. WhatsApp
+ * 3. Copy Formatted Caption + Link (ready to paste in FB/Instagram post)
+ * 4. Download Poster Photo (to attach high-res image directly on FB post)
+ * 5. Native Device Share (via Android/iOS share sheet)
  */
 export default function ShareEventModal({ event, onClose }) {
-  const [copied, setCopied] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedCaption, setCopiedCaption] = useState(false)
 
   if (!event) return null
 
@@ -23,24 +23,35 @@ export default function ShareEventModal({ event, onClose }) {
     ? window.location.origin
     : ''
 
-  // Local dev (Laragon) uses the LavaLust subfolder; Production (Render) uses root origin
   const isLocalhost = Boolean(origin.match(/localhost|127\.0\.0\.1/i))
   const apiBase = isLocalhost
     ? (import.meta.env.VITE_API_URL || 'http://localhost/LIFEGEN/backend/public').replace(/\/$/, '')
     : origin
 
-  // Backend OG page — FB crawler fetches Open Graph meta tags (title, image, desc)
+  // Backend OG page
   const ogUrl = `${apiBase}/share/event/${event.id}`
+
+  // Canonical event page URL for caption
+  const eventPageUrl = `${origin}/events/${event.id}`
 
   // Facebook sharer
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogUrl)}`
 
+  // Formatted caption text
+  const dateStr = event.event_date ? fmtDate(event.event_date) : ''
+  const timeStr = event.event_time ? to12h(event.event_time) : ''
+  const desc = (event.description || '').replace(/<[^>]+>/g, '').trim()
+
+  const captionText = [
+    `🎟️ ${event.title}`,
+    dateStr ? `📅 ${dateStr}${timeStr ? ' at ' + timeStr : ''}` : '',
+    event.location ? `📍 ${event.location}` : '',
+    desc ? `\n${desc}` : '',
+    `\n👉 Reserve your spot & view details:\n${eventPageUrl}`,
+  ].filter(Boolean).join('\n')
+
   // WhatsApp
-  const desc = (event.description || '').replace(/<[^>]+>/g, '').slice(0, 140)
-  const waText = encodeURIComponent(
-    `🙌 *${event.title}*\n${desc}${desc.length >= 140 ? '…' : ''}\n\n📅 ${fmtDate(event.event_date)}${event.event_time ? ' at ' + to12h(event.event_time) : ''}${event.location ? '\n📍 ' + event.location : ''}\n\n${ogUrl}`
-  )
-  const waUrl = `https://wa.me/?text=${waText}`
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(captionText)}`
 
   // ── Handlers ───────────────────────────────────────────────────────
   const openFacebook = () => {
@@ -50,13 +61,12 @@ export default function ShareEventModal({ event, onClose }) {
     window.open(fbUrl, 'fb_share', `width=${w},height=${h},top=${t},left=${l},toolbar=0,status=0,menubar=0,scrollbars=0,resizable=1`)
   }
 
-  const copyLink = async () => {
+  const copyTextToClipboard = async (text) => {
     try {
-      await navigator.clipboard.writeText(ogUrl)
+      await navigator.clipboard.writeText(text)
     } catch {
-      // fallback for older browsers
       const ta = document.createElement('textarea')
-      ta.value = ogUrl
+      ta.value = text
       ta.style.position = 'fixed'
       ta.style.opacity = '0'
       document.body.appendChild(ta)
@@ -64,11 +74,53 @@ export default function ShareEventModal({ event, onClose }) {
       document.execCommand('copy')
       document.body.removeChild(ta)
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2200)
+  }
+
+  const handleCopyLink = async () => {
+    await copyTextToClipboard(ogUrl)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2200)
+  }
+
+  const handleCopyCaption = async () => {
+    await copyTextToClipboard(captionText)
+    setCopiedCaption(true)
+    setTimeout(() => setCopiedCaption(false), 2200)
+  }
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event.title,
+          text: captionText,
+          url: ogUrl,
+        })
+      } catch (e) {
+        // user dismissed share sheet
+      }
+    }
   }
 
   const banner = resolveImageUrl(event.banner_image)
+
+  const handleDownloadBanner = async () => {
+    if (!banner) return
+    try {
+      const res = await fetch(banner)
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `lifegen-${(event.title || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-banner.jpg`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      window.open(banner, '_blank')
+    }
+  }
 
   // ── Render ─────────────────────────────────────────────────────────
   return (
@@ -194,6 +246,7 @@ export default function ShareEventModal({ event, onClose }) {
 
           {/* Facebook */}
           <button
+            type="button"
             onClick={openFacebook}
             style={{
               width: '100%', padding: '11px 16px',
@@ -214,46 +267,106 @@ export default function ShareEventModal({ event, onClose }) {
             Share on Facebook
           </button>
 
-          {/* WhatsApp */}
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              width: '100%', padding: '11px 16px',
-              background: '#25D366', color: '#fff',
-              border: 'none', borderRadius: 10,
-              fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
-              textDecoration: 'none',
-              boxShadow: '0 4px 14px rgba(37,211,102,0.3)',
-              transition: 'opacity 0.15s',
-              boxSizing: 'border-box',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            <MessageCircle size={18} />
-            Share on WhatsApp
-          </a>
-
-          {/* Copy link */}
+          {/* Copy Caption & Link (Best Alternative for clean FB/IG Posts) */}
           <button
-            onClick={copyLink}
+            type="button"
+            onClick={handleCopyCaption}
             style={{
               width: '100%', padding: '11px 16px',
-              background: copied ? '#f0fdf4' : '#f5f5f5',
-              color: copied ? '#16a34a' : '#333',
-              border: `1.5px solid ${copied ? '#bbf7d0' : '#e0e0e0'}`,
+              background: copiedCaption ? '#f0fdf4' : '#fff7ed',
+              color: copiedCaption ? '#16a34a' : '#c2410c',
+              border: `1.5px solid ${copiedCaption ? '#bbf7d0' : '#fed7aa'}`,
               borderRadius: 10,
-              fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+              fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
               transition: 'all 0.2s',
             }}
           >
-            {copied ? <Check size={16} /> : <Link2 size={16} />}
-            {copied ? 'Link copied!' : 'Copy event link'}
+            {copiedCaption ? <Check size={16} /> : <Copy size={16} />}
+            {copiedCaption ? 'Caption & Link Copied!' : 'Copy Post Caption with Link'}
           </button>
+
+          {/* Download Poster Image (Alternative: Upload poster directly to FB) */}
+          {banner && (
+            <button
+              type="button"
+              onClick={handleDownloadBanner}
+              style={{
+                width: '100%', padding: '10px 16px',
+                background: '#f8fafc',
+                color: '#334155',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: 10,
+                fontSize: '0.86rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                transition: 'all 0.2s',
+              }}
+            >
+              <Download size={15} />
+              Save Poster Photo
+            </button>
+          )}
+
+          {/* Secondary Actions Row: WhatsApp & Copy Simple Link */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {/* WhatsApp */}
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '9px 12px',
+                background: '#25D366', color: '#fff',
+                border: 'none', borderRadius: 10,
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                textDecoration: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <MessageCircle size={15} />
+              WhatsApp
+            </a>
+
+            {/* Copy link */}
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              style={{
+                padding: '9px 12px',
+                background: copiedLink ? '#f0fdf4' : '#f5f5f5',
+                color: copiedLink ? '#16a34a' : '#333',
+                border: `1.5px solid ${copiedLink ? '#bbf7d0' : '#e0e0e0'}`,
+                borderRadius: 10,
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                transition: 'all 0.2s',
+              }}
+            >
+              {copiedLink ? <Check size={14} /> : <Link2 size={14} />}
+              {copiedLink ? 'Copied!' : 'Copy Link'}
+            </button>
+          </div>
+
+          {/* Mobile Native Share Sheet (Android/iPhone) */}
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <button
+              type="button"
+              onClick={handleNativeShare}
+              style={{
+                width: '100%', padding: '9px 16px',
+                background: 'transparent',
+                color: '#64748b',
+                border: '1px dashed #cbd5e1',
+                borderRadius: 10,
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              }}
+            >
+              <Share2 size={14} />
+              More sharing options (Apps)...
+            </button>
+          )}
         </div>
       </div>
 
