@@ -1112,7 +1112,8 @@ class Chat extends Controller
     private function g_conf()
     {
         // Separate OAuth client for Meet/Calendar (MEET_*), so Google Login (GOOGLE_CLIENT_ID) is never affected.
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+       $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'); $scheme = $https ? 'https' : 'http';
         $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
         $auto = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $dir . '/api/chat/google/callback';
         $origins = array_filter(array_map('trim', explode(',', (string) getenv('ALLOWED_ORIGINS'))));
