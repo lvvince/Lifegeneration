@@ -965,9 +965,21 @@ class Chat extends Controller
         if ($title === '') api_response(['error' => 'Give the session a title.'], 422);
         $auto = !empty($in['auto_meet']) && $in['auto_meet'] !== 'false' && $in['auto_meet'] !== '0';
         if (!$auto && !$this->valid_meet($url)) api_response(['error' => 'Paste a Google Meet link, like https://meet.google.com/abc-defg-hij'], 422);
-        $ts = strtotime($start);
+
+        // Parse the datetime in Asia/Manila context. The frontend now sends ISO-8601 with
+        // +08:00 offset (e.g. "2026-11-13T16:00:00+08:00") so strtotime resolves correctly
+        // to the exact Manila local time regardless of the server's PHP timezone.
+        // Fallback: bare strings without offset are assumed Manila local.
+        $tz = new DateTimeZone('Asia/Manila');
+        try {
+            $dtObj = new DateTime($start);        // Parses +08:00 offset correctly
+            $dtObj->setTimezone($tz);             // Normalize to Manila for storage
+        } catch (Exception $e) {
+            api_response(['error' => 'Choose a date and time.'], 422);
+        }
+        $ts = $dtObj->getTimestamp();
         if (!$ts) api_response(['error' => 'Choose a date and time.'], 422);
-        $startSql = date('Y-m-d H:i:s', $ts);
+        $startSql = $dtObj->format('Y-m-d H:i:s');   // Store as Manila local time
         $late = $this->db->raw("SELECT (? < (NOW() - INTERVAL 10 MINUTE))", [$startSql])->fetchColumn();
         if ((int) $late === 1) api_response(['error' => 'That start time has already passed.'], 422);
 

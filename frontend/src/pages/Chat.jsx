@@ -25,8 +25,11 @@ const POLL_MS = 5000
 const parse = (d) => {
   if (!d) return new Date()
   let s = String(d).trim().replace(' ', 'T')
+  // DB stores datetimes in Asia/Manila (UTC+8). If the string has no timezone info,
+  // treat it as Manila local time (+08:00), NOT as UTC (Z). Appending 'Z' would shift
+  // the displayed time 8 hours forward (e.g. 4:00 PM → 12:00 AM next day).
   if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) {
-    s += 'Z'
+    s += '+08:00'
   }
   const x = new Date(s)
   return isNaN(x) ? new Date() : x
@@ -1137,7 +1140,7 @@ function SessionForm({ google, channels, onCancel, onDone, toast }) {
     try {
       await apiPost('/api/chat/sessions', {
         title: f.title.trim(), kind: f.kind, description: f.description.trim(), meet_url: f.auto ? '' : f.meet_url.trim(), auto_meet: f.auto,
-        starts_at: `${f.date} ${f.time}:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
+        starts_at: `${f.date}T${f.time}:00+08:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
       })
       onDone()
     } catch (e2) { setErr(e2.message || 'Could not schedule the session.'); toast(e2.message || 'Could not schedule the session.', 'bad') } finally { setBusy(false) }
