@@ -89,7 +89,9 @@ export default function PrayerWall() {
 
   const [open, setOpen] = useState(null)
   const [toDelete, setToDelete] = useState(null)
+  const [delBusy, setDelBusy] = useState(false)
   const [testi, setTesti] = useState('')
+  const [markBusy, setMarkBusy] = useState(false)
   const root = useRef(null)
 
   const load = useCallback(
@@ -145,6 +147,8 @@ export default function PrayerWall() {
   }
 
   async function markAnswered(p, text) {
+    if (markBusy) return
+    setMarkBusy(true)
     try {
       const res = await apiPost('/api/prayer/mark-answered', { id: p.id, testimony: text })
       toast(res.message || 'Marked as answered. Praise God!')
@@ -152,10 +156,14 @@ export default function PrayerWall() {
       load()
     } catch (err) {
       toast(err.message || 'Failed to update prayer.', 'bad')
+    } finally {
+      setMarkBusy(false)
     }
   }
 
   async function remove() {
+    if (delBusy) return
+    setDelBusy(true)
     try {
       await apiPost('/api/prayer/delete', { id: toDelete.id })
       toast('Prayer request deleted.')
@@ -164,6 +172,8 @@ export default function PrayerWall() {
       load()
     } catch (err) {
       toast(err.message || 'Failed to delete prayer.', 'bad')
+    } finally {
+      setDelBusy(false)
     }
   }
 
@@ -424,14 +434,14 @@ export default function PrayerWall() {
               <form className="fh-testi-form" onSubmit={(e) => { e.preventDefault(); markAnswered(current, testi) }}>
                 <label htmlFor="fh-testi">God answered? Share a short testimony <small>(optional)</small></label>
                 <textarea id="fh-testi" rows={3} maxLength={800} value={testi} onChange={(e) => setTesti(e.target.value)} placeholder="Tell us how God moved…" />
-                <button type="submit" className="fh-btn is-sage"><CheckCircle2 size={16} aria-hidden="true" /> Mark as answered</button>
+                <button type="submit" className="fh-btn is-sage" disabled={markBusy}><CheckCircle2 size={16} aria-hidden="true" /> {markBusy ? 'Saving…' : 'Mark as answered'}</button>
               </form>
             )}
             {owner(current) && answered(current) && !current.testimony && (
               <form className="fh-testi-form" onSubmit={(e) => { e.preventDefault(); markAnswered(current, testi) }}>
                 <label htmlFor="fh-testi2">Add your testimony</label>
                 <textarea id="fh-testi2" rows={3} maxLength={800} value={testi} onChange={(e) => setTesti(e.target.value)} placeholder="Tell us how God moved…" />
-                <button type="submit" className="fh-btn is-sage" disabled={!testi.trim()}><Check size={16} aria-hidden="true" /> Save testimony</button>
+                <button type="submit" className="fh-btn is-sage" disabled={markBusy || !testi.trim()}><Check size={16} aria-hidden="true" /> {markBusy ? 'Saving…' : 'Save testimony'}</button>
               </form>
             )}
             {owner(current) && (
@@ -448,7 +458,7 @@ export default function PrayerWall() {
       )}
 
       {toDelete && (
-        <ConfirmDialog title="Delete this prayer?" message={`"${toDelete.title}" will be removed for everyone.`} confirmLabel="Delete" danger onConfirm={remove} onCancel={() => setToDelete(null)} />
+        <ConfirmDialog title="Delete this prayer?" message={`"${toDelete.title}" will be removed for everyone.`} confirmLabel="Delete" danger busy={delBusy} onConfirm={remove} onCancel={() => setToDelete(null)} />
       )}
     </div>
   )

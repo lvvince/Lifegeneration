@@ -82,6 +82,18 @@ class Donations extends Controller
             api_response(['error' => 'Donation amount cannot exceed ₱1,000,000.00.'], 422);
         }
 
+        // Anti-spam throttle: maximum 5 donation submissions every 5 minutes per user
+        $userId = $user['id'] ?? null;
+        if ($userId) {
+            $recent = (int) $this->db->raw(
+                "SELECT COUNT(*) FROM donations WHERE user_id = ? AND created_at > (NOW() - INTERVAL 5 MINUTE)",
+                [$userId]
+            )->fetchColumn();
+            if ($recent >= 5) {
+                api_response(['error' => 'Too many donation submissions in a short period. Please try again in a few minutes.'], 429);
+            }
+        }
+
         $campaignId = !empty($input['campaign_id']) ? (int) $input['campaign_id'] : null;
         $category = trim($input['category'] ?? 'offering');
         $paymentMethod = trim($input['payment_method'] ?? 'gcash');

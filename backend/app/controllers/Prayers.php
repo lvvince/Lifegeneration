@@ -103,6 +103,15 @@ class Prayers extends Controller
             api_response(['error' => 'Prayer title and description are required.'], 422);
         }
 
+        // Anti-spam rate limit: maximum 3 prayer requests every 2 minutes per user
+        $recent = (int) $this->db->raw(
+            "SELECT COUNT(*) FROM prayer_requests WHERE user_id = ? AND created_at > (NOW() - INTERVAL 2 MINUTE)",
+            [$user['id']]
+        )->fetchColumn();
+        if ($recent >= 3) {
+            api_response(['error' => 'You are posting too fast. Please take a moment before submitting another prayer.'], 429);
+        }
+
         // Optional photo (multipart). Images only, checked by real content, max 8 MB.
         $image = null;
         if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {

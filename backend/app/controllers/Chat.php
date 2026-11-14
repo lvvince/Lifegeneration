@@ -393,7 +393,12 @@ class Chat extends Controller
     private function touch_presence($me)
     {
         if ($me['id'] > 0) {
-            $this->db->raw("INSERT INTO chat_presence (user_id, last_seen) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()", [$me['id']]);
+            // Only update last_seen if older than 40 seconds to prevent unnecessary disk I/O on rapid polls
+            $this->db->raw(
+                "INSERT INTO chat_presence (user_id, last_seen) VALUES (?, NOW())
+                 ON DUPLICATE KEY UPDATE last_seen = IF(last_seen < (NOW() - INTERVAL 40 SECOND), NOW(), last_seen)",
+                [$me['id']]
+            );
         }
     }
 

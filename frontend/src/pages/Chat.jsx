@@ -19,14 +19,17 @@ const REACTIONS = [
   { key: 'praise', label: 'Praise', Icon: Flame },
 ]
 const MUTES = [[15, '15 minutes'], [60, '1 hour'], [1440, '1 day'], [10080, '7 days']]
-const POLL_MS = 5000
+const POLL_MS = 8000
 
 /* ---------- small helpers ---------- */
 const parse = (d) => {
   if (!d) return new Date()
   let s = String(d).trim().replace(' ', 'T')
+  // DB stores datetimes in Asia/Manila (UTC+8). If the string has no timezone info,
+  // treat it as Manila local time (+08:00), NOT as UTC (Z). Appending 'Z' would shift
+  // the displayed time 8 hours forward (e.g. 4:00 PM → 12:00 AM next day).
   if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) {
-    s += 'Z'
+    s += '+08:00'
   }
   const x = new Date(s)
   return isNaN(x) ? new Date() : x
@@ -155,7 +158,7 @@ export default function Chat() {
     })
     apiGet('/api/chat/members').then((m) => setMembers(Array.isArray(m) ? m : [])).catch(() => {})
     loadSessions()
-    const t = setInterval(() => { if (document.visibilityState === 'visible') { loadBoot(); loadSessions() } }, 15000)
+    const t = setInterval(() => { if (document.visibilityState === 'visible') { loadBoot(); loadSessions() } }, 30000)
     return () => clearInterval(t)
   }, [loadBoot]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -751,7 +754,7 @@ function Message({ m, joined, mine, me, canPost, picked, onPick, onProfile, onRe
 function MemberList({ members, setMembers, onOpen }) {
   const [q, setQ] = useState('')
   useEffect(() => {
-    const t = setInterval(() => document.visibilityState === 'visible' && apiGet('/api/chat/members').then((m) => Array.isArray(m) && setMembers(m)).catch(() => {}), 30000)
+    const t = setInterval(() => document.visibilityState === 'visible' && apiGet('/api/chat/members').then((m) => Array.isArray(m) && setMembers(m)).catch(() => {}), 45000)
     return () => clearInterval(t)
   }, [setMembers])
   const f = members.filter((m) => m.name.toLowerCase().includes(q.trim().toLowerCase()))
@@ -1137,7 +1140,7 @@ function SessionForm({ google, channels, onCancel, onDone, toast }) {
     try {
       await apiPost('/api/chat/sessions', {
         title: f.title.trim(), kind: f.kind, description: f.description.trim(), meet_url: f.auto ? '' : f.meet_url.trim(), auto_meet: f.auto,
-        starts_at: `${f.date} ${f.time}:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
+        starts_at: `${f.date}T${f.time}:00+08:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
       })
       onDone()
     } catch (e2) { setErr(e2.message || 'Could not schedule the session.'); toast(e2.message || 'Could not schedule the session.', 'bad') } finally { setBusy(false) }
