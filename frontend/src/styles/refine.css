@@ -313,18 +313,19 @@ html[data-theme='dark'], :root[data-theme='dark'] {
 /* ================= 19. FIND MY PLACE title: minimalist ================= */
 .fm.fm.fm .fm-title em { padding: 0; margin: 0; background: none; color: var(--fm-or); transform: none; }
 
-/* ================= 20. FOOTER SOCIAL: brand icons at kulay ================= */
-:root:root .lg-ft-social { display: flex; flex-wrap: wrap; gap: 10px; }
-:root:root .lg-ft-social a { display: inline-flex; align-items: center; gap: 10px; width: auto; height: auto; min-height: 48px; padding: 0 16px 0 0; border: 1px solid rgba(23,20,15,.16); border-radius: 5px !important; background: transparent; color: inherit; font-size: 13px; font-weight: 700; text-decoration: none; overflow: hidden; transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .25s; }
-:root:root .lg-ft-social a:hover { transform: translateY(-3px); border-color: currentColor; box-shadow: 0 3px 0 rgba(23,20,15,.9); background: transparent; }
-:root:root .lg-ft-ico { display: grid; place-items: center; width: 48px; height: 48px; color: #fff; align-self: stretch; }
+/* ================= 20. FOOTER SOCIAL: icons lang, apat na magkakatabi ================= */
+:root:root .lg-ft-social { display: grid; grid-template-columns: repeat(4, 48px); gap: 10px; margin: 0; padding: 0; list-style: none; }
+:root:root .lg-ft-social li { margin: 0; }
+:root:root .lg-ft-social a { display: grid; place-items: center; width: 48px; height: 48px; min-height: 0; padding: 0; border: 0; border-radius: 5px !important; overflow: hidden; color: #fff; transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s; }
+:root:root .lg-ft-social a:hover { transform: translateY(-3px); box-shadow: 0 3px 0 #17140f; }
+:root:root .lg-ft-social a:active { transform: scale(.94); }
+:root:root .lg-ft-ico { display: grid; place-items: center; width: 100%; height: 100%; color: #fff; }
 :root:root .lg-ft-social .is-fb .lg-ft-ico { background: #1877F2; }
 :root:root .lg-ft-social .is-ig .lg-ft-ico { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
 :root:root .lg-ft-social .is-tt .lg-ft-ico { background: #010101; }
 :root:root .lg-ft-social .is-tt .lg-ft-ico svg { filter: drop-shadow(1.5px 1.5px 0 #FE2C55) drop-shadow(-1.5px -1.5px 0 #25F4EE); }
 :root:root .lg-ft-social .is-ig .lg-ft-ico svg { stroke-width: 2.2; }
-:root:root .lg-ft-lbl { white-space: nowrap; }
-@media (max-width: 420px) { :root:root .lg-ft-social { gap: 8px; } :root:root .lg-ft-social li { flex: 1 1 calc(50% - 8px); } :root:root .lg-ft-social a { width: 100%; } }
+html[data-theme='dark']:root:root .lg-ft-social a:hover { box-shadow: 0 3px 0 #f6f2eb; }
 
 /* ================= 21. Dark-mode contrast fixes ================= */
 html[data-theme='dark']:root:root .lg-ft{background:#14110d;color:#f1ece3;border-top-color:#2c261e}
@@ -349,3 +350,77 @@ html[data-theme='dark']:root:root:root .portal.px.lgx .sk-main .p-table thead th
 html[data-theme='dark']:root:root:root .portal .ao-quick button,html[data-theme='dark']:root:root:root .portal .ao-quick button span{color:#f6f2eb}
 html[data-theme='dark']:root:root:root .portal .ao-quick button{background:#1d1812}
 :root:root:root .portal .pg-tabs button.on small,:root:root:root .portal [aria-selected='true'] small{color:#fff}
+
+/* ================= 22. Member hero (Ministries / D-Groups / Pages) — dark, malinaw na text ================= */
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero) { background: #17140f !important; background-image: none !important; border: 1px solid #17140f; color: #f6f2eb; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero) { background: #17140f !important; background-image: none !important; border-color: #3a322a; }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero)::after { content: '' !important; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-hero-title { color: #fff; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-hero-sub { color: rgba(246,242,235,.82); }
+:root:root:root .portal.px.lgx .pg-root .min-vol-hero-badge { background: #ff5a0a; color: #17140f; border: 0; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.04); }
+:root:root:root .portal.px.lgx .pg-root .min-vol-stat-divider { display: none; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-stat { display: grid; align-content: start; gap: 4px; min-width: 0; padding: 14px 12px; border-left: 1px solid rgba(255,255,255,.14); }
+:root:root:root .portal.px.lgx .pg-root .min-vol-stat:first-child { border-left: 0; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-stat strong { color: #ff7a33; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+:root:root:root .portal.px.lgx .pg-root .min-vol-stat span { color: #d6cfc1 !important; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; line-height: 1.25; opacity: 1; }
+
+/* ================= 23. Search drawer — pantay sa light at dark ================= */
+:root:root:root .portal.px.lgx .sk-search { gap: 10px; padding: 0 6px 0 14px; border: 1px solid var(--rf-line, rgba(23,20,15,.2)); border-radius: 5px !important; background: var(--rf-card, #fff); box-shadow: none; }
+:root:root:root .portal.px.lgx .sk-search:focus-within { border-color: #ff5a0a; box-shadow: 0 0 0 3px rgba(255,90,10,.25); }
+:root:root:root .portal.px.lgx .sk-search input,
+:root:root:root .portal.px.lgx .sk-search input:focus,
+:root:root:root .portal.px.lgx .sk-search input:focus-visible { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0 !important; border-radius: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; font-size: 16px; }
+:root:root:root .portal.px.lgx .sk-res { border-radius: 0 !important; border: 0; border-bottom: 1px solid var(--rf-line, rgba(23,20,15,.12)); background: transparent; box-shadow: none; min-height: 60px; }
+:root:root:root .portal.px.lgx .sk-res .sk-tile { border-radius: 5px !important; }
+:root:root:root .portal.px.lgx .sk-res.is-sel { background: rgba(255,90,10,.1); }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search { background: #1d1812; border-color: #3a322a; color: #f6f2eb; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search input { color: #f6f2eb; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search input::placeholder { color: #8f877a; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search svg { color: #b5ad9f; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-iconbtn { background: #1d1812; border: 1px solid #3a322a; border-radius: 5px !important; color: #f6f2eb; box-shadow: none; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-res { border-bottom-color: #2c261e; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-res .sk-tile { background: #2a241c; color: #f6f2eb; box-shadow: none; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-res small { color: #a89f90; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-res.is-sel { background: rgba(255,90,10,.16); }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-chips button { background: #1d1812; border-color: #3a322a; color: #f6f2eb; border-radius: 5px; }
+
+/* ================= 24. Chat header sa phone: hindi na nag-uumpugan ================= */
+@media (max-width: 560px) {
+  :root:root:root .fc .fc-bar { flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 8px 10px 0; }
+  :root:root:root .fc .fc-bar-t { flex: 1 1 0; min-width: 0; }
+  :root:root:root .fc .fc-bar-t h2 { font-size: 1.05rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :root:root:root .fc .fc-bar-t p { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; }
+  :root:root:root .fc .fc-bar-a { order: 3; flex: 1 0 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 4px -10px 0; padding: 0; border-top: 1px solid var(--rf-line, rgba(23,20,15,.12)); background: transparent !important; box-shadow: none !important; }
+  :root:root:root .fc .fc-bar-a .fc-iconbtn { width: 100%; height: 46px; border-radius: 0 !important; }
+  :root:root:root .fc .fc-bar-a .fc-iconbtn.is-on { background: rgba(255,90,10,.14) !important; color: #c2410c; box-shadow: inset 0 -2px 0 #ff5a0a !important; }
+}
+html[data-theme='dark']:root:root:root .fc .fc-bar-a { border-top-color: #2c261e; }
+html[data-theme='dark']:root:root:root .fc .fc-bar-a .fc-iconbtn.is-on { color: #ff9a5c; }
+
+/* ================= 25. Mobile UX polish ================= */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+:root:root a, :root:root button, :root:root [role='button'], :root:root label, :root:root summary { touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,90,10,.18); }
+@media (max-width: 820px) {
+  :root:root :is(input:not([type='checkbox']):not([type='radio']), select, textarea) { font-size: 16px; }
+  :root:root:root .portal.px.lgx :is(.sk-dscroll, .fc-scroll, .fc-msgs, .fc-side, .sk-drawer) { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  :root:root:root .portal.px.lgx .sk-main { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  :root:root:root .portal.px.lgx .fc-compose { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  :root:root:root .portal.px.lgx :is(.sk-res, .sk-row, .fc-people button, .pg-tabs button, .p-tabs button) { min-height: 48px; }
+  :root:root:root .rh .rh-actions > *, :root:root:root .rh-actions > * { min-height: 46px; }
+}
+@media (max-width: 420px) {
+  :root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero) { padding-inline: 18px 14px; }
+  :root:root:root .portal.px.lgx .pg-root .min-vol-stat { padding: 12px 8px; }
+  :root:root:root .portal.px.lgx .pg-root .min-vol-stat span { font-size: 10px; letter-spacing: .06em; }
+}
+@media (hover: none) { :root:root .lg-ft-col li > a:hover, :root:root .lg-ft-col li > button:hover { transform: none; } }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) { color: #fff !important; }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) .hl { color: #ff5a0a !important; }
+:root:root:root .portal.px.lgx .pg-root :is(.dg-hero-sub, .pg-hero p, .min-vol-hero-sub) { color: rgba(246,242,235,.84) !important; opacity: 1 !important; }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero) :is(h1, p, span, strong) { opacity: 1; }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) { -webkit-text-fill-color: #fff !important; }
+:root:root:root .portal.px.lgx .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) .hl { -webkit-text-fill-color: #ff5a0a !important; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search { background: #1d1812 !important; background-image: none !important; border: 1px solid #3a322a !important; box-shadow: none !important; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-search:focus-within { border-color: #ff5a0a !important; box-shadow: 0 0 0 3px rgba(255,90,10,.25) !important; }
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-iconbtn { background: #1d1812 !important; background-image: none !important; border: 1px solid #3a322a !important; box-shadow: none !important; }

@@ -26,11 +26,10 @@ export default function HomeFooter() {
           <p>A Christ-centered youth organization in Calapan. Photos, recaps and announcements are posted on our pages first.</p>
           <h3>Follow us on</h3>
           <ul className="lg-ft-social">
-            {FOLLOW.map(({ name, label, cls, href, icon: Icon }) => (
+            {FOLLOW.map(({ name, cls, href, icon: Icon }) => (
               <li key={name}>
                 <a href={href} className={cls} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}>
                   <span className="lg-ft-ico"><Icon size={20} /></span>
-                  <span className="lg-ft-lbl">{label}</span>
                 </a>
               </li>
             ))}
