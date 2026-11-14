@@ -43,8 +43,11 @@ export async function apiRequest(path, options = {}) {
     })
   } catch (error) {
     console.error('Fetch failed:', url, error)
+    const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false
     throw new Error(
-      `Unable to connect to backend (${url}). Please check server and database.`
+      isOffline
+        ? 'You are currently offline. Please check your internet connection and try again.'
+        : 'Slow or lost connection. Please check your internet connection and try again.'
     )
   }
 

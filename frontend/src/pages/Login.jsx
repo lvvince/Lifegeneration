@@ -88,7 +88,7 @@ export default function Login() {
       <div className="au-google"><div ref={gRef} /></div>
       {isWebview && (
         <p style={{ fontSize: '0.8rem', color: '#ffaa44', textAlign: 'center', marginTop: '10px', lineHeight: 1.4 }}>
-          ⚠️ Naka-bukas sa Messenger/Facebook? I-tap ang tatlong tuldok (⋮ o •••) sa taas at piliin ang <b>Open in Chrome / Safari</b> para gumana ang Google sign-in.
+          ⚠️ Opened inside Messenger or Facebook? Tap the menu (⋮ or •••) at the top and select <b>Open in Chrome / Safari</b> to use Google sign-in.
         </p>
       )}
     </AuthShell>
