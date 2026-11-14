@@ -131,19 +131,15 @@ export default function AdminReports() {
   return (
     <>
       {/* ── Page header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <PageHeader title="Reports" desc="Member numbers, event attendance and forecasts. Export any table as CSV or print a full PDF report." />
-        <button
-          type="button"
-          className="p-btn p-btn-primary"
-          onClick={() => setShowPrint(true)}
-          disabled={loading}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0, alignSelf: 'flex-end' }}
-        >
-          <Printer size={16} />
-          Print / PDF
-        </button>
-      </div>
+      <PageHeader
+        title="Reports"
+        desc="Member numbers, event attendance and forecasts."
+        actions={
+          <button type="button" className="p-btn p-btn-primary" onClick={() => setShowPrint(true)} disabled={loading}>
+            <Printer size={16} /> Print / PDF
+          </button>
+        }
+      />
 
       {error && <div className="alert" style={{ marginBottom: 16 }}>{error}</div>}
 

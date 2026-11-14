@@ -1,0 +1,351 @@
+/* =====================================================================
+   refine.css | Life Generation
+   Huling stylesheet (naka-import sa main.jsx). Flat at matalas na surfaces,
+   manipis na hairline, iisang accent, malinis na galaw. Walang clay.
+   ===================================================================== */
+:root {
+  --rf-ink: #17140f; --rf-ink-2: #4a443b; --rf-ink-3: #7d7569;
+  --rf-paper: #f6f2eb; --rf-card: #ffffff;
+  --rf-line: rgba(23, 20, 15, 0.14); --rf-line-2: rgba(23, 20, 15, 0.07);
+  --rf-or: #ff5a0a; --rf-or-d: #d94a00; --rf-or-soft: #fff0e4; --rf-ok: #12795a; --rf-bad: #c4322a;
+  --rf-r1: 3px; --rf-r2: 5px; --rf-r3: 8px;
+  --rf-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --cx-clay: 0 0 0 1px var(--rf-line); --cx-press: inset 0 0 0 1px var(--rf-ink); --cx-bg: #fff;
+  --clay: 0 0 0 1px var(--rf-line); --clay-or: none; --clay-press: inset 0 0 0 1px var(--rf-ink);
+  --fx-soft: #fff; --fx-shadow: 0 1px 0 rgba(23, 20, 15, 0.04); --fx-shadow-up: 0 10px 24px -16px rgba(23, 20, 15, 0.28);
+  --su-edge: 0 0 0 1px var(--rf-line); --edge: 0 0 0 1px var(--rf-line);
+  --p-shadow: none; --mp-shadow: none; --radius: 6px;
+  --rd-s: 4px; --rd-m: 6px; --rd-l: 8px; --rd-p: 6px;
+}
+html[data-theme='dark'], :root[data-theme='dark'] {
+  --rf-ink: #f3eee6; --rf-ink-2: #c9c2b6; --rf-ink-3: #8f887c;
+  --rf-paper: #0f0f0f; --rf-card: #171717; --rf-line: rgba(255, 255, 255, 0.16); --rf-line-2: rgba(255, 255, 255, 0.07);
+  --rf-or-soft: #2a1a10; --cx-bg: #171717; --fx-soft: #171717; --fx-shadow: none;
+}
+
+/* 1. PAGE */
+:root:root:root .portal.px.lgx .sk-main :is(.p-head, .ad-head) { position: relative; align-items: flex-end; gap: 16px; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--rf-line); }
+:root:root:root .portal.px.lgx .sk-main :is(.p-head, .ad-head)::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 56px; height: 3px; background: var(--rf-or); transform-origin: left; animation: rf-draw .7s var(--rf-out) .1s both; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-title, .ad-head h1) { letter-spacing: -0.02em; line-height: 1; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-desc, .ad-head p) { max-width: 62ch; margin-top: 8px; color: var(--rf-ink-2); font-size: 14px; line-height: 1.6; text-wrap: pretty; }
+@keyframes rf-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes rf-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  :root:root:root .portal.px.lgx .sk-main .sk-page > * { animation: rf-rise .5s var(--rf-out) backwards; }
+  :root:root:root .portal.px.lgx .sk-main .sk-page > *:nth-child(2) { animation-delay: .05s; }
+  :root:root:root .portal.px.lgx .sk-main .sk-page > *:nth-child(3) { animation-delay: .1s; }
+  :root:root:root .portal.px.lgx .sk-main .sk-page > *:nth-child(n+4) { animation-delay: .15s; }
+}
+
+/* 2. FORM CONTROLS: puti, 1px border, matalas, orange na focus ring */
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form, .fb-form) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=range], [type=file], [type=color], [type=submit], [type=button], [type=hidden], [type=search]),
+:root:root:root .portal.px.lgx :is(.p-input, input.p-input, select.p-input, textarea.p-input) {
+  -webkit-appearance: none !important; appearance: none !important; width: 100%; min-height: 44px; padding: 0 14px; margin: 0;
+  border: 1px solid var(--rf-line) !important; border-radius: var(--rf-r2) !important; background-color: var(--rf-card) !important; color: var(--rf-ink);
+  box-shadow: none !important; font: inherit; font-size: 15px; font-weight: 500; line-height: 1.3;
+  transition: border-color .2s, box-shadow .2s;
+}
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form, .fb-form) textarea, :root:root:root .portal.px.lgx textarea.p-input { padding: 11px 14px; min-height: 96px; line-height: 1.5; resize: vertical; }
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form) :is(input, textarea, select)::placeholder, :root:root:root .portal.px.lgx .p-input::placeholder { color: var(--rf-ink-3); opacity: 1; font-weight: 400; }
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form, .fb-form) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=range], [type=file], [type=search]):hover:not(:disabled), :root:root:root .portal.px.lgx .p-input:hover:not(:disabled) { border-color: var(--rf-ink-3) !important; }
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form, .fb-form) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=range], [type=file], [type=search]):focus, :root:root:root .portal.px.lgx .p-input:focus { outline: 0; border-color: var(--rf-ink) !important; box-shadow: 0 0 0 3px rgba(255, 90, 10, .28) !important; }
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .ad-form) :is(input, textarea, select):disabled { opacity: .55; background-color: var(--rf-line-2) !important; cursor: not-allowed; }
+:root:root:root .portal.px.lgx :is(.sk-main, .p-modal, .fb-form) select:not([multiple]), :root:root:root .portal.px.lgx select.p-input {
+  padding-right: 38px; cursor: pointer; text-overflow: ellipsis; max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6.2l4.5 4.6 4.5-4.6' fill='none' stroke='%2317140f' stroke-width='1.8' stroke-linecap='square'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right 13px center !important; background-size: 14px !important;
+}
+:root:root:root .portal.px.lgx :is(.p-modal, .ad-form) input[type='date'], :root:root:root .portal.px.lgx :is(.p-modal, .ad-form) input[type='time'], :root:root:root .portal.px.lgx :is(.p-modal, .ad-form) input[type='datetime-local'] { padding-right: 10px; }
+:root:root:root .portal.px.lgx :is(.p-label, .p-field > label) { display: block; margin-bottom: 6px; color: var(--rf-ink); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .p-hint { color: var(--rf-ink-3); font-size: 12px; line-height: 1.45; }
+:root:root:root .portal.px.lgx input[type='checkbox'], :root:root:root .portal.px.lgx input[type='radio'] { accent-color: var(--rf-or); }
+
+:root:root:root .portal.px.lgx .sk-main :is(.mb-search, .ad-search, .su-search, .p-search, .sk-search, .ck-search) { position: relative; display: flex; align-items: center; min-height: 46px; border: 1px solid var(--rf-line); border-radius: var(--rf-r2) !important; background: var(--rf-card); box-shadow: none; transition: border-color .2s, box-shadow .2s; }
+:root:root:root .portal.px.lgx .sk-main :is(.mb-search, .ad-search, .su-search, .p-search, .sk-search, .ck-search):hover { border-color: var(--rf-ink-3); }
+:root:root:root .portal.px.lgx .sk-main :is(.mb-search, .ad-search, .su-search, .p-search, .sk-search, .ck-search):focus-within { border-color: var(--rf-ink); box-shadow: 0 0 0 3px rgba(255, 90, 10, .28); }
+:root:root:root .portal.px.lgx .sk-main :is(.mb-search, .ad-search, .su-search, .p-search, .sk-search, .ck-search) input { flex: 1; min-width: 0; height: 100%; min-height: 44px; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; outline: 0; }
+:root:root:root .portal.px.lgx .sk-main :is(.mb-search, .ad-search, .su-search, .p-search, .sk-search, .ck-search) svg { color: var(--rf-ink-3); }
+
+/* 3. BUTTONS */
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn, a.p-btn, .ad-btn) {
+  min-height: 42px; padding: 0 18px; gap: 8px; border: 1px solid var(--rf-line); border-radius: var(--rf-r2) !important;
+  background: var(--rf-card); color: var(--rf-ink); box-shadow: none; filter: none;
+  font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  transition: transform .25s var(--rf-out), border-color .2s, background-color .2s, color .2s, box-shadow .25s var(--rf-out);
+}
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn, a.p-btn):hover:not(:disabled) { border-color: var(--rf-ink); transform: translateY(-1px); box-shadow: 0 2px 0 var(--rf-ink); }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn, a.p-btn):active:not(:disabled) { transform: translateY(1px); box-shadow: none; transition-duration: .05s; }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-primary, a.p-btn-primary) { border-color: var(--rf-ink); background: var(--rf-or); color: #17140f; box-shadow: 0 2px 0 var(--rf-ink); }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-primary, a.p-btn-primary):hover:not(:disabled) { background: #ff6a22; box-shadow: 0 4px 0 var(--rf-ink); transform: translateY(-2px); }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-primary, a.p-btn-primary):active:not(:disabled) { transform: translateY(1px); box-shadow: 0 0 0 var(--rf-ink); }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-primary, a.p-btn-primary):disabled { background: var(--rf-line-2); border-color: var(--rf-line); color: var(--rf-ink-3); box-shadow: none; }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-quiet, a.p-btn-quiet) { border-color: transparent; background: transparent; color: var(--rf-ink-2); box-shadow: none; }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-quiet, a.p-btn-quiet):hover:not(:disabled) { border-color: var(--rf-line); background: var(--rf-line-2); box-shadow: none; transform: none; color: var(--rf-ink); }
+:root:root:root .portal.px.lgx .sk-main :is(button.p-btn-sm, a.p-btn-sm) { min-height: 36px; padding: 0 13px; font-size: 12px; }
+:root:root:root .portal.px.lgx :focus-visible { outline-color: var(--rf-or); }
+
+/* 4. SURFACES */
+:root:root:root .portal.px.lgx .sk-main :is(.p-panel, .p-card, .ad-card, .ad-box, .ad-panel, .mi-card, .p-table-wrap, .ad-table-wrap, .ao-card, .ao-tile, .p-stat, .ad-stat, .ck-card, .in-card) {
+  border: 1px solid var(--rf-line); border-radius: var(--rf-r3); background: var(--rf-card); box-shadow: none;
+}
+:root:root:root .portal.px.lgx .sk-main :is(.p-panel, .ao-card, .ao-tile, .p-card, .ad-card, .ck-card)::before { display: none; }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .ad-card, .ao-tile) { transition: border-color .2s, transform .3s var(--rf-out); } :root:root:root .portal.px.lgx .sk-main :is(.ao-card, .p-card, .ad-card, .ao-tile):hover { transform: none; border-color: var(--rf-ink); } }
+:root:root:root .portal.px.lgx .sk-main .p-panel-head { border-bottom: 1px solid var(--rf-line); }
+:root:root:root .portal.px.lgx .sk-main .p-badge, :root:root:root .portal.px.lgx .sk-main .p-tab-n { border-radius: var(--rf-r1); }
+
+/* 5. TABS: underline, hindi kapsula */
+:root:root:root .portal.px.lgx .sk-main :is(.p-tabs, .mb-tabs, .ad-chips, .su-seg, .sk-chips, .pg-tabs) { display: flex; gap: 0; padding: 0; border: 0; border-bottom: 1px solid var(--rf-line); border-radius: 0 !important; background: transparent; box-shadow: none; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tabs, .mb-tabs, .ad-chips, .su-seg, .sk-chips, .pg-tabs)::-webkit-scrollbar { display: none; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tab, .mb-tabs button, .ad-chips button, .su-seg button, .sk-chips button, .pg-tabs button) { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 16px; margin: 0; border: 0; border-radius: 0 !important; background: transparent; box-shadow: none; color: var(--rf-ink-3); font-size: 12.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; transition: color .2s, background-color .2s; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tab, .mb-tabs button, .ad-chips button, .su-seg button, .sk-chips button, .pg-tabs button)::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; background: var(--rf-or); transform: scaleX(0); transform-origin: left; transition: transform .35s var(--rf-out); }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main :is(.p-tab, .mb-tabs button, .ad-chips button, .su-seg button, .sk-chips button, .pg-tabs button):not(.is-on):not(.is-active):hover { color: var(--rf-ink); background: var(--rf-line-2); } }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tab.is-active, .mb-tabs button.is-on, .ad-chips button.is-on, .su-seg button.is-on, .sk-chips button.is-on, .pg-tabs button.is-on, .p-tab[aria-selected='true']) { color: var(--rf-ink); background: transparent; box-shadow: none; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tab.is-active, .mb-tabs button.is-on, .ad-chips button.is-on, .su-seg button.is-on, .sk-chips button.is-on, .pg-tabs button.is-on, .p-tab[aria-selected='true'])::after { transform: scaleX(1); }
+:root:root:root .portal.px.lgx .sk-main :is(.p-tab-n, .mb-tabs button em, .su-seg button em) { min-width: 20px; padding: 1px 6px; border-radius: var(--rf-r1); background: var(--rf-line-2); color: var(--rf-ink-2); font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0; }
+:root:root:root .portal.px.lgx .sk-main :is(.mb-tabs button.is-on em, .su-seg button.is-on em) { background: var(--rf-or); color: #17140f; }
+
+/* 6. MODALS */
+:root:root:root .p-overlay { background: rgba(23, 20, 15, .55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: rf-fade .2s ease both; }
+:root:root:root .p-modal { border: 1px solid var(--rf-ink); border-radius: var(--rf-r3) !important; background: var(--rf-card); color: var(--rf-ink); box-shadow: 8px 8px 0 rgba(23, 20, 15, .85); animation: rf-pop .32s var(--rf-out) both; }
+:root:root:root .p-modal-head { border-bottom: 1px solid var(--rf-line); }
+:root:root:root .p-modal-head h2 { font-size: 15px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+:root:root:root .p-modal-foot { border-top: 1px solid var(--rf-line); background: var(--rf-line-2); }
+@keyframes rf-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rf-pop { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes rf-sheet { from { transform: translateY(100%); } to { transform: none; } }
+@media (max-width: 640px) {
+  :root:root:root .p-overlay { align-items: flex-end; padding: 0; }
+  :root:root:root .p-modal { width: 100%; max-width: none; max-height: 94dvh; border-width: 1px 0 0; border-radius: var(--rf-r3) var(--rf-r3) 0 0 !important; box-shadow: none; padding-bottom: env(safe-area-inset-bottom); animation: rf-sheet .38s var(--rf-out) both; }
+}
+:root:root:root .fx-sel { border: 1px solid var(--rf-ink); border-radius: var(--rf-r2); background: var(--rf-card); color: var(--rf-ink); box-shadow: 6px 6px 0 rgba(23, 20, 15, .85); padding: 4px; }
+:root:root:root .fx-opt { min-height: 42px; border-radius: var(--rf-r1); font-weight: 600; }
+:root:root:root .fx-opt[aria-selected='true'] { background: var(--rf-or-soft); color: var(--rf-or-d); }
+:root:root:root .fx-sel.is-sheet { border-radius: var(--rf-r3) var(--rf-r3) 0 0; box-shadow: none; border-width: 1px 0 0; }
+
+/* 7. PRAYER WALL + GOD TODAY: hindi na naputol ang pin sa expanded note */
+:root:root:root .fh-big { overflow: visible; max-height: none; margin: 18px 0; }
+:root:root:root .fh-big > .fh-pin, :root:root:root .fh-big > .pw-fix, :root:root:root .fh-big > .pw-pin { top: 12px; z-index: 4; }
+:root:root:root .fh .pw-over, :root:root:root .pw-over { overflow-y: auto; -webkit-overflow-scrolling: touch; align-items: flex-start; padding: max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom)); }
+:root:root:root .pw-over > .fh-big { margin: auto; }
+:root:root:root .fh-big > p { max-height: none; overflow: visible; text-align: left; }
+
+/* 8. PAGE HEADERS (Donations, Check-in) */
+:root:root:root .portal.px.lgx .sk-main :is(.su-head, .ck-head) { position: relative; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--rf-line); }
+:root:root:root .portal.px.lgx .sk-main :is(.su-head, .ck-head)::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 56px; height: 3px; background: var(--rf-or); transform-origin: left; animation: rf-draw .7s var(--rf-out) .1s both; }
+:root:root:root .portal.px.lgx .sk-main :is(.su-head, .ck-head) :is(h1, h2) { letter-spacing: -0.02em; line-height: 1; }
+:root:root:root .portal.px.lgx .sk-main :is(.su-head, .ck-head) p { max-width: 62ch; margin-top: 8px; color: var(--rf-ink-2); font-size: 14px; line-height: 1.6; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-search, .ck-search) input, :root:root:root .portal.px.lgx .sk-main .p-search input { padding-left: 42px !important; }
+:root:root:root .portal.px.lgx .sk-main :is(.p-search, .ck-search) svg { position: absolute; left: 14px; top: 50%; translate: 0 -50%; pointer-events: none; }
+
+/* 9. KPI TILES + LIST ROWS (Donations, Reports) */
+:root:root:root .portal.px.lgx .sk-main .su-kpis > * { position: relative; border: 1px solid var(--rf-line); border-radius: var(--rf-r3) !important; background: var(--rf-card); box-shadow: none; overflow: hidden; transition: border-color .2s, transform .3s var(--rf-out); }
+:root:root:root .portal.px.lgx .sk-main .su-kpis > *::after { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 3px; background: var(--rf-ink); transform: scaleX(.18); transform-origin: left; transition: transform .45s var(--rf-out), background-color .2s; }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main .su-kpis > *:hover { border-color: var(--rf-ink); } :root:root:root .portal.px.lgx .sk-main .su-kpis > *:hover::after { transform: scaleX(1); background: var(--rf-or); } }
+:root:root:root .portal.px.lgx .sk-main .su-kpis :is(strong, b, .su-amt) { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+:root:root:root .portal.px.lgx .sk-main .su-kpi-ico { border-radius: var(--rf-r2) !important; background: var(--rf-ink) !important; color: #fff !important; }
+:root:root:root .portal.px.lgx .sk-main .su-icon { border: 1px solid var(--rf-line) !important; border-radius: var(--rf-r2) !important; background: var(--rf-card) !important; box-shadow: none !important; transition: border-color .2s, transform .25s var(--rf-out); }
+:root:root:root .portal.px.lgx .sk-main .su-icon:hover { border-color: var(--rf-ink) !important; transform: translateY(-1px); }
+:root:root:root .portal.px.lgx .sk-main .su-list > * { border: 1px solid var(--rf-line); border-radius: var(--rf-r3) !important; background: var(--rf-card); box-shadow: none; transition: border-color .2s, transform .3s var(--rf-out); }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main .su-list > *:hover { border-color: var(--rf-ink); transform: translateX(3px); } }
+:root:root:root .portal.px.lgx .sk-main :is(.su-puck, .mi-vol-avatar, .mi-team-thumb, .mi-team-thumb-empty) { border-radius: var(--rf-r2) !important; }
+:root:root:root .portal.px.lgx .sk-main :is(.su-chip, .mi-slots-badge, .dg-meta-chip, .ck-or) { border-radius: var(--rf-r1) !important; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .sk-main :is(.su-act, .su-acts button, .su-copy) { border-radius: var(--rf-r2) !important; box-shadow: none; transition: transform .2s var(--rf-out), background-color .2s, border-color .2s; }
+:root:root:root .portal.px.lgx .sk-main :is(.su-act, .su-acts button):active { transform: translateY(1px); }
+
+/* 10. D-GROUPS + MINISTRIES CARDS */
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-grid, .mi-admin-grid) { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card, .mi-admin-card) { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--rf-line); border-radius: var(--rf-r3) !important; background: var(--rf-card); box-shadow: none; transition: border-color .2s, transform .35s var(--rf-out); }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card, .mi-admin-card):hover { border-color: var(--rf-ink); transform: translateY(-3px); } :root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card, .mi-admin-card):hover :is(.dg-admin-card-img, .mi-admin-card-img) img { transform: scale(1.05); } }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-img, .mi-admin-card-img, .dg-admin-card-img-empty, .mi-admin-card-img-empty) { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0 !important; border-bottom: 1px solid var(--rf-line); background: var(--rf-line-2); }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-img, .mi-admin-card-img) img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--rf-out); }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-body, .mi-admin-card-body) { display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 16px; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-title, .mi-admin-card-title) { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.25; overflow-wrap: anywhere; }
+:root:root:root .portal.px.lgx .sk-main .dg-admin-card-leader { margin: 0; color: var(--rf-or-d); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-desc, .mi-admin-card-desc, .ad-card p, .mi-app-message) { margin: 0; color: var(--rf-ink-2); font-size: 14px; line-height: 1.65; text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+:root:root:root .portal.px.lgx .sk-main .ad-card p { -webkit-line-clamp: 5; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-meta, .mi-admin-card-meta) { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-actions, .mi-admin-card-actions) { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--rf-line); }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-actions, .mi-admin-card-actions) > * { min-height: 46px; border: 0 !important; border-radius: 0 !important; background: transparent; box-shadow: none !important; transition: background-color .2s; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-actions, .mi-admin-card-actions) > * + * { border-left: 1px solid var(--rf-line) !important; }
+:root:root:root .portal.px.lgx .sk-main :is(.dg-admin-card-actions, .mi-admin-card-actions) > *:hover { background: var(--rf-or-soft); transform: none; }
+:root:root:root .portal.px.lgx .sk-main :is(.mi-team-row, .mi-app-row, .mi-volunteer-row) { border: 1px solid var(--rf-line); border-radius: var(--rf-r3) !important; background: var(--rf-card); box-shadow: none; }
+:root:root:root .portal.px.lgx .sk-main .mi-uploader { border: 1px dashed var(--rf-ink-3); border-radius: var(--rf-r2) !important; background: var(--rf-line-2); transition: border-color .2s, background-color .2s; }
+:root:root:root .portal.px.lgx .sk-main .mi-uploader:hover { border-color: var(--rf-or); background: var(--rf-or-soft); }
+
+/* 11. TABLES (Events, Reports) */
+:root:root:root .portal.px.lgx .sk-main .p-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+:root:root:root .portal.px.lgx .sk-main .p-table thead th { background: var(--rf-ink); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .sk-main .p-table tbody tr { transition: background-color .15s; }
+:root:root:root .portal.px.lgx .sk-main .p-table tbody tr:hover { background: var(--rf-or-soft); }
+:root:root:root .portal.px.lgx .sk-main .p-table td, :root:root:root .portal.px.lgx .sk-main .p-table th { padding: 12px 16px; }
+:root:root:root .portal.px.lgx .sk-main .p-table img { border-radius: var(--rf-r2) !important; }
+:root:root:root .portal.px.lgx .sk-main .p-num { font-variant-numeric: tabular-nums; }
+:root:root:root .portal.px.lgx .sk-main .p-bar { height: 8px; border-radius: 0 !important; background: var(--rf-line-2); overflow: hidden; }
+:root:root:root .portal.px.lgx .sk-main .p-bar > * { height: 100%; border-radius: 0 !important; background: var(--rf-or); transform-origin: left; animation: rf-draw .8s var(--rf-out) both; }
+
+/* 12. CHECK-IN */
+:root:root:root .portal.px.lgx .sk-main :is(.ck-row, .p-row) { border: 1px solid var(--rf-line); border-radius: var(--rf-r2) !important; background: var(--rf-card); box-shadow: none; margin-bottom: 6px; transition: border-color .2s; }
+:root:root:root .portal.px.lgx .sk-main :is(.ck-row, .p-row):hover { border-color: var(--rf-ink); }
+:root:root:root .portal.px.lgx .sk-main .ck-list { background: transparent; }
+:root:root:root .portal.px.lgx .sk-main .ck-ring { filter: none; }
+
+/* 13. ANNOUNCEMENTS + MEMBERS EXTRAS */
+:root:root:root .portal.px.lgx .sk-main .ad-card { padding: 18px; border-left: 3px solid var(--rf-line); }
+:root:root:root .portal.px.lgx .sk-main .ad-card.is-pinned { border-left-color: var(--rf-or); }
+:root:root:root .portal.px.lgx .sk-main .ad-card.is-off { opacity: .6; }
+:root:root:root .portal.px.lgx .sk-main :is(.ad-tag, .ad-badge) { border-radius: var(--rf-r1) !important; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
+:root:root:root .portal.px.lgx .sk-main .ad-stat strong { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+:root:root:root .portal.px.lgx .sk-main .ad-acts button, :root:root:root .portal.px.lgx .sk-main .ad-pin { border-radius: var(--rf-r2) !important; box-shadow: none; transition: background-color .2s, color .2s; }
+:root:root:root .portal.px.lgx .sk-main .mb-row { border: 1px solid var(--rf-line); border-radius: var(--rf-r3) !important; background: var(--rf-card); transition: border-color .2s, transform .3s var(--rf-out); }
+@media (hover: hover) { :root:root:root .portal.px.lgx .sk-main .mb-row:hover { border-color: var(--rf-ink); transform: translateX(3px); } }
+:root:root:root .portal.px.lgx .sk-main .mb-hist { border: 1px solid var(--rf-line) !important; border-radius: var(--rf-r2) !important; background: transparent !important; color: var(--rf-ink); box-shadow: none !important; transition: border-color .2s, background-color .2s; }
+:root:root:root .portal.px.lgx .sk-main .mb-hist:hover { border-color: var(--rf-ink) !important; background: var(--rf-or-soft) !important; }
+:root:root:root .portal.px.lgx .sk-main .mb-av { border-radius: var(--rf-r2) !important; }
+
+/* MOBILE */
+@media (max-width: 640px) {
+  :root:root:root .portal.px.lgx .sk-main :is(.p-head, .ad-head, .su-head, .ck-head) { flex-wrap: wrap; }
+  :root:root:root .portal.px.lgx .sk-main :is(.p-head, .ad-head) > :is(button, a) { width: 100%; }
+  :root:root:root .portal.px.lgx .sk-main .su-kpis { grid-template-columns: 1fr 1fr; }
+  :root:root:root .portal.px.lgx .sk-main .p-table-wrap { margin-inline: -4px; }
+  :root:root:root .portal.px.lgx .sk-main :is(.p-tab, .mb-tabs button, .ad-chips button, .su-seg button) { min-height: 48px; padding: 0 14px; }
+  :root:root:root .portal.px.lgx .sk-main :is(.dg-admin-grid, .mi-admin-grid) { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { :root:root:root .portal.px.lgx *, :root:root:root .portal.px.lgx *::before, :root:root:root .portal.px.lgx *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* 14. CHAT: walang background sa search / pin / meet / people; walang # */
+:root:root:root .fc .fc-iconbtn, :root:root:root .fc .fc-bar-a .fc-iconbtn { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0 !important; border-radius: var(--rf-r2, 5px) !important; background: transparent !important; box-shadow: none !important; color: var(--rf-ink-2, #4a443b); transition: color .2s, transform .25s cubic-bezier(.22,1,.36,1); }
+:root:root:root .fc .fc-iconbtn:hover { background: transparent !important; color: var(--rf-or, #ff5a0a); transform: translateY(-1px); }
+:root:root:root .fc .fc-iconbtn:active { transform: translateY(1px); }
+:root:root:root .fc .fc-iconbtn.is-on { background: transparent !important; color: var(--rf-or, #ff5a0a); }
+:root:root:root .fc .fc-iconbtn.is-on::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: 2px; height: 2px; background: var(--rf-or, #ff5a0a); }
+:root:root:root .fc .fc-iconbtn:focus-visible { outline: 2px solid var(--rf-or, #ff5a0a); outline-offset: 1px; }
+:root:root:root .fc .fc-iconbtn .fc-pill { position: absolute; top: 2px; right: 0; min-width: 16px; padding: 0 4px; border-radius: 3px; background: var(--rf-or, #ff5a0a); color: #17140f; font-size: 10px; font-style: normal; font-weight: 800; line-height: 16px; }
+:root:root:root .fc .fc-bar-a { gap: 2px; }
+
+/* D-Groups / Ministries: huwag nang dobleng border sa paligid ng grid */
+:root:root:root .portal.px.lgx .sk-main .p-panel:has(> :is(.dg-admin-grid, .mi-admin-grid)), :root:root:root .portal.px.lgx .sk-main .p-panel:has(> .p-panel-body > :is(.dg-admin-grid, .mi-admin-grid)) { border: 0; background: transparent; padding: 0; }
+
+/* ================= 15. HERO HEADERS (admin / officer) ================= */
+:root:root:root .portal.px.lgx .rh { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 28px; align-items: end; margin: 0 0 24px; padding: clamp(20px, 4vw, 36px); border: 1px solid #17140f; border-radius: var(--rf-r3); background: #17140f; color: #f6f2eb; animation: rf-rise .55s var(--rf-out) backwards; }
+:root:root:root .portal.px.lgx .rh::before { content: ''; position: absolute; inset: 0; z-index: -1; background: repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 1px, transparent 1px 14px); }
+:root:root:root .portal.px.lgx .rh::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--rf-or); transform-origin: top; animation: rh-bar .8s var(--rf-out) .15s backwards; }
+@keyframes rh-bar { from { transform: scaleY(0); } }
+:root:root:root .portal.px.lgx .rh-mark { position: absolute; right: -28px; bottom: -48px; z-index: -1; color: rgba(255,255,255,.07); pointer-events: none; animation: rh-float 9s ease-in-out infinite; }
+@keyframes rh-float { 50% { transform: translateY(-8px) rotate(-3deg); } }
+:root:root:root .portal.px.lgx .rh-main { min-width: 0; }
+:root:root:root .portal.px.lgx .rh-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 5px 10px; border-radius: var(--rf-r1); background: var(--rf-or); color: #17140f; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .rh-title { margin: 14px 0 0; color: #fff; font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 900; line-height: .95; letter-spacing: -.035em; text-transform: uppercase; overflow-wrap: anywhere; }
+:root:root:root .portal.px.lgx .rh-desc { margin: 12px 0 0; max-width: 60ch; color: #fff; font-size: 16px; font-weight: 600; line-height: 1.5; }
+:root:root:root .portal.px.lgx .rh-detail { margin: 10px 0 0; max-width: 66ch; color: rgba(246,242,235,.74); font-size: 14px; line-height: 1.75; text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; text-wrap: pretty; }
+:root:root:root .portal.px.lgx .rh-points { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+:root:root:root .portal.px.lgx .rh-points li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,.22); border-radius: var(--rf-r1); color: rgba(246,242,235,.88); font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; transition: border-color .2s, background-color .2s; }
+:root:root:root .portal.px.lgx .rh-points li::before { content: ''; width: 6px; height: 6px; background: var(--rf-or); }
+@media (hover: hover) { :root:root:root .portal.px.lgx .rh-points li:hover { border-color: var(--rf-or); background: rgba(255,90,10,.12); } }
+:root:root:root .portal.px.lgx .rh-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; align-self: end; }
+:root:root:root .portal.px.lgx .rh-actions .p-btn { border-color: #fff; background: #fff; color: #17140f; box-shadow: none; }
+:root:root:root .portal.px.lgx .rh-actions .p-btn:hover:not(:disabled) { border-color: #fff; box-shadow: 0 3px 0 var(--rf-or); }
+:root:root:root .portal.px.lgx .rh-actions .p-btn-primary { border-color: var(--rf-or); background: var(--rf-or); color: #17140f; box-shadow: none; }
+:root:root:root .portal.px.lgx .rh-actions .p-btn-primary:hover:not(:disabled) { background: #ff6a22; box-shadow: 0 3px 0 #fff; }
+:root:root:root .portal.px.lgx .rh-actions .su-badge { padding: 8px 12px; border-radius: var(--rf-r1); background: var(--rf-or); color: #17140f; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 760px) {
+  :root:root:root .portal.px.lgx .rh { grid-template-columns: minmax(0, 1fr); align-items: start; padding: 22px 18px 20px 22px; }
+  :root:root:root .portal.px.lgx .rh-actions { width: 100%; }
+  :root:root:root .portal.px.lgx .rh-actions > * { flex: 1 1 auto; justify-content: center; }
+  :root:root:root .portal.px.lgx .rh-desc { font-size: 15px; }
+  :root:root:root .portal.px.lgx .rh-mark { width: 150px; height: 150px; right: -20px; bottom: -30px; }
+}
+
+/* ================= 16. HERO HEADERS (member: D-Groups, Volunteer teams, Events) ================= */
+:root:root:root .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero) { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 14px; justify-items: start; text-align: left; padding: clamp(22px, 5vw, 40px) clamp(18px, 4vw, 40px) clamp(22px, 5vw, 40px) clamp(24px, 4.5vw, 44px); border: 1px solid #17140f; border-radius: var(--rf-r3); background: #17140f; color: #f6f2eb; box-shadow: none; }
+:root:root:root .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero)::before { content: ''; position: absolute; inset: 0; z-index: -1; background: repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 1px, transparent 1px 14px); }
+:root:root:root .pg-root :is(.min-vol-hero, .dg-hero, .pg-hero)::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--rf-or); transform-origin: top; animation: rh-bar .8s var(--rf-out) .15s backwards; }
+:root:root:root .pg-root :is(.min-vol-hero-badge, .dg-hero-badge, .pg-chip) { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border: 0; border-radius: var(--rf-r1); background: var(--rf-or); color: #17140f; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+:root:root:root .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) { margin: 0; color: #fff; font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 900; line-height: .95; letter-spacing: -.035em; text-transform: uppercase; overflow-wrap: anywhere; }
+:root:root:root .pg-root :is(.min-vol-hero-title, .dg-hero-title, .pg-hero h1) .hl { color: var(--rf-or); background: none; padding: 0; font-style: normal; box-shadow: none; }
+:root:root:root .pg-root :is(.min-vol-hero-sub, .dg-hero-sub, .pg-hero p) { max-width: 66ch; margin: 0; color: rgba(246,242,235,.78); font-size: 14.5px; line-height: 1.75; text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; text-wrap: pretty; }
+:root:root:root .pg-root :is(.min-vol-hero-stats, .dg-hero-stats) { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; width: 100%; margin-top: 6px; padding: 0; border: 1px solid rgba(255,255,255,.18); border-radius: var(--rf-r2); background: rgba(255,255,255,.04); box-shadow: none; }
+:root:root:root .pg-root :is(.min-vol-stat, .dg-stat) { flex: 1 1 120px; display: grid; gap: 2px; padding: 14px 18px; text-align: left; }
+:root:root:root .pg-root :is(.min-vol-stat strong, .dg-stat strong) { color: var(--rf-or); font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+:root:root:root .pg-root :is(.min-vol-stat span, .dg-stat span) { color: rgba(246,242,235,.7); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+:root:root:root .pg-root :is(.min-vol-stat-divider, .dg-stat-divider) { width: 1px; align-self: stretch; margin: 10px 0; background: rgba(255,255,255,.18); }
+@media (max-width: 560px) { :root:root:root .pg-root :is(.min-vol-stat-divider, .dg-stat-divider) { display: none; } :root:root:root .pg-root :is(.min-vol-stat, .dg-stat) { flex-basis: 45%; border-bottom: 1px solid rgba(255,255,255,.12); } }
+
+/* ================= 17. BALANCE: admin overview tiles + donations ================= */
+:root:root:root .portal.px.lgx .ao-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+:root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(4n+3) { grid-column: span 2; }
+:root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(4n+2) { grid-column: span 3; }
+:root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(4n+1) { grid-column: 1 / -1; }
+:root:root:root .portal.px.lgx .ao-tile b { overflow-wrap: anywhere; }
+@media (max-width: 899px) { :root:root:root .portal.px.lgx .ao-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } :root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(n) { grid-column: auto; } :root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
+@media (min-width: 900px) and (max-width: 1099px) { :root:root:root .portal.px.lgx .ao-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } :root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(n) { grid-column: auto; } :root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(3n+1) { grid-column: 1 / -1; } :root:root:root .portal.px.lgx .ao-tiles > :last-child:nth-child(3n+2) { grid-column: span 2; } }
+/* donations page */
+:root:root:root .portal.px.lgx .su .su-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 20px; padding: 0; list-style: none; }
+:root:root:root .portal.px.lgx .su .su-kpis > li { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 2px; align-items: center; padding: 16px; }
+:root:root:root .portal.px.lgx .su .su-kpis .su-kpi-ico { grid-row: 1 / span 2; width: 42px; height: 42px; display: grid; place-items: center; }
+:root:root:root .portal.px.lgx .su .su-kpis small { color: var(--rf-ink-3); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+:root:root:root .portal.px.lgx .su .su-kpis b { font-size: clamp(1.25rem, 2.4vw, 1.7rem); font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+:root:root:root .portal.px.lgx .su .su-bar { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; align-items: center; margin-bottom: 14px; }
+:root:root:root .portal.px.lgx .su .su-bar .su-seg { grid-column: 1 / -1; }
+:root:root:root .portal.px.lgx .su .su-bar.is-simple { grid-template-columns: 1fr; }
+:root:root:root .portal.px.lgx .su .su-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 18px; }
+:root:root:root .portal.px.lgx .su .su-acts { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+:root:root:root .portal.px.lgx .su .su-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+@media (max-width: 899px) { :root:root:root .portal.px.lgx .su .su-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  :root:root:root .portal.px.lgx .su .su-kpis > li { grid-template-columns: 1fr; padding: 14px; }
+  :root:root:root .portal.px.lgx .su .su-kpis .su-kpi-ico { grid-row: auto; margin-bottom: 8px; }
+  :root:root:root .portal.px.lgx .su .su-bar { grid-template-columns: 1fr; }
+  :root:root:root .portal.px.lgx .su .su-row { grid-template-columns: auto minmax(0, 1fr); }
+  :root:root:root .portal.px.lgx .su .su-row .su-acts { grid-column: 1 / -1; justify-content: flex-start; padding-top: 12px; border-top: 1px dashed var(--rf-line); }
+}
+
+/* ================= 18. CHAT COMPOSER balance ================= */
+:root:root:root .fc .fc-compose { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+:root:root:root .fc .fc-row { display: flex; align-items: center; gap: 4px; min-height: 52px; padding: 4px 6px 4px 4px; border: 1px solid var(--rf-line); border-radius: var(--rf-r3); background: var(--rf-card); box-shadow: none; transition: border-color .2s, box-shadow .2s; }
+:root:root:root .fc .fc-row:focus-within { border-color: var(--rf-ink); box-shadow: 0 0 0 3px rgba(255, 90, 10, .28); }
+:root:root:root .fc .fc-row textarea { flex: 1 1 auto; align-self: center; min-width: 0; min-height: 0; height: auto; max-height: 150px; padding: 12px 8px; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; line-height: 1.4; resize: none; }
+:root:root:root .fc .fc-row textarea:focus { border: 0 !important; box-shadow: none !important; }
+:root:root:root .fc .fc-row .fc-iconbtn, :root:root:root .fc .fc-row .fc-send { align-self: center; flex: none; }
+:root:root:root .fc .fc-row .fc-send { width: 42px; height: 42px; border-radius: var(--rf-r2) !important; }
+:root:root:root .fc .fc-search input, :root:root:root .fc .fc-find input { min-height: 40px; }
+
+/* ================= 19. FIND MY PLACE title: minimalist ================= */
+.fm.fm.fm .fm-title em { padding: 0; margin: 0; background: none; color: var(--fm-or); transform: none; }
+
+/* ================= 20. FOOTER SOCIAL: brand icons at kulay ================= */
+:root:root .lg-ft-social { display: flex; flex-wrap: wrap; gap: 10px; }
+:root:root .lg-ft-social a { display: inline-flex; align-items: center; gap: 10px; width: auto; height: auto; min-height: 48px; padding: 0 16px 0 0; border: 1px solid rgba(23,20,15,.16); border-radius: 5px !important; background: transparent; color: inherit; font-size: 13px; font-weight: 700; text-decoration: none; overflow: hidden; transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .25s; }
+:root:root .lg-ft-social a:hover { transform: translateY(-3px); border-color: currentColor; box-shadow: 0 3px 0 rgba(23,20,15,.9); background: transparent; }
+:root:root .lg-ft-ico { display: grid; place-items: center; width: 48px; height: 48px; color: #fff; align-self: stretch; }
+:root:root .lg-ft-social .is-fb .lg-ft-ico { background: #1877F2; }
+:root:root .lg-ft-social .is-ig .lg-ft-ico { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+:root:root .lg-ft-social .is-tt .lg-ft-ico { background: #010101; }
+:root:root .lg-ft-social .is-tt .lg-ft-ico svg { filter: drop-shadow(1.5px 1.5px 0 #FE2C55) drop-shadow(-1.5px -1.5px 0 #25F4EE); }
+:root:root .lg-ft-social .is-ig .lg-ft-ico svg { stroke-width: 2.2; }
+:root:root .lg-ft-lbl { white-space: nowrap; }
+@media (max-width: 420px) { :root:root .lg-ft-social { gap: 8px; } :root:root .lg-ft-social li { flex: 1 1 calc(50% - 8px); } :root:root .lg-ft-social a { width: 100%; } }
+
+/* ================= 21. Dark-mode contrast fixes ================= */
+html[data-theme='dark']:root:root .lg-ft{background:#14110d;color:#f1ece3;border-top-color:#2c261e}
+html[data-theme='dark']:root:root .lg-ft h3,html[data-theme='dark']:root:root .lg-ft strong{color:#f6f2eb}
+html[data-theme='dark']:root:root .lg-ft p{color:#bdb6a9}
+html[data-theme='dark']:root:root .lg-ft-col a,html[data-theme='dark']:root:root .lg-ft-col button,html[data-theme='dark']:root:root .lg-ft-col span{color:#d8d1c3}
+html[data-theme='dark']:root:root .lg-ft-col a:hover,html[data-theme='dark']:root:root .lg-ft-col button:hover{color:#ff7a33}
+html[data-theme='dark']:root:root .lg-ft a[href*='policy']{color:#ff9a5c}
+:root:root:root .portal.px.mp .pg-root .dg-stat span{color:#c9c1b2}
+html[data-theme='dark']:root:root:root .portal .ao-act span,html[data-theme='dark']:root:root:root .portal .ao-actions span{color:inherit}
+html[data-theme='dark']:root:root:root .portal table thead th{color:var(--rf-mute,#a89f90);background:transparent}
+html[data-theme='dark']:root:root .lg-ft-logo,html[data-theme='dark']:root:root .lg-ft-logo span{color:#f6f2eb}
+html[data-theme='dark']:root:root .lg-ft-logo span em{color:#ff7a33}
+html[data-theme='dark']:root:root .lg-ft a[href*='olicy'],html[data-theme='dark']:root:root .lg-ft-legal a{color:#ff9a5c}
+html[data-theme='dark']:root:root .lg-ft-legal,html[data-theme='dark']:root:root .lg-ft-bottom{background:transparent;border-color:#2c261e}
+html[data-theme='dark']:root:root .p-table thead th{color:#a89f90;background:#1d1812}
+:root:root:root .portal.px.mp .dg-hero .dg-stat span,:root:root:root .dg-hero-stats .dg-stat span{color:#c9c1b2}
+html[data-theme='dark']:root:root:root .portal.px.lgx .sk-main .p-table thead th{background:#2a241c;color:#f6f2eb}
+:root:root .lg-give-policy a{color:#c2410c}
+:root:root:root .portal.px.mp .pg-root .dg-hero-stats .dg-stat span,:root:root:root .portal.px.mp .pg-root .dg-stat span{color:#c9c1b2!important}
+:root:root:root .portal.px.lgx .pg-root .dg-hero .dg-stat span{color:#c9c1b2!important}
+html[data-theme='dark']:root:root:root .portal .ao-quick button,html[data-theme='dark']:root:root:root .portal .ao-quick button span{color:#f6f2eb}
+html[data-theme='dark']:root:root:root .portal .ao-quick button{background:#1d1812}
+:root:root:root .portal .pg-tabs button.on small,:root:root:root .portal [aria-selected='true'] small{color:#fff}

@@ -66,10 +66,10 @@ html[data-theme='dark'] .portal.px {
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: 15px;
+  border-radius: 6px;
   background: var(--p-surface);
   color: var(--p-accent);
-  box-shadow: 5px 5px 12px var(--p-neo-d), -5px -5px 12px var(--p-neo-l);
+  box-shadow: none;
 }
 
 /* ---------- rail (desktop) ---------- */
@@ -85,7 +85,7 @@ html[data-theme='dark'] .portal.px {
   gap: 12px;
   width: 74px;
   padding: 14px 0;
-  border-radius: 30px;
+  border-radius: 8px;
   background: var(--p-surface);
   box-shadow: var(--p-shadow);
 }
@@ -123,11 +123,11 @@ html[data-theme='dark'] .portal.px {
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: 6px;
   background: var(--p-surface);
   color: var(--p-text-3);
   cursor: pointer;
-  box-shadow: 5px 5px 12px var(--p-neo-d), -5px -5px 12px var(--p-neo-l);
+  box-shadow: none;
   transition: box-shadow 0.35s var(--px-ease), color 0.25s, transform 0.35s var(--px-ease);
 }
 .portal.px .px-ico:hover {
@@ -136,7 +136,7 @@ html[data-theme='dark'] .portal.px {
 }
 .portal.px .px-ico.is-active {
   color: var(--p-accent);
-  box-shadow: inset 4px 4px 9px var(--p-neo-d), inset -4px -4px 9px var(--p-neo-l);
+  box-shadow: none;
   transform: none;
 }
 .px-rail .px-ico:last-child {
@@ -148,7 +148,7 @@ html[data-theme='dark'] .portal.px {
   left: calc(100% + 14px);
   top: 50%;
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: var(--p-text);
   color: var(--p-bg);
   font-size: 12.5px;
@@ -214,13 +214,13 @@ html[data-theme='dark'] .portal.px {
   margin: 0;
   padding: 0 14px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--p-surface);
   color: var(--p-text-3);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: inset 3px 3px 8px var(--p-neo-d), inset -3px -3px 8px var(--p-neo-l);
+  box-shadow: none;
 }
 .px-searchbtn span {
   flex: 1;
@@ -228,7 +228,7 @@ html[data-theme='dark'] .portal.px {
 }
 .px-searchbtn kbd {
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--p-sunken);
   font: inherit;
   font-size: 12px;
@@ -251,12 +251,12 @@ html[data-theme='dark'] .portal.px {
   background: var(--p-surface);
   color: var(--p-text-2);
   cursor: pointer;
-  box-shadow: 5px 5px 12px var(--p-neo-d), -5px -5px 12px var(--p-neo-l);
+  box-shadow: none;
   transition: transform 0.3s var(--px-ease), box-shadow 0.3s;
 }
 .portal.px .px-neo-btn:active,
 .portal.px .px-avatar-btn:active {
-  box-shadow: inset 3px 3px 8px var(--p-neo-d), inset -3px -3px 8px var(--p-neo-l);
+  box-shadow: none;
 }
 .px-badge {
   position: absolute;
@@ -265,7 +265,7 @@ html[data-theme='dark'] .portal.px {
   min-width: 19px;
   height: 19px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--p-accent);
   color: var(--p-accent-ink);
   font-size: 11px;
@@ -313,7 +313,7 @@ html[data-theme='dark'] .portal.px {
   width: min(390px, calc(100vw - 24px));
   max-height: 72vh;
   overflow: auto;
-  border-radius: 24px;
+  border-radius: 8px;
   background: var(--p-surface);
   box-shadow: 0 30px 70px -24px rgba(20, 30, 70, 0.5), 0 0 0 1px var(--p-border);
   transform-origin: top right;
@@ -357,7 +357,7 @@ html[data-theme='dark'] .portal.px {
   margin: 0;
   padding: 11px 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 6px;
   background: transparent;
   color: var(--p-text);
   font: inherit;
@@ -385,7 +385,7 @@ html[data-theme='dark'] .portal.px {
   display: flex;
   gap: 14px;
   padding: 14px 10px;
-  border-radius: 18px;
+  border-radius: 6px;
 }
 .an-item + .an-item {
   margin-top: 2px;
@@ -472,7 +472,7 @@ html[data-theme='dark'] .portal.px {
 .portal.px .p-stats,
 .portal.px .card {
   border: 0;
-  border-radius: 24px;
+  border-radius: 8px;
   box-shadow: var(--p-shadow);
 }
 .portal.px .p-stats {
@@ -503,31 +503,31 @@ html[data-theme='dark'] .portal.px {
 }
 .portal.px .p-modal {
   border: 0;
-  border-radius: 26px;
+  border-radius: 8px;
 }
 .portal.px button.p-btn,
 .portal.px a.p-btn {
-  border-radius: 14px;
+  border-radius: 6px;
 }
 .portal.px button.p-btn.p-btn-primary,
 .portal.px a.p-btn.p-btn-primary {
-  box-shadow: 0 10px 22px -12px var(--p-accent);
+  box-shadow: none;
 }
 .portal.px button.p-btn.p-btn-secondary {
   border-color: transparent;
-  box-shadow: 4px 4px 10px var(--p-neo-d), -4px -4px 10px var(--p-neo-l);
+  box-shadow: none;
 }
 .portal.px .p-input {
   border-color: transparent;
-  border-radius: 14px;
+  border-radius: 6px;
   background: var(--p-sunken);
-  box-shadow: inset 2px 2px 6px var(--p-neo-d), inset -2px -2px 6px var(--p-neo-l);
+  box-shadow: none;
 }
 .portal.px .p-input:focus {
   background: var(--p-surface);
 }
 .portal.px .p-badge {
-  border-radius: 999px;
+  border-radius: 6px;
 }
 .portal.px .p-tabs {
   border-bottom: 0;
@@ -535,18 +535,18 @@ html[data-theme='dark'] .portal.px {
   padding: 5px;
   width: fit-content;
   max-width: 100%;
-  border-radius: 16px;
+  border-radius: 6px;
   background: var(--p-sunken);
 }
 .portal.px button.p-tab {
   margin: 0;
   padding: 8px 14px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 6px;
 }
 .portal.px button.p-tab.is-active {
   background: var(--p-surface);
-  box-shadow: 3px 3px 8px var(--p-neo-d), -3px -3px 8px var(--p-neo-l);
+  box-shadow: none;
 }
 .portal.px table.p-table th {
   background: transparent;
@@ -560,7 +560,7 @@ html[data-theme='dark'] .portal.px {
 .px-search {
   width: min(560px, 100%);
   overflow: hidden;
-  border-radius: 26px;
+  border-radius: 8px;
   background: var(--p-surface);
   box-shadow: 0 40px 90px -30px rgba(10, 20, 60, 0.6);
   animation: px-pop-in 0.35s var(--px-ease);
@@ -597,7 +597,7 @@ html[data-theme='dark'] .portal.px {
   margin: 0;
   padding: 9px 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 6px;
   background: transparent;
   color: var(--p-text);
   font: inherit;
@@ -628,7 +628,7 @@ html[data-theme='dark'] .portal.px {
   min-height: 220px;
   margin-bottom: 18px;
   padding: clamp(22px, 3vw, 34px);
-  border-radius: 30px;
+  border-radius: 8px;
   color: #fff;
   box-shadow: var(--p-shadow);
 }
@@ -672,7 +672,7 @@ html[data-theme='dark'] .portal.px {
   gap: 8px;
   padding: 8px 14px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -714,7 +714,7 @@ html[data-theme='dark'] .portal.px {
   flex: none;
   width: 52px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: 6px;
   background: var(--p-sunken);
   line-height: 1;
   text-align: center;
@@ -746,7 +746,7 @@ html[data-theme='dark'] .portal.px {
   height: 84px;
   margin-bottom: 8px;
   font-size: 26px;
-  box-shadow: 6px 6px 14px var(--p-neo-d), -6px -6px 14px var(--p-neo-l);
+  box-shadow: none;
 }
 .ov-profile b {
   font-size: 1.15rem;
@@ -806,7 +806,7 @@ html[data-theme='dark'] .portal.px {
 .portal.px button.cal-day.is-picked {
   background: var(--p-accent);
   color: var(--p-accent-ink);
-  box-shadow: 0 8px 16px -8px var(--p-accent);
+  box-shadow: none;
 }
 .cal-day.has-ev::after {
   content: '';
@@ -912,7 +912,7 @@ html[data-theme='dark'] .portal.px {
     display: flex;
     justify-content: space-around;
     padding: 8px;
-    border-radius: 28px;
+    border-radius: 8px;
     background: var(--p-surface);
     box-shadow: 0 20px 44px -16px rgba(20, 30, 70, 0.45), 0 0 0 1px var(--p-border);
   }
@@ -925,7 +925,7 @@ html[data-theme='dark'] .portal.px {
     margin: 0;
     padding: 9px 2px 7px;
     border: 0;
-    border-radius: 20px;
+    border-radius: 8px;
     background: transparent;
     color: var(--p-text-3);
     font: inherit;
@@ -953,7 +953,7 @@ html[data-theme='dark'] .portal.px {
     z-index: 56;
     display: block;
     padding: 20px 14px;
-    border-radius: 28px;
+    border-radius: 8px;
     background: var(--p-surface);
     animation: px-pop-in 0.35s var(--px-ease);
     transform-origin: bottom center;
@@ -984,10 +984,10 @@ html[data-theme='dark'] .portal.px {
   }
   .portal.px .p-panel,
   .portal.px .card {
-    border-radius: 22px;
+    border-radius: 8px;
   }
   .portal.px .ov-hero {
-    border-radius: 24px;
+    border-radius: 8px;
   }
 }
 
@@ -1023,7 +1023,7 @@ html[data-theme='dark'] .portal.px {
 .portal.px .px-ico {
   width: clamp(38px, 5.6vh, 48px);
   height: clamp(38px, 5.6vh, 48px);
-  border-radius: 14px;
+  border-radius: 6px;
 }
 @media (max-height: 620px) {
   .px-nav { overflow-y: auto; }

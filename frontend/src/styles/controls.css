@@ -1,13 +1,13 @@
 /* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
 :root{
   --cx-bg: #fffdf9; --cx-sunk: #f4ede3; --cx-ink: #1c1812; --cx-or: #ff5a0a;
-  --cx-clay: 0 2px 3px rgba(255,255,255,.95) inset, 0 -4px 8px rgba(120,80,40,.10) inset, 0 10px 18px -12px rgba(70,40,10,.34), 0 2px 4px rgba(70,40,10,.07);
-  --cx-press: 0 3px 8px rgba(70,40,10,.22) inset, 0 1px 0 rgba(255,255,255,.85);
+  --cx-clay: 0 2px 4px rgba(70,40,10,.07);
+  --cx-press: 0 1px 0 rgba(255,255,255,.85);
   --cx-spring: cubic-bezier(.34,1.56,.64,1);
 }
 :root .portal select:not([multiple]),:root .fc select:not([multiple]),:root .p-modal select:not([multiple]),:root .fc-modal select:not([multiple]){
   -webkit-appearance: none; appearance: none; width: auto; max-width: 100%; min-height: 44px; margin: 0; padding: 0 40px 0 16px;
-  border: 0; border-radius: 999px; background-color: var(--cx-bg); color: var(--cx-ink);
+  border: 0; border-radius: 6px; background-color: var(--cx-bg); color: var(--cx-ink);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%231c1812' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center; background-size: 18px;
   box-shadow: var(--cx-clay); font: inherit; font-size: 14px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; cursor: pointer;
@@ -19,13 +19,13 @@
 :root .portal select:disabled,:root .fc select:disabled{ opacity: .55; cursor: not-allowed; box-shadow: var(--cx-press); }
 :root .portal select.p-auto{ width: auto; }
 :root .portal select.p-sm,:root .portal td select,:root .portal .mb-row select{ min-height: 38px; padding: 0 34px 0 14px; font-size: 13px; }
-:root .fx-sel{ position: fixed; z-index: 100000; display: flex; flex-direction: column; padding: 6px; border-radius: 20px; background: #fffdf9; color: #1c1812; font-family: inherit;
-  box-shadow: 0 2px 3px #fff inset, 0 24px 50px -14px rgba(40,20,0,.45), 0 4px 10px rgba(40,20,0,.10);
+:root .fx-sel{ position: fixed; z-index: 100000; display: flex; flex-direction: column; padding: 6px; border-radius: 8px; background: #fffdf9; color: #1c1812; font-family: inherit;
+  box-shadow: 0 24px 50px -14px rgba(40,20,0,.45);
   opacity: 0; transform: translateY(-6px) scale(.97); transform-origin: top left; transition: opacity .16s ease, transform .22s var(--cx-spring); }
 :root .fx-sel.is-up{ transform-origin: bottom left; transform: translateY(6px) scale(.97); }
 :root .fx-sel.is-in{ opacity: 1; transform: none; }
 :root .fx-sel-list{ display: flex; flex-direction: column; gap: 2px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-:root .fx-opt{ display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-height: 44px; margin: 0; padding: 0 14px; border: 0; border-radius: 14px; background: transparent; color: inherit;
+:root .fx-opt{ display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-height: 44px; margin: 0; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: inherit;
   font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; transition: background .15s, color .15s, transform .2s var(--cx-spring); }
 :root .fx-opt span{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 :root .fx-opt svg{ flex: none; color: var(--cx-or); animation: fx-pop .35s var(--cx-spring); }
@@ -41,7 +41,7 @@
 @keyframes fx-pop{ from { transform: scale(0) rotate(-30deg); } to { transform: none; } }
 :root .fx-sel-back{ position: fixed; inset: 0; z-index: 99999; background: rgba(28,20,10,.42); opacity: 0; transition: opacity .2s; }
 :root .fx-sel-back.is-in{ opacity: 1; }
-:root .fx-sel.is-sheet{ left: 0; right: 0; bottom: 0; top: auto; max-width: none; min-width: 0; border-radius: 28px 28px 0 0; padding: 8px 10px calc(14px + env(safe-area-inset-bottom));
+:root .fx-sel.is-sheet{ left: 0; right: 0; bottom: 0; top: auto; max-width: none; min-width: 0; border-radius: 8px 8px 0 0; padding: 8px 10px calc(14px + env(safe-area-inset-bottom));
   transform: translateY(100%); opacity: 1; transition: transform .34s cubic-bezier(.16,1,.3,1); }
 :root .fx-sel.is-sheet.is-in{ transform: none; }
 :root .fx-sel-head{ display: grid; justify-items: center; gap: 8px; padding: 6px 0 10px; }
@@ -50,14 +50,14 @@
 :root .fx-sel.is-sheet .fx-sel-list{ max-height: min(60vh, 420px); }
 :root .fx-sel.is-sheet .fx-opt{ min-height: 52px; font-size: 16px; }
 :root .portal input[type="checkbox"]:not(.fc-toggle input),:root .fc input[type="checkbox"]:not(.fc-toggle input),:root .p-modal input[type="checkbox"]{
-  -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 24px; height: 24px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 8px;
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 24px; height: 24px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 4px;
   background: var(--cx-sunk); box-shadow: var(--cx-press); cursor: pointer; transition: background .2s, box-shadow .25s, transform .3s var(--cx-spring); vertical-align: middle;
 }
 :root .portal input[type="checkbox"]:not(.fc-toggle input)::after,:root .fc input[type="checkbox"]:not(.fc-toggle input)::after,:root .p-modal input[type="checkbox"]::after{
   content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 12.5l4 4 7-8.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='20' stroke-dashoffset='20'/%3E%3C/svg%3E") center / 100% no-repeat;
 }
 :root .portal input[type="checkbox"]:checked:not(.fc-toggle input),:root .fc input[type="checkbox"]:checked:not(.fc-toggle input),:root .p-modal input[type="checkbox"]:checked{
-  background: linear-gradient(180deg, #ff8a47, #f24e00); box-shadow: 0 2px 3px rgba(255,255,255,.45) inset, 0 -3px 6px rgba(150,45,0,.3) inset, 0 8px 14px -6px rgba(255,90,10,.7); animation: fx-pop .35s var(--cx-spring);
+  background: linear-gradient(180deg, #ff8a47, #f24e00); box-shadow: none; animation: fx-pop .35s var(--cx-spring);
 }
 :root .portal input[type="checkbox"]:checked:not(.fc-toggle input)::after{ animation: fx-tick .3s .05s ease-out both; }
 @keyframes fx-tick{ from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
@@ -66,11 +66,11 @@
 :root .portal input[type="checkbox"]:disabled{ opacity: .5; cursor: not-allowed; }
 :root .portal input[type="radio"],:root .fc input[type="radio"]{ -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 24px; height: 24px; margin: 0; border: 0; border-radius: 50% !important; background: var(--cx-sunk); box-shadow: var(--cx-press); cursor: pointer; transition: background .2s, box-shadow .25s; }
 :root .portal input[type="radio"]::after,:root .fc input[type="radio"]::after{ content: ''; position: absolute; inset: 7px; border-radius: 50%; background: #fff; transform: scale(0); transition: transform .3s var(--cx-spring); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
-:root .portal input[type="radio"]:checked,:root .fc input[type="radio"]:checked{ background: linear-gradient(180deg, #ff8a47, #f24e00); box-shadow: 0 2px 3px rgba(255,255,255,.45) inset, 0 -3px 6px rgba(150,45,0,.3) inset, 0 8px 14px -6px rgba(255,90,10,.7); }
+:root .portal input[type="radio"]:checked,:root .fc input[type="radio"]:checked{ background: linear-gradient(180deg, #ff8a47, #f24e00); box-shadow: none; }
 :root .portal input[type="radio"]:checked::after,:root .fc input[type="radio"]:checked::after{ transform: scale(1); }
 :root .portal button.p-switch{ width: 50px; height: 30px; border: 0; background: var(--cx-sunk); box-shadow: var(--cx-press); transition: background .25s, box-shadow .25s; }
-:root .portal button.p-switch::after{ top: 3px; left: 3px; width: 24px; height: 24px; background: linear-gradient(180deg, #fff, #f1e8db); box-shadow: 0 2px 3px #fff inset, 0 5px 9px -2px rgba(40,20,0,.45); transition: transform .38s var(--cx-spring); }
-:root .portal button.p-switch[aria-checked="true"]{ background: linear-gradient(180deg, #ff8a47, #f24e00); border: 0; box-shadow: 0 3px 8px rgba(150,45,0,.4) inset; }
+:root .portal button.p-switch::after{ top: 3px; left: 3px; width: 24px; height: 24px; background: linear-gradient(180deg, #fff, #f1e8db); box-shadow: none; transition: transform .38s var(--cx-spring); }
+:root .portal button.p-switch[aria-checked="true"]{ background: linear-gradient(180deg, #ff8a47, #f24e00); border: 0; box-shadow: none; }
 :root .portal button.p-switch[aria-checked="true"]::after{ transform: translateX(20px); background: linear-gradient(180deg, #fff, #f6ece0); }
 :root .portal button.p-switch:active:not(:disabled)::after{ width: 28px; }
 :root .portal button.p-switch[aria-checked="true"]:active:not(:disabled)::after{ transform: translateX(16px); }
@@ -79,7 +79,7 @@
 @media (prefers-reduced-motion: reduce){:root .fx-sel,:root .fx-sel-back,:root .fx-opt svg,:root .portal input[type="checkbox"],:root .portal button.p-switch::after{ transition: none !important; animation: none !important; }
 }
 /* beat soft.css field rule (same chain + one more :not) */
-:root .portal.px.lgx select:not([multiple]):not([data-native]):not([data-x]):not([data-y]){ -webkit-appearance: none; appearance: none; min-height: 44px; padding: 0 40px 0 16px; border: 0; border-radius: 999px; background-color: var(--cx-bg);
+:root .portal.px.lgx select:not([multiple]):not([data-native]):not([data-x]):not([data-y]){ -webkit-appearance: none; appearance: none; min-height: 44px; padding: 0 40px 0 16px; border: 0; border-radius: 6px; background-color: var(--cx-bg);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%231c1812' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center; background-size: 18px; box-shadow: var(--cx-clay); font-size: 14px; font-weight: 600; cursor: pointer; }
 :root .portal.px.lgx select:not([multiple]):not([data-native]):not([data-x]):not([data-y]):focus-visible{ box-shadow: var(--cx-clay), 0 0 0 3px rgba(255,90,10,.35); }
@@ -93,8 +93,8 @@ html[data-theme='dark'],
   --cx-bg: #1b1f2b;
   --cx-sunk: #151822;
   --cx-ink: #f3f1ed;
-  --cx-clay: 0 2px 3px rgba(255,255,255,.04) inset, 0 -4px 8px rgba(0,0,0,.25) inset, 0 10px 18px -12px rgba(0,0,0,.6);
-  --cx-press: 0 3px 8px rgba(0,0,0,.5) inset, 0 1px 0 rgba(255,255,255,.05);
+  --cx-clay: none;
+  --cx-press: 0 1px 0 rgba(255,255,255,.05);
 }
 
 html[data-theme='dark'] :root .portal select:not([multiple]),
@@ -107,7 +107,7 @@ html[data-theme='dark'] :root .portal.px.lgx select:not([multiple]):not([data-na
   color: #f3f1ed !important;
   border: 1px solid #2e354a !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%23f3f1ed' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4) !important;
+  box-shadow: none !important;
 }
 
 html[data-theme='dark'] :root .fx-sel,
@@ -137,7 +137,7 @@ html[data-theme='dark'] :root .fx-opt[aria-selected="true"],
 html[data-theme='dark'] :root .portal button.p-switch,
 :root[data-theme='dark'] .portal button.p-switch {
   background: #1b1f2b !important;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5) !important;
+  box-shadow: none !important;
 }
 
 html[data-theme='dark'] :root .portal button.p-switch[aria-checked="true"],

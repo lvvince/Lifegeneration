@@ -1,6 +1,6 @@
 /* Policy pages: black, editorial layout with a sticky section index. Works for guests and inside the portal. */
 .lgl { --l-bg: #0a0a0c; --l-ink: #f4f2ee; --l-ink2: #a9a49b; --l-line: rgba(255, 255, 255, 0.12); --l-or: #ff7a35;
-  position: relative; isolation: isolate; margin: 0 auto; border-radius: 22px; background: var(--l-bg); color: var(--l-ink); overflow: clip; font-family: var(--sk-font, 'Archivo', 'Inter', system-ui, sans-serif); }
+  position: relative; isolation: isolate; margin: 0 auto; border-radius: 8px; background: var(--l-bg); color: var(--l-ink); overflow: clip; font-family: var(--sk-font, 'Archivo', 'Inter', system-ui, sans-serif); }
 .lgl *, .lgl *::before, .lgl *::after { box-sizing: border-box; }
 .lgl h1, .lgl h2, .lgl h3, .lgl p, .lgl ul { margin: 0; padding: 0; }
 .lgl ul { list-style: none; }
@@ -11,7 +11,7 @@
 .lgl-hero { display: grid; justify-items: center; gap: 14px; padding: clamp(22px, 5vw, 40px) 20px clamp(36px, 7vw, 72px); text-align: center; }
 .lgl-back { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--l-ink2) !important; font-size: 12.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
 @media (hover: hover) { .lgl-back:hover { color: #fff !important; } }
-.lgl-ico { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--l-line); border-radius: 14px; background: rgba(255, 255, 255, 0.04); color: var(--l-or); }
+.lgl-ico { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--l-line); border-radius: 6px; background: rgba(255, 255, 255, 0.04); color: var(--l-or); }
 .lgl-hero h1 { color: #fff; font-size: clamp(2.4rem, 9vw, 4.8rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; animation: lgl-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .lgl-hero h1 span { background: linear-gradient(90deg, #ff9a4d, #ff5a0a 55%, #ff3d6e); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lgl-hero p { max-width: 54ch; color: var(--l-ink2); font-size: clamp(0.98rem, 2.6vw, 1.1rem); line-height: 1.6; }
@@ -22,15 +22,15 @@
 .lgl-toc { position: sticky; z-index: 5; top: calc(var(--bar, 0px) + env(safe-area-inset-top, 0px)); margin: 0 -20px 8px; padding: 10px 20px; background: rgba(10, 10, 12, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--l-line); }
 .lgl-toc ul { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .lgl-toc ul::-webkit-scrollbar { display: none; }
-.lgl-toc a { display: inline-flex; align-items: center; flex: none; min-height: 40px; padding: 0 14px; border: 1px solid var(--l-line); border-radius: 99px; color: var(--l-ink2); font-size: 13px; font-weight: 700; white-space: nowrap; transition: color 0.2s, background 0.2s, border-color 0.2s; }
+.lgl-toc a { display: inline-flex; align-items: center; flex: none; min-height: 40px; padding: 0 14px; border: 1px solid var(--l-line); border-radius: 8px; color: var(--l-ink2); font-size: 13px; font-weight: 700; white-space: nowrap; transition: color 0.2s, background 0.2s, border-color 0.2s; }
 .lgl-toc a[aria-current='true'] { border-color: var(--l-or); background: rgba(255, 90, 10, 0.14); color: #fff; }
 .lgl-body section { padding: 26px 0; border-bottom: 1px solid var(--l-line); scroll-margin-top: 120px; }
 .lgl-body h2 { margin-bottom: 10px; color: #fff; font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em; }
 .lgl-body p { color: var(--l-ink2); font-size: 15.5px; line-height: 1.75; user-select: text; -webkit-user-select: text; }
-.lgl-more { display: grid; gap: 12px; margin-top: 30px; padding: 20px; border: 1px solid var(--l-line); border-radius: 18px; background: rgba(255, 255, 255, 0.03); }
+.lgl-more { display: grid; gap: 12px; margin-top: 30px; padding: 20px; border: 1px solid var(--l-line); border-radius: 6px; background: rgba(255, 255, 255, 0.03); }
 .lgl-more h3 { color: #fff; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
 .lgl-more div { display: flex; flex-wrap: wrap; gap: 8px; }
-.lgl-more div a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 99px; color: #fff; font-size: 13.5px; font-weight: 700; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.lgl-more div a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 8px; color: #fff; font-size: 13.5px; font-weight: 700; transition: background 0.2s, color 0.2s, border-color 0.2s; }
 @media (hover: hover) { .lgl-more div a:hover { border-color: var(--l-or); background: var(--l-or); color: #111; } }
 .lgl-more p { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.55; }
 .lgl-more svg { flex: none; margin-top: 3px; color: var(--l-or); }

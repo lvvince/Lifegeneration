@@ -2,7 +2,7 @@
 :root .fh{--t-sage:#cfe0c8;--t-cream:#fff6e0;--t-blue:#cfdff0;--t-butter:#fbeeb0;--t-blush:#f6d9cf;--paint:#fffdf6;--dash:#a9c1dd}
 :root .gt-board{padding-top:clamp(28px,4vw,48px)}
 :root .gt-wall{align-items:start;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:38px 26px;margin:0;padding:0;list-style:none}
-:root .gt-note{--n:var(--t-cream);position:relative;display:flex;flex-direction:column;min-height:170px;margin:0;padding:30px 16px 12px;border-radius:2px 2px 14px 2px;background:var(--n) linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%,rgba(120,80,20,.06));color:#2a2418;rotate:var(--r,0deg);transform-origin:50% 0;box-shadow:0 1px 1px rgba(0,0,0,.12),0 16px 20px -12px rgba(40,25,5,.7);animation:fh-drop .8s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0)*55ms + 60ms);transition:rotate .45s var(--spring),scale .4s var(--spring),box-shadow .35s}
+:root .gt-note{--n:var(--t-cream);position:relative;display:flex;flex-direction:column;min-height:170px;margin:0;padding:30px 16px 12px;border-radius:2px 2px 6px 2px;background:var(--n) linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%,rgba(120,80,20,.06));color:#2a2418;rotate:var(--r,0deg);transform-origin:50% 0;box-shadow:0 1px 1px rgba(0,0,0,.12);animation:fh-drop .8s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0)*55ms + 60ms);transition:rotate .45s var(--spring),scale .4s var(--spring),box-shadow .35s}
 :root .gt-note.t-sage,:root .gt-read.t-sage{--n:var(--t-sage)}
 :root .gt-note.t-cream,:root .gt-read.t-cream{--n:var(--t-cream)}
 :root .gt-note.t-blue,:root .gt-read.t-blue{--n:var(--t-blue)}
@@ -10,7 +10,7 @@
 :root .gt-note.t-blush,:root .gt-read.t-blush{--n:var(--t-blush)}
 :root .gt-note.has-img{background-color:#fffdf6;padding-top:16px}
 :root .gt-note.has-img .fh-pin{top:-10px}
-@media(hover:hover){:root .gt-note:not(.is-skel):not(.is-blank):hover{rotate:0deg;scale:1.04;z-index:4;box-shadow:0 2px 2px rgba(0,0,0,.12),0 28px 30px -14px rgba(40,25,5,.75)}
+@media(hover:hover){:root .gt-note:not(.is-skel):not(.is-blank):hover{rotate:0deg;scale:1.04;z-index:4;box-shadow:0 2px 2px rgba(0,0,0,.12)}
 }
 :root .gt-note.is-new{animation:fh-new 1.1s cubic-bezier(.22,1,.36,1) both}
 :root .gt-note.is-skel{min-height:170px;background:rgba(255,255,255,.35);box-shadow:none;animation:fh-pulse 1.4s ease-in-out infinite}
@@ -28,17 +28,17 @@
 :root .gt-read{display:grid;gap:12px;padding-top:38px;background:var(--n) linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%)}
 :root .gt-big-text{margin:0;max-height:34vh;overflow-y:auto;font-family:var(--hand);font-size:clamp(1.7rem,5vw,2.1rem);line-height:1.1;white-space:pre-wrap;overflow-wrap:anywhere}
 :root .gt-read>footer{display:flex;justify-content:space-between;gap:8px}
-:root .gt-cms{display:grid;gap:8px;padding:12px;border-radius:16px;background:rgba(255,255,255,.55)}
+:root .gt-cms{display:grid;gap:8px;padding:12px;border-radius:6px;background:rgba(255,255,255,.55)}
 :root .gt-cms h3{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#4b4235}
 :root .gt-cms ul{display:grid;gap:8px;max-height:26vh;margin:0;padding:0;overflow-y:auto;list-style:none}
-:root .gt-cms li{display:grid;gap:1px;padding:8px 10px;border-radius:12px;background:#fffdf9;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+:root .gt-cms li{display:grid;gap:1px;padding:8px 10px;border-radius:6px;background:#fffdf9;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
 :root .gt-cms li b{font-size:12.5px}
 :root .gt-cms li time{color:#8a806d;font-size:11px}
 :root .gt-cms li.gt-end{padding:0;background:none}
 :root .gt-muted{margin:0;color:#6b6350;font-size:13.5px}
 :root .gt-muted a{color:var(--sage-d);font-weight:800}
 :root .gt-cf{display:flex;gap:8px}
-:root .fh .gt-cf input{flex:1;min-width:0;height:46px;margin:0;padding:0 16px;border:0;border-radius:999px;background:#fffdf9;color:var(--ink);font:inherit;font-size:16px;box-shadow:0 2px 6px rgba(70,40,10,.12) inset}
+:root .fh .gt-cf input{flex:1;min-width:0;height:46px;margin:0;padding:0 16px;border:0;border-radius:6px;background:#fffdf9;color:var(--ink);font:inherit;font-size:16px;box-shadow:none}
 :root .fh .gt-cf .fh-btn{width:48px;padding:0;flex:none}
 :root .gt-compose{background:var(--t-butter) linear-gradient(172deg,rgba(255,255,255,.5),transparent 40%)}
 :root .fh .gt-ta{width:100%;min-height:150px;padding:6px 2px;border:0;border-radius:0;background:transparent;color:#2a2418;font-family:var(--hand);font-size:1.9rem;line-height:1.1;resize:vertical;outline:0;box-shadow:none}

@@ -4,7 +4,7 @@ import '../../styles/staffui.css'
 import { apiGet, apiPost } from '../../api.js'
 import { fmtDate } from '../../lib/format.js'
 import {
-  Empty, Loading, useToast,
+  PageHeader, Empty, Loading, useToast,
 } from '../../components/portal/ui.jsx'
 
 const TONE = { pending: 'warn', approved: 'ok', rejected: 'bad' }
@@ -53,13 +53,11 @@ export default function AdminApplications() {
   const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   return (
     <div className="su">
-      <header className="su-head">
-        <div>
-          <h1>Applications</h1>
-          <p>Members who want to serve. Approving adds them to the ministry.</p>
-        </div>
-        {counts.pending > 0 && <span className="su-badge">{counts.pending} to review</span>}
-      </header>
+      <PageHeader
+        title="Applications"
+        desc="Members who want to serve. Approving adds them to the ministry."
+        actions={counts.pending > 0 ? <span className="su-badge">{counts.pending} to review</span> : null}
+      />
       {error && <div className="alert" style={{ marginBottom: 12 }}>{error}</div>}
 
       <div className="su-bar is-simple">

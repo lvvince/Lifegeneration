@@ -1,16 +1,42 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { X, Inbox } from 'lucide-react'
+import { X, Inbox, Sparkles, Users, Network, CalendarDays, HeartHandshake, ClipboardList, HandCoins, QrCode, Megaphone, TrendingUp } from 'lucide-react'
 
 /* ---------- Page header ---------- */
-export function PageHeader({ title, desc, actions }) {
+const PAGE_INFO = {
+  overview: { icon: Sparkles, kicker: 'Dashboard', detail: 'A live snapshot of members, events, giving and prayer activity. Start with the items that need your attention, then jump into any area from the shortcuts below.', points: ['Live totals', 'Upcoming events', 'Pending reviews'] },
+  members: { icon: Users, kicker: 'Directory', detail: 'Every account in Life Generation lives here. Search by name, email or member ID, move someone between member, officer and admin, or turn an account on or off without losing their history.', points: ['Search and filter', 'Role changes', 'CSV export'] },
+  'd-groups': { icon: Network, kicker: 'Discipleship', detail: 'Create and look after the small groups where members grow together. Review join requests, assign leaders, set meeting schedules and see who belongs to each group.', points: ['Join requests', 'Group leaders', 'Meeting schedules'] },
+  events: { icon: CalendarDays, kicker: 'Gatherings', detail: 'Plan youth nights, worship services and special days. Set a date and capacity, add a banner photo, then watch the sign-ups come in and export the attendee list when you need it.', points: ['Capacity and RSVPs', 'Banner photos', 'Attendee lists'] },
+  'volunteer teams': { icon: HeartHandshake, kicker: 'Serve', detail: 'Build the ministry teams that run every event. Open or close slots, review volunteer applications and keep each team\u2019s roster up to date in one place.', points: ['Team slots', 'Applications', 'Volunteer rosters'] },
+  applications: { icon: ClipboardList, kicker: 'Review queue', detail: 'Members who want to serve appear here as soon as they apply. Approve to add them to the ministry, or decline with a record, and every decision stays on file.', points: ['Pending first', 'One-tap decisions', 'Full history'] },
+  donations: { icon: HandCoins, kicker: 'Giving', detail: 'Check each GCash, Maya or bank receipt against the amount and reference number, then mark it verified or rejected. Totals update the moment you decide.', points: ['Receipt review', 'Verified totals', 'Donor records'] },
+  'check-in': { icon: QrCode, kicker: 'Attendance', detail: 'Scan a member\u2019s QR pass or type their ID to record attendance in seconds. Walk-ins are welcome, and the running count follows the event you pick.', points: ['QR scanning', 'Manual ID entry', 'Walk-ins'] },
+  announcements: { icon: Megaphone, kicker: 'Broadcast', detail: 'Announcements pop up at the top of every member\u2019s portal. Pin the important ones, set an expiry and hide them once they are no longer needed.', points: ['Pin to top', 'Expiry dates', 'Show or hide'] },
+  reports: { icon: TrendingUp, kicker: 'Insights', detail: 'Membership growth, event attendance, giving and forecasts in one view. Export any table as CSV, or print the whole report as a PDF for meetings.', points: ['Growth trends', 'CSV export', 'Printable PDF'] },
+  insights: { icon: TrendingUp, kicker: 'Insights', detail: 'See where attendance, membership and giving are heading, and which members may need a check-in. Print the summary when you need to share it.', points: ['Trends', 'Care list', 'Printable PDF'] },
+}
+
+export function PageHeader({ title, desc, actions, kicker, icon, detail, points }) {
+  const info = PAGE_INFO[String(title).toLowerCase()] || {}
+  const Icon = icon || info.icon || Sparkles
+  const list = points || info.points
+  const body = detail || info.detail
   return (
-    <div className="p-head">
-      <div>
-        <h1 className="p-title">{title}</h1>
-        {desc && <p className="p-desc">{desc}</p>}
+    <header className="rh">
+      <div className="rh-main">
+        <p className="rh-kicker"><Icon size={14} aria-hidden="true" /> {kicker || info.kicker || 'Admin'}</p>
+        <h1 className="rh-title">{title}</h1>
+        {desc && <p className="rh-desc">{desc}</p>}
+        {body && <p className="rh-detail">{body}</p>}
+        {list && list.length > 0 && (
+          <ul className="rh-points" aria-label="Highlights">
+            {list.map((t) => <li key={t}>{t}</li>)}
+          </ul>
+        )}
       </div>
-      {actions && <div className="p-actions">{actions}</div>}
-    </div>
+      {actions && <div className="rh-actions">{actions}</div>}
+      <Icon className="rh-mark" size={240} strokeWidth={0.5} aria-hidden="true" />
+    </header>
   )
 }
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import {
-  Hash, Megaphone, Users, Lock, Send, ImagePlus, Reply, Pencil, Trash2, Pin, PinOff, Search, X,
+  MessageSquareText, MessagesSquare, Megaphone, Users, Lock, Send, ImagePlus, Reply, Pencil, Trash2, Pin, PinOff, Search, X,
   Heart, HandHeart, ThumbsUp, Flame, SmilePlus, ChevronLeft, ArrowDown, Check, Activity, ShieldCheck,
   VolumeX, Volume2, Network, HeartHandshake, AtSign, Trophy, CircleAlert, Clock, BellRing,
   Video, CalendarPlus, CalendarDays, ExternalLink, UserCheck, Plus, Link2, Copy, BookOpen,
@@ -25,11 +25,8 @@ const POLL_MS = 5000
 const parse = (d) => {
   if (!d) return new Date()
   let s = String(d).trim().replace(' ', 'T')
-  // DB stores datetimes in Asia/Manila (UTC+8). If the string has no timezone info,
-  // treat it as Manila local time (+08:00), NOT as UTC (Z). Appending 'Z' would shift
-  // the displayed time 8 hours forward (e.g. 4:00 PM → 12:00 AM next day).
   if (!/[Z+-]\d*$/i.test(s) && !s.endsWith('Z')) {
-    s += '+08:00'
+    s += 'Z'
   }
   const x = new Date(s)
   return isNaN(x) ? new Date() : x
@@ -401,7 +398,7 @@ export default function Chat() {
   if (!user) {
     return (
       <div className="fc-gate">
-        <Hash size={28} aria-hidden="true" />
+        <MessagesSquare size={28} aria-hidden="true" />
         <h1>Fellowship Chat</h1>
         <p>Sign in to chat with the youth, officers and admins of Life Generation.</p>
         <Link to="/login" className="fc-btn">Sign in</Link>
@@ -461,7 +458,7 @@ export default function Chat() {
               <div className="fc-sec" key={label}>
                 <small>{label}</small>
                 {items.map((c) => {
-                  const Icon = c.kind === 'announcement' ? Megaphone : c.kind === 'dgroup' ? Network : c.kind === 'ministry' ? HeartHandshake : c.kind === 'staff' ? Lock : Hash
+                  const Icon = c.kind === 'announcement' ? Megaphone : c.kind === 'dgroup' ? Network : c.kind === 'ministry' ? HeartHandshake : c.kind === 'staff' ? Lock : MessageSquareText
                   return (
                     <button key={c.id} type="button" className={`fc-room${c.id === activeId ? ' is-on' : ''}${c.unread && c.id !== activeId ? ' has-new' : ''}`} onClick={() => openRoom(c.id)} aria-current={c.id === activeId ? 'true' : undefined}>
                       <Icon size={17} strokeWidth={2} aria-hidden="true" />
@@ -483,9 +480,9 @@ export default function Chat() {
       </aside>
 
       {/* ---------- conversation ---------- */}
-      <section className="fc-main" aria-label={channel ? `#${channel.name}` : 'Conversation'}>
+      <section className="fc-main" aria-label={channel ? channel.name : 'Conversation'}>
         {!channel ? (
-          <div className="fc-empty"><Hash size={30} aria-hidden="true" /><b>Pick a room</b><p>Choose a room on the left to start.</p></div>
+          <div className="fc-empty"><MessagesSquare size={30} aria-hidden="true" /><b>Pick a room</b><p>Choose a room on the left to start.</p></div>
         ) : (
           <>
             <header className="fc-bar">
@@ -494,7 +491,7 @@ export default function Chat() {
                 {unreadTotal > 0 && <i className="fc-pill">{unreadTotal > 9 ? '9+' : unreadTotal}</i>}
               </button>
               <div className="fc-bar-t">
-                <h2>{channel.kind === 'announcement' ? <Megaphone size={17} aria-hidden="true" /> : channel.staff_only ? <Lock size={16} aria-hidden="true" /> : <Hash size={17} aria-hidden="true" />}{channel.name}</h2>
+                <h2>{channel.kind === 'announcement' ? <Megaphone size={17} aria-hidden="true" /> : channel.staff_only ? <Lock size={16} aria-hidden="true" /> : <MessageSquareText size={17} aria-hidden="true" />}{channel.name}</h2>
                 <p>{channel.description}</p>
               </div>
               <div className="fc-bar-a" role="toolbar" aria-label="Room tools">
@@ -516,7 +513,7 @@ export default function Chat() {
             {searching && (
               <div className="fc-search">
                 <Search size={16} aria-hidden="true" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search #${channel.name}`} aria-label="Search messages" autoFocus />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${channel.name}`} aria-label="Search messages" autoFocus />
                 {q && <button type="button" onClick={() => setQ('')} aria-label="Clear"><X size={15} /></button>}
                 <span>{results ? `${results.length} found` : q.trim().length === 1 ? 'Keep typing' : ''}</span>
               </div>
@@ -537,7 +534,7 @@ export default function Chat() {
               {loading && <div className="fc-skel" aria-busy="true">{[70, 45, 85, 55].map((w, i) => <i key={i} style={{ width: `${w}%` }} />)}</div>}
               {!loading && shown.length === 0 && (
                 <div className="fc-empty">
-                  {results ? <><Search size={28} /><b>No matches</b><p>Try another word.</p></> : <><Hash size={28} /><b>Start of #{channel.name}</b><p>{readonlyForMe ? 'Nothing has been announced yet.' : 'Be the first to say something.'}</p></>}
+                  {results ? <><Search size={28} /><b>No matches</b><p>Try another word.</p></> : <><MessagesSquare size={28} /><b>Start of {channel.name}</b><p>{readonlyForMe ? 'Nothing has been announced yet.' : 'Be the first to say something.'}</p></>}
                 </div>
               )}
               {groups.map((g) => {
@@ -609,7 +606,7 @@ export default function Chat() {
                   )}
                   <button type="button" className="fc-iconbtn" aria-label="Mention someone" onClick={() => { set({ text: `${draft.text}${draft.text && !/\s$/.test(draft.text) ? ' ' : ''}@` }); area.current?.focus() }}><AtSign size={19} /></button>
                   <textarea ref={area} rows={1} value={draft.text} maxLength={2000} onChange={(e) => set({ text: e.target.value })} onKeyDown={onKey}
-                    placeholder={channel.readonly || draft.announce ? 'Write the announcement…' : `Message #${channel.name}`} aria-label="Message" />
+                    placeholder={channel.readonly || draft.announce ? 'Write the announcement…' : `Message ${channel.name}`} aria-label="Message" />
                   <button type="submit" className={`fc-send${fly ? ' is-fly' : ''}${draft.text.trim() || draft.image ? ' is-ready' : ''}`} disabled={sending} aria-disabled={!draft.text.trim() && !draft.image} aria-label={draft.edit ? 'Save edit' : 'Send'}>
                     {draft.edit ? <Check size={19} /> : <Send size={19} className="fc-plane" />}
                   </button>
@@ -1042,7 +1039,7 @@ function SessionsPanel({ me, channels, data, reload, toast }) {
                   <span className="fc-sess-ico"><KindIcon size={18} aria-hidden="true" /></span>
                   <div>
                     <b>{s.title}</b>
-                    <small>{kindLabel}{s.channel_name ? ` · #${s.channel_name}` : ' · Everyone'}</small>
+                    <small>{kindLabel}{s.channel_name ? ` · ${s.channel_name}` : ' · Everyone'}</small>
                   </div>
                   <span className={`fc-badge${s.live ? ' is-live' : s.cancelled ? ' is-off' : ''}`}>{countdown(s)}</span>
                 </div>
@@ -1140,7 +1137,7 @@ function SessionForm({ google, channels, onCancel, onDone, toast }) {
     try {
       await apiPost('/api/chat/sessions', {
         title: f.title.trim(), kind: f.kind, description: f.description.trim(), meet_url: f.auto ? '' : f.meet_url.trim(), auto_meet: f.auto,
-        starts_at: `${f.date}T${f.time}:00+08:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
+        starts_at: `${f.date} ${f.time}:00`, duration: Number(f.duration), channel_id: f.channel_id || 0, announce: f.announce,
       })
       onDone()
     } catch (e2) { setErr(e2.message || 'Could not schedule the session.'); toast(e2.message || 'Could not schedule the session.', 'bad') } finally { setBusy(false) }
@@ -1173,7 +1170,7 @@ function SessionForm({ google, channels, onCancel, onDone, toast }) {
         <label className="fc-field"><span>Who can see it</span>
           <select value={f.channel_id} onChange={(e) => set({ channel_id: e.target.value })}>
             <option value="">Everyone</option>
-            {rooms.map((c) => <option key={c.id} value={c.id}>#{c.name}</option>)}
+            {rooms.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
       </div>

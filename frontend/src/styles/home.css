@@ -46,7 +46,7 @@ html[data-theme='light'] {
   margin: 0;
   padding: 0 26px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 6px;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 650;
@@ -241,7 +241,7 @@ html[data-theme='light'] {
   min-height: 42px;
   padding: 0 14px;
   border: 1px solid currentColor;
-  border-radius: 999px;
+  border-radius: 6px;
   color: inherit;
   font-size: 0.86rem;
   font-weight: 600;
@@ -419,7 +419,7 @@ html[data-theme='light'] {
   max-width: 340px;
   padding: 22px;
   border: 1px solid var(--lg-line);
-  border-radius: 16px;
+  border-radius: 6px;
   background: var(--lg-bg-2);
   color: var(--lg-text);
   animation: lg-pop 0.2s var(--lg-ease);
@@ -620,7 +620,7 @@ main.lg-home {
   max-width: 420px;
   padding: 14px 18px 14px 14px;
   border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 18px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
@@ -634,7 +634,7 @@ main.lg-home {
   flex: none;
   width: 62px;
   height: 66px;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   color: #111;
   font-family: 'Bebas Neue', 'Inter', sans-serif;
@@ -834,7 +834,7 @@ a.lg-event-main {
   width: 84px;
   height: 84px;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: 6px;
 }
 .lg-event-go {
   display: grid;
@@ -924,7 +924,7 @@ a.lg-event-main {
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 18px;
+  border-radius: 6px;
   background: #16161a;
   color: #fff;
   font-family: inherit;
@@ -969,7 +969,7 @@ a.lg-event-main {
   height: 44px;
   margin-bottom: 6px;
   border: 1px solid rgba(255, 255, 255, 0.34);
-  border-radius: 14px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.14);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
@@ -1103,7 +1103,7 @@ a.lg-channel {
   min-height: 250px;
   padding: clamp(20px, 2vw, 28px);
   border: 1px solid var(--lg-line);
-  border-radius: 22px;
+  border-radius: 8px;
   background: var(--lg-bg-2);
   color: var(--lg-text);
   text-decoration: none;
@@ -1118,10 +1118,10 @@ a.lg-channel {
   width: 62px;
   height: 62px;
   margin-bottom: auto;
-  border-radius: 20px;
+  border-radius: 8px;
   background: var(--lg-bg-2);
   color: var(--lg-text);
-  box-shadow: 7px 7px 16px var(--sh-d), -7px -7px 16px var(--sh-l);
+  box-shadow: none;
   transition: box-shadow 0.4s, color 0.3s;
 }
 html[data-theme='dark'] .lg-channel-ico {
@@ -1160,7 +1160,7 @@ html[data-theme='dark'] .lg-channel-ico {
   }
   a.lg-channel:hover .lg-channel-ico {
     color: var(--lg-accent);
-    box-shadow: inset 5px 5px 11px var(--sh-d), inset -5px -5px 11px var(--sh-l);
+    box-shadow: none;
   }
   a.lg-channel:hover .lg-channel-cta svg {
     transform: translateX(4px);

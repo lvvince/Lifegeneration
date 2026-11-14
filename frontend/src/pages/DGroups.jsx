@@ -103,7 +103,7 @@ export default function DGroups() {
         </h1>
         <p className="dg-hero-sub">
           Do life together. Join a close-knit cell group where you can grow,
-          be mentored, and build genuine friendships with exclusive Group Chat access.
+          be mentored, and build genuine friendships with exclusive Group Chat access. Browse the groups below, read how each one meets, and send a request to join the one that fits your schedule.
         </p>
         <div className="dg-hero-stats">
           <div className="dg-stat">

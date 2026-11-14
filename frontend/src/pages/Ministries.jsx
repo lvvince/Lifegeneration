@@ -112,7 +112,7 @@ export default function Ministries() {
         </h1>
         <p className="min-vol-hero-sub">
           Bring your talents, energy, and passion to the events that shape our community.
-          Choose a team, apply in seconds, and make every event unforgettable.
+          Choose a team, apply in seconds, and make every event unforgettable. Each team shows how many volunteers it has and how many slots are open, so you can join where you are needed most.
         </p>
         <div className="min-vol-hero-stats">
           <div className="min-vol-stat">

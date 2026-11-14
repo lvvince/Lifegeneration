@@ -9,18 +9,15 @@ export default function OfficerInsights() {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <PageHeader title="Insights" desc="Where attendance, membership and giving are heading, and who may need a check-in." />
-        <button
-          type="button"
-          className="p-btn p-btn-primary"
-          onClick={() => setShowPrint(true)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0, alignSelf: 'flex-end' }}
-        >
-          <Printer size={16} />
-          Print / PDF
-        </button>
-      </div>
+      <PageHeader
+        title="Insights"
+        desc="Where attendance, membership and giving are heading."
+        actions={
+          <button type="button" className="p-btn p-btn-primary" onClick={() => setShowPrint(true)}>
+            <Printer size={16} /> Print / PDF
+          </button>
+        }
+      />
 
       <Insights />
 

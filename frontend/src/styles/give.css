@@ -50,7 +50,7 @@
 .gv-btn.is-line { background: transparent; color: var(--g-ink); }
 .gv-btn.is-sm { min-height: 44px; padding: 0 14px; }
 .gv-btn.is-big { width: 100%; min-height: 54px; height: auto; padding: 14px 18px; font-size: 14px; font-weight: 900; background: var(--g-or); word-break: break-word; overflow-wrap: anywhere; line-height: 1.35; }
-@media (hover: hover) { .gv-btn:hover:not(:disabled) { box-shadow: 0 10px 20px -10px rgba(70,40,10,.3); } }
+@media (hover: hover) { .gv-btn:hover:not(:disabled) { box-shadow: none; } }
 
 /* form layout */
 .gv-grid { display: grid; gap: 16px; }
@@ -63,7 +63,7 @@
 /* funds */
 .gv-funds { display: grid; gap: 10px; }
 .gv-fund { display: grid; gap: 6px; width: 100%; padding: 14px; border: 2px solid var(--g-line); background: var(--g-bg); color: var(--g-ink); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.25s var(--g-ease); }
-.gv-fund.is-on { border-color: var(--g-or); background: var(--sk-or-soft, rgba(249, 115, 22, 0.1)); box-shadow: inset 4px 0 0 var(--g-or); }
+.gv-fund.is-on { border-color: var(--g-or); background: var(--sk-or-soft, rgba(249, 115, 22, 0.1)); box-shadow: none; }
 .gv-fund-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
 .gv-fund-top b { font-size: 15px; font-weight: 800; }
 .gv-fund-top small { color: var(--g-ink2); font-size: 12px; font-weight: 700; }
@@ -77,7 +77,7 @@
 .gv-field > span, .gv-field > label { color: var(--g-ink2); font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
 .gv-field input[type='text'], .gv-field input[type='email'], .gv-field input[type='tel'], .gv-field input[type='number'], .gv-field textarea { width: 100%; min-height: 50px; padding: 0 14px; border: 2px solid var(--g-line); border-radius: 0; background: var(--g-bg); color: var(--g-ink); font: inherit; font-size: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
 .gv-field textarea { min-height: 84px; padding: 12px 14px; resize: vertical; }
-.gv-field input:focus, .gv-field textarea:focus { outline: 0; border-color: var(--g-ink); box-shadow: 0 10px 20px -10px rgba(70,40,10,.3); }
+.gv-field input:focus, .gv-field textarea:focus { outline: 0; border-color: var(--g-ink); box-shadow: none; }
 .gv-money > div { position: relative; }
 .gv-money b { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--g-ink2); font-weight: 800; }
 .gv-money input { padding-left: 34px !important; }

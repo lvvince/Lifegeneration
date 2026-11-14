@@ -9,10 +9,11 @@ import {
   ChevronLeft, ChevronRight, Check, ArrowRight, Loader2,
   HeartHandshake, Sparkles, Crown, GraduationCap,
   Navigation, UsersRound, Cpu, Rocket, Handshake,
-  Flame, Building2, Paperclip
+  Flame, Building2
 } from 'lucide-react'
 import { apiGet, apiPost } from '../api.js'
 import '../styles/pages.css'
+import '../styles/findplace.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STEP_QUIZ    = 'quiz'
@@ -110,14 +111,6 @@ function getOptionIcon(key) {
 }
 function getQuestionIcon(key) {
   return QUESTION_ICONS[key] || Gift
-}
-
-// ─── Shared style helpers ──────────────────────────────────────────────────────
-const card = {
-  background: '#fff',
-  borderRadius: 20,
-  border: '1px solid var(--p-border, #e5e8f1)',
-  boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -226,784 +219,173 @@ export default function GiftsMatcher() {
     ? (flipDir === 'forward' ? 'gm-card--flip-in' : 'gm-card--flip-in-back')
     : ''
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+
+  const pad = (n) => String(n).padStart(2, '0')
+  const clip = (t, n = 160) => (t && t.length > n ? t.slice(0, n).trimEnd() + '…' : t || '')
+
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (step === STEP_LOADING) {
     return (
-      <div
-        className="pg-root"
-        style={{
-          minHeight: '70vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 18,
-          textAlign: 'center',
-          padding: '40px 20px',
-        }}
-      >
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            background: 'rgba(255, 90, 10, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Loader2 size={30} color="#ff5a0a" style={{ animation: 'spin 1s linear infinite' }} />
-        </div>
-        <div>
-          <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#1a1f2e' }}>
-            Finding your place…
-          </h2>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--p-text-2, #586079)', maxWidth: 320 }}>
-            Matching your answers with the best ministry team and discipleship group for you.
-          </p>
-        </div>
+      <div className="pg-root fm fm-center" role="status" aria-live="polite">
+        <div className="fm-scan" aria-hidden="true"><span /><span /><span /><span /></div>
+        <h2 className="fm-load-title">Finding your place</h2>
+        <p className="fm-load-copy">Matching your answers with the ministry team and D-Group that fit you best.</p>
       </div>
     )
   }
 
-  // ── Results ────────────────────────────────────────────────────────────────
+  // ── Results ──────────────────────────────────────────────────────────────
   if (step === STEP_RESULT && result) {
     const { personality, top_ministry, top_dgroup, all_ministry_scores, all_dgroup_scores } = result
-
-    // Pick personality icon + color
-    const pMeta = personality?.key
-      ? (PERSONALITY_META[personality.key] || { icon: Star, color: '#ff5a0a' })
-      : { icon: Star, color: '#ff5a0a' }
+    const pMeta = personality?.key ? (PERSONALITY_META[personality.key] || { icon: Star }) : { icon: Star }
     const PersonalityIcon = pMeta.icon
 
-    return (
-      <div className="pg-root" style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px 48px' }}>
-
-        {/* ── Section label */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'rgba(255,90,10,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Sparkles size={18} color="#ff5a0a" />
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#ff5a0a' }}>
-            Your Results
-          </span>
-        </div>
-
-        {/* ── Personality card */}
-        {personality && (
-          <div
-            style={{
-              ...card,
-              padding: '28px 26px',
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 20,
-            }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 16,
-                background: pMeta.color + '18',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <PersonalityIcon size={26} color={pMeta.color} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p
-                style={{
-                  margin: '0 0 4px',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--p-text-2, #586079)',
-                }}
-              >
-                Your personality type
-              </p>
-              <h2
-                style={{
-                  margin: '0 0 8px',
-                  fontSize: 'clamp(20px, 3vw, 26px)',
-                  fontWeight: 900,
-                  color: '#1a1f2e',
-                  lineHeight: 1.2,
-                }}
-              >
-                {personality.label}
-              </h2>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  color: 'var(--p-text-2, #586079)',
-                  lineHeight: 1.6,
-                }}
-              >
-                {personality.description}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Matches grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
-          {/* Ministry match */}
-          {top_ministry && (
-            <div style={{ ...card, padding: '22px 22px', borderLeft: '3px solid #ff5a0a' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: 'rgba(255,90,10,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <HeartHandshake size={19} color="#ff5a0a" />
-                </div>
-                <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 10.5,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: '#ff5a0a',
-                    }}
-                  >
-                    Best Ministry Match
-                  </p>
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: 16,
-                      fontWeight: 800,
-                      color: '#1a1f2e',
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {top_ministry.name}
-                  </h3>
-                </div>
-              </div>
-
-              <p
-                style={{
-                  margin: '0 0 14px',
-                  fontSize: 13,
-                  color: 'var(--p-text-2, #586079)',
-                  lineHeight: 1.55,
-                }}
-              >
-                {top_ministry.description?.slice(0, 120)}
-                {top_ministry.description?.length > 120 ? '…' : ''}
-              </p>
-
-              {/* Score bars */}
-              <div style={{ marginBottom: 16 }}>
-                {all_ministry_scores?.slice(0, 4).map((m, i) => {
-                  const maxScore = all_ministry_scores[0]?.score || 1
-                  const pct = Math.round((m.score / maxScore) * 100)
-                  return (
-                    <div key={m.id} style={{ marginBottom: 7 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: 11.5,
-                          fontWeight: i === 0 ? 700 : 500,
-                          color: i === 0 ? '#ff5a0a' : '#586079',
-                          marginBottom: 3,
-                        }}
-                      >
-                        <span>{m.name}</span>
-                        <span>{pct}%</span>
-                      </div>
-                      <div style={{ height: 5, borderRadius: 4, background: '#f1f3f7', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            width: pct + '%',
-                            height: '100%',
-                            borderRadius: 4,
-                            background: i === 0 ? '#ff5a0a' : '#d1d5db',
-                            transition: 'width 0.6s ease',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <Link
-                to="/ministries"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '9px 18px',
-                  borderRadius: 10,
-                  background: '#ff5a0a',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  textDecoration: 'none',
-                }}
-              >
-                <HeartHandshake size={14} />
-                <span>Apply to {top_ministry.name}</span>
-                <ArrowRight size={13} />
-              </Link>
-            </div>
-          )}
-
-          {/* D-Group match */}
-          {top_dgroup && (
-            <div style={{ ...card, padding: '22px 22px', borderLeft: '3px solid #6366f1' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: 'rgba(99,102,241,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Users size={19} color="#6366f1" />
-                </div>
-                <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 10.5,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: '#6366f1',
-                    }}
-                  >
-                    Best D-Group Match
-                  </p>
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: 16,
-                      fontWeight: 800,
-                      color: '#1a1f2e',
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {top_dgroup.name}
-                  </h3>
-                </div>
-              </div>
-
-              <p
-                style={{
-                  margin: '0 0 14px',
-                  fontSize: 13,
-                  color: 'var(--p-text-2, #586079)',
-                  lineHeight: 1.55,
-                }}
-              >
-                {top_dgroup.description?.slice(0, 120)}
-                {top_dgroup.description?.length > 120 ? '…' : ''}
-              </p>
-
-              {/* Score bars */}
-              <div style={{ marginBottom: 16 }}>
-                {all_dgroup_scores?.slice(0, 4).map((g, i) => {
-                  const maxScore = all_dgroup_scores[0]?.score || 1
-                  const pct = maxScore > 0 ? Math.round((g.score / maxScore) * 100) : 0
-                  return (
-                    <div key={g.id} style={{ marginBottom: 7 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: 11.5,
-                          fontWeight: i === 0 ? 700 : 500,
-                          color: i === 0 ? '#6366f1' : '#586079',
-                          marginBottom: 3,
-                        }}
-                      >
-                        <span>{g.name}</span>
-                        <span>{pct}%</span>
-                      </div>
-                      <div style={{ height: 5, borderRadius: 4, background: '#f1f3f7', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            width: pct + '%',
-                            height: '100%',
-                            borderRadius: 4,
-                            background: i === 0 ? '#6366f1' : '#d1d5db',
-                            transition: 'width 0.6s ease',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <Link
-                to="/dgroups"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '9px 18px',
-                  borderRadius: 10,
-                  background: '#6366f1',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  textDecoration: 'none',
-                }}
-              >
-                <Users size={14} />
-                <span>Join {top_dgroup.name}</span>
-                <ArrowRight size={13} />
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* ── Action row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleReset}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '10px 20px',
-              borderRadius: 10,
-              border: '1px solid var(--p-border, #e5e8f1)',
-              background: '#fff',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 13,
-              color: '#1a1f2e',
-            }}
-          >
-            <RefreshCw size={14} />
-            Retake Quiz
-          </button>
-
-          <Link
-            to="/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '10px 20px',
-              borderRadius: 10,
-              background: 'var(--p-text, #1a1f2e)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 13,
-              textDecoration: 'none',
-            }}
-          >
-            Back to Dashboard
+    const Match = ({ kind, item, scores, to, cta, Icon }) => {
+      const top = scores?.[0]?.score || 1
+      return (
+        <article className="fm-match">
+          <header className="fm-match-head">
+            <span className="fm-match-ico" aria-hidden="true"><Icon size={20} /></span>
+            <p className="fm-eyebrow">{kind}</p>
+          </header>
+          <h3 className="fm-match-name">{item.name}</h3>
+          {item.description && <p className="fm-match-desc">{clip(item.description, 180)}</p>}
+          <ol className="fm-bars" aria-label={`${kind} ranking`}>
+            {scores?.slice(0, 4).map((s, i) => {
+              const pct = top > 0 ? Math.round((s.score / top) * 100) : 0
+              return (
+                <li key={s.id} className={i === 0 ? 'is-top' : ''} style={{ '--d': `${i * 90}ms` }}>
+                  <span className="fm-bar-name">{s.name}</span>
+                  <span className="fm-bar-pct">{pct}%</span>
+                  <span className="fm-bar-track"><i style={{ width: `${pct}%` }} /></span>
+                </li>
+              )
+            })}
+          </ol>
+          <Link to={to} className="fm-btn fm-btn-solid">
+            <span>{cta}</span><ArrowRight size={16} aria-hidden="true" />
           </Link>
+        </article>
+      )
+    }
+
+    return (
+      <div className="pg-root fm fm-results">
+        <header className="fm-res-hero">
+          <p className="fm-eyebrow"><Sparkles size={14} aria-hidden="true" /> Your result</p>
+          {personality && (
+            <div className="fm-persona">
+              <span className="fm-persona-ico" aria-hidden="true"><PersonalityIcon size={30} /></span>
+              <div>
+                <h1 className="fm-persona-name">{personality.label}</h1>
+                {personality.description && <p className="fm-persona-desc">{personality.description}</p>}
+              </div>
+            </div>
+          )}
+        </header>
+
+        <div className="fm-matches">
+          {top_ministry && <Match kind="Best ministry match" item={top_ministry} scores={all_ministry_scores} to="/ministries" cta={`Apply to ${top_ministry.name}`} Icon={HeartHandshake} />}
+          {top_dgroup && <Match kind="Best D-Group match" item={top_dgroup} scores={all_dgroup_scores} to="/dgroups" cta={`Join ${top_dgroup.name}`} Icon={Users} />}
+        </div>
+
+        <div className="fm-actions">
+          <button type="button" className="fm-btn" onClick={handleReset}><RefreshCw size={16} aria-hidden="true" /> Retake quiz</button>
+          <Link to="/dashboard" className="fm-btn fm-btn-ghost">Back to dashboard</Link>
         </div>
       </div>
     )
   }
 
-  // ── Quiz: error / loading states ───────────────────────────────────────────
+  // ── Quiz: error / loading ────────────────────────────────────────────────
   if (configErr) {
     return (
-      <div className="pg-root" style={{ textAlign: 'center', padding: 60 }}>
-        <p style={{ color: '#dc2626', fontSize: 14 }}>{configErr}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="p-btn p-btn-primary p-btn-sm"
-          style={{ marginTop: 16 }}
-        >
-          Retry
-        </button>
+      <div className="pg-root fm fm-center">
+        <p className="fm-err" role="alert">{configErr}</p>
+        <button type="button" className="fm-btn fm-btn-solid" onClick={() => window.location.reload()}>Retry</button>
       </div>
     )
   }
-
   if (!config || !question) {
     return (
-      <div className="pg-root" style={{ textAlign: 'center', padding: 60 }}>
-        <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', color: '#ff5a0a' }} />
-        <p style={{ marginTop: 12, fontSize: 13, color: 'var(--p-text-2)' }}>Loading quiz…</p>
+      <div className="pg-root fm fm-center" role="status">
+        <div className="fm-scan" aria-hidden="true"><span /><span /><span /><span /></div>
+        <p className="fm-load-copy">Loading quiz…</p>
       </div>
     )
   }
 
-  // ── Quiz screen ────────────────────────────────────────────────────────────
+  // ── Quiz ─────────────────────────────────────────────────────────────────
   const QuestionIcon = getQuestionIcon(question.key)
+  const phaseClass = flipPhase === 'idle' ? '' : `fm-${flipPhase}-${flipDir}`
 
   return (
-    <div
-      className="pg-root"
-      style={{
-        maxWidth: 660,
-        margin: '0 auto',
-        padding: '16px 20px 60px',
-        background: 'transparent',
-      }}
-    >
+    <div className="pg-root fm">
+      <aside className="fm-rail">
+        <p className="fm-eyebrow">Discover your fit</p>
+        <h1 className="fm-title"><span>Find</span> <span>my</span> <em>place</em></h1>
+        <p className="fm-lede">Answer {totalQ} quick questions to find your best-fit volunteer team and D-Group.</p>
 
-      {/* ══════════════════════════════════════════════
-          HERO — "FIND MY PLACE" (Theme-Adaptive Title)
-         ══════════════════════════════════════════════ */}
-      <div style={{
-        textAlign: 'center',
-        padding: '24px 0 20px',
-        marginBottom: 8,
-      }}>
-
-        {/* Handcrafted Title (Responsive Light & Dark Mode) */}
-        <h1 style={{ margin: '0 0 12px', lineHeight: 1.05, letterSpacing: '-0.03em' }}>
-          <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', flexWrap: 'wrap', gap: '0 10px' }}>
-            <span style={{
-              fontSize: 'clamp(42px, 9vw, 68px)',
-              fontWeight: 900,
-              color: 'var(--p-text, #1a1a1a)',
-              letterSpacing: '-0.045em',
-              lineHeight: 1,
-            }}>
-              FIND
-            </span>
-            <span style={{
-              fontSize: 'clamp(42px, 9vw, 68px)',
-              fontWeight: 900,
-              fontStyle: 'italic',
-              color: '#ff5a0a',
-              letterSpacing: '-0.04em',
-              lineHeight: 1,
-            }}>
-              MY
-            </span>
-            <span className="gm-hero-place-badge">
-              PLACE
-            </span>
-          </span>
-        </h1>
-
-        <p style={{
-          margin: '0 auto',
-          fontSize: 14,
-          color: 'var(--p-text-2, #657088)',
-          maxWidth: 400,
-          lineHeight: 1.6,
-        }}>
-          Answer {totalQ} quick questions to discover your best-fit Volunteer Team and D-Group.
-        </p>
-      </div>
-
-      {/* ══════════════════════════════════════════════
-          PROGRESS — 5-Page Indicators (Responsive)
-         ══════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 22, textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
-          {questions.map((_, i) => (
-            <div key={i} style={{
-              width: i === currentQ ? 28 : 8,
-              height: 7,
-              borderRadius: 4,
-              background: i < currentQ
-                ? '#ff5a0a'
-                : i === currentQ
-                ? '#ff5a0a'
-                : 'var(--p-border, #d1d5db)',
-              opacity: i > currentQ ? 0.45 : 1,
-              transition: 'all 0.3s ease',
-            }} />
+        <ol className="fm-steps" aria-label="Progress">
+          {questions.map((q, i) => (
+            <li key={q.key} className={i < currentQ || (i === currentQ && answers[q.key]) ? 'is-done' : i === currentQ ? 'is-now' : ''} aria-current={i === currentQ ? 'step' : undefined}>
+              <b>{pad(i + 1)}</b><span>{(q.title || q.label || q.key).toString().replace(/_/g, ' ')}</span>
+            </li>
           ))}
+        </ol>
+      </aside>
+
+      <section className="fm-stage" aria-labelledby="fm-q">
+        <div className="fm-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPct} aria-label="Quiz progress">
+          <i style={{ width: `${progressPct}%` }} />
         </div>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--p-text-3, #8a92a8)', letterSpacing: '0.04em' }}>
-          Question {currentQ + 1} of {totalQ}
-          <span style={{ color: '#ff5a0a', marginLeft: 8 }}>· {progressPct}%</span>
-        </span>
-      </div>
+        <div className="fm-count"><span><b>{pad(currentQ + 1)}</b> / {pad(totalQ)}</span><span>{progressPct}%</span></div>
 
-      {/* ══════════════════════════════════════════════
-          NOTEBOOK PAPER STACK (Light & Dark Responsive)
-         ══════════════════════════════════════════════ */}
-      <div className="gm-card-scene" style={{ position: 'relative', marginBottom: 24 }}>
-
-        {/* Stacked layers behind */}
-        <div
-          className="gm-notebook-stack-1"
-          style={{
-            position: 'absolute', inset: 0,
-            transform: 'rotate(-2.2deg) translateY(7px) translateX(-3px)',
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="gm-notebook-stack-2"
-          style={{
-            position: 'absolute', inset: 0,
-            transform: 'rotate(1.4deg) translateY(4px) translateX(2px)',
-            zIndex: 1,
-          }}
-        />
-
-        {/* ── Main Lined Notebook Card (Light White / Dark Mode Responsive) ── */}
-        <div
-          className={`gm-notebook-card ${cardFlipClass}`}
-          style={{
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          {/* Burnished Metal Paperclip Icon clamped on top */}
-          <div style={{
-            position: 'absolute',
-            top: -4,
-            right: 38,
-            width: 32,
-            height: 38,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.22))',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            transform: 'rotate(12deg)',
-          }}>
-            <Paperclip size={28} color="#e07a2a" strokeWidth={2.4} />
+        <div className={`fm-panel ${phaseClass}`}>
+          <div className="fm-q-head">
+            <span className="fm-q-ico" aria-hidden="true"><QuestionIcon size={22} /></span>
+            <h2 id="fm-q" className="fm-q">{question.question}</h2>
           </div>
 
-          {/* Line numbers on left margin */}
-          <div style={{
-            position: 'absolute', left: 0, top: 0, bottom: 0, width: 52,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center',
-            paddingTop: 36,
-            pointerEvents: 'none',
-          }}>
-            {Array.from({ length: 14 }, (_, i) => (
-              <div
-                key={i}
-                className="gm-notebook-num"
-                style={{
-                  fontSize: 9.5,
-                  height: 31,
-                  lineHeight: '31px',
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {i + 1}
-              </div>
-            ))}
-          </div>
-
-          {/* Question title */}
-          <div style={{
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-            marginBottom: 22,
-          }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: 12,
-              background: 'rgba(255,90,10,0.12)',
-              border: '1px solid rgba(255,90,10,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, marginTop: 1,
-            }}>
-              <QuestionIcon size={21} color="#ff5a0a" />
-            </div>
-            <h2 style={{
-              margin: 0,
-              fontSize: 'clamp(15px, 2.5vw, 18.5px)',
-              fontWeight: 800,
-              color: 'var(--p-text, #1a1f2e)',
-              lineHeight: 1.35,
-              letterSpacing: '-0.01em',
-            }}>
-              {question.question}
-            </h2>
-          </div>
-
-          {/* Options */}
-          <div style={{ display: 'grid', gap: 9 }}>
-            {question.options?.map(opt => {
-              const selected   = answers[question.key] === opt.key
+          <div className="fm-opts" role="radiogroup" aria-labelledby="fm-q">
+            {question.options?.map((opt, i) => {
+              const selected = answers[question.key] === opt.key
               const OptionIcon = getOptionIcon(opt.key)
               return (
                 <button
                   key={opt.key}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className={`fm-opt${selected ? ' is-on' : ''}`}
+                  style={{ '--i': i }}
                   onClick={() => flipPhase === 'idle' && handleSelect(opt.key)}
-                  className={`gm-option-btn ${selected ? 'selected' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '12px 14px',
-                    borderRadius: 14,
-                    cursor: flipPhase !== 'idle' ? 'default' : 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    outline: 'none',
-                    transition: 'all 0.16s ease',
-                    transform: selected ? 'translateX(4px)' : 'translateX(0)',
-                  }}
                 >
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: selected ? 'rgba(255,90,10,0.16)' : 'rgba(0,0,0,0.04)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'background 0.15s',
-                  }}>
-                    <OptionIcon size={17} color={selected ? '#ff5a0a' : 'var(--p-text-2, #586079)'} />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontWeight: 700, fontSize: 13.5,
-                      color: selected ? '#ff5a0a' : 'var(--p-text, #1a1f2e)',
-                      transition: 'color 0.15s',
-                    }}>
-                      {opt.label}
-                    </div>
-                    {opt.description && (
-                      <div style={{
-                        fontSize: 12,
-                        color: 'var(--p-text-2, #586079)',
-                        marginTop: 2,
-                        lineHeight: 1.4,
-                      }}>
-                        {opt.description}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Radio circle with Check icon */}
-                  <div style={{
-                    width: 21, height: 21, borderRadius: '50%',
-                    border: selected ? 'none' : '2px solid var(--p-border, #d1d5db)',
-                    background: selected ? '#ff5a0a' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.15s',
-                    boxShadow: selected ? '0 2px 8px rgba(255,90,10,0.38)' : 'none',
-                  }}>
-                    {selected && <Check size={12} color="#ffffff" strokeWidth={3} />}
-                  </div>
+                  <span className="fm-opt-key" aria-hidden="true">{String.fromCharCode(65 + i)}</span>
+                  <span className="fm-opt-ico" aria-hidden="true"><OptionIcon size={18} /></span>
+                  <span className="fm-opt-txt">
+                    <strong>{opt.label}</strong>
+                    {opt.description && <small>{opt.description}</small>}
+                  </span>
+                  <span className="fm-opt-tick" aria-hidden="true"><Check size={14} strokeWidth={3} /></span>
                 </button>
               )
             })}
           </div>
         </div>
-      </div>
 
-      {/* Submit error */}
-      {submitErr && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 10,
-          background: 'rgba(220,38,38,0.08)', color: '#dc2626',
-          border: '1px solid rgba(220,38,38,0.2)',
-          fontSize: 13, marginBottom: 14,
-        }}>
-          {submitErr}
+        {submitErr && <p className="fm-err" role="alert">{submitErr}</p>}
+
+        <div className="fm-nav" role="group" aria-label="Quiz navigation">
+          <button type="button" className="fm-btn" onClick={handleBack} disabled={currentQ === 0 || flipPhase !== 'idle'}>
+            <ChevronLeft size={16} aria-hidden="true" /> Back
+          </button>
+          <button type="button" className="fm-btn fm-btn-solid" onClick={handleNext} disabled={!canGoNext() || flipPhase !== 'idle'}>
+            <span>{isLastQ ? 'See my results' : 'Next'}</span>
+            {isLastQ ? <Sparkles size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
+          </button>
         </div>
-      )}
-
-      {/* ── Navigation ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-        <button
-          type="button"
-          onClick={handleBack}
-          disabled={currentQ === 0 || flipPhase !== 'idle'}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '11px 22px', borderRadius: 13,
-            border: '1.5px solid var(--p-border, #e5e8f1)',
-            background: 'var(--p-surface, #ffffff)',
-            cursor: (currentQ === 0 || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
-            fontWeight: 700, fontSize: 13,
-            color: 'var(--p-text, #1a1f2e)',
-            opacity: (currentQ === 0 || flipPhase !== 'idle') ? 0.35 : 1,
-            transition: 'opacity 0.2s, background 0.15s',
-          }}
-        >
-          <ChevronLeft size={16} />
-          Back
-        </button>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!canGoNext() || flipPhase !== 'idle'}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '12px 30px', borderRadius: 13,
-            background: (canGoNext() && flipPhase === 'idle') ? '#ff5a0a' : 'var(--p-border, #d1d5db)',
-            color: '#fff',
-            cursor: (!canGoNext() || flipPhase !== 'idle') ? 'not-allowed' : 'pointer',
-            fontWeight: 800, fontSize: 14,
-            border: 0,
-            boxShadow: (canGoNext() && flipPhase === 'idle')
-              ? '0 4px 20px rgba(255,90,10,0.35)'
-              : 'none',
-            transition: 'all 0.2s',
-            transform: (canGoNext() && flipPhase === 'idle') ? 'scale(1)' : 'scale(0.97)',
-          }}
-        >
-          {isLastQ ? (
-            <>See My Matches <Award size={16} /></>
-          ) : (
-            <>Next <ChevronRight size={16} /></>
-          )}
-        </button>
-      </div>
+      </section>
     </div>
   )
 }

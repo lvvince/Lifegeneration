@@ -1,26 +1,26 @@
 /* auto-prefixed with :root (+specificity) so it always beats route-level CSS loaded later */
 :root .ah{display:grid;gap:16px}
-:root .ah-hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:16px;border-radius:26px;background:#fffdf9;box-shadow:0 2px 3px #fff inset,0 -5px 10px rgba(120,80,40,.07) inset,0 14px 24px -16px rgba(70,40,10,.35)}
-:root .ah-ring{--p:0;position:relative;display:grid;place-content:center;justify-items:center;width:108px;height:108px;border-radius:50%;background:conic-gradient(#ff5a0a calc(var(--p)*1%),#f1e8db 0);box-shadow:0 8px 16px -8px rgba(255,90,10,.5)}
-:root .ah-ring::before{content:'';position:absolute;inset:10px;border-radius:50%;background:#fffdf9;box-shadow:0 3px 8px rgba(70,40,10,.18) inset}
+:root .ah-hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:16px;border-radius:8px;background:#fffdf9;box-shadow:none}
+:root .ah-ring{--p:0;position:relative;display:grid;place-content:center;justify-items:center;width:108px;height:108px;border-radius:50%;background:conic-gradient(#ff5a0a calc(var(--p)*1%),#f1e8db 0);box-shadow:none}
+:root .ah-ring::before{content:'';position:absolute;inset:10px;border-radius:50%;background:#fffdf9;box-shadow:none}
 :root .ah-ring b,:root .ah-ring span{position:relative}
 :root .ah-ring b{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
 :root .ah-ring b small{font-size:15px;font-weight:700}
 :root .ah-ring span{margin-top:3px;color:#8a7f70;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
 :root .ah-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
-:root .ah-sum>div{display:grid;justify-items:start;gap:2px;padding:12px;border-radius:18px;background:#f7f0e6;box-shadow:0 2px 6px rgba(70,40,10,.1) inset}
+:root .ah-sum>div{display:grid;justify-items:start;gap:2px;padding:12px;border-radius:6px;background:#f7f0e6;box-shadow:none}
 :root .ah-sum svg{color:#8a7f70}
 :root .ah-sum .is-ok svg{color:#1f9d6b}
 :root .ah-sum .is-miss svg{color:#c2410c}
 :root .ah-sum .is-streak svg{color:#ff5a0a}
 :root .ah-sum dd{margin:4px 0 0;font-size:26px;font-weight:800;line-height:1}
 :root .ah-sum dt{color:#6f6558;font-size:11.5px;font-weight:700}
-:root .ah-filters{display:flex;gap:6px;padding:5px;border-radius:999px;background:#f1e9dd;box-shadow:0 3px 8px rgba(70,40,10,.14) inset}
-:root .ah-filters .ah-chip{flex:1;min-height:40px;border:0;border-radius:999px;background:transparent;color:#5b5143;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .2s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
-:root .ah-filters .ah-chip.is-on{background:#fffdf9;color:#1c1812;box-shadow:0 2px 3px #fff inset,0 6px 12px -6px rgba(70,40,10,.4)}
+:root .ah-filters{display:flex;gap:6px;padding:5px;border-radius:6px;background:#f1e9dd;box-shadow:none}
+:root .ah-filters .ah-chip{flex:1;min-height:40px;border:0;border-radius:6px;background:transparent;color:#5b5143;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .2s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+:root .ah-filters .ah-chip.is-on{background:#fffdf9;color:#1c1812;box-shadow:none}
 :root .ah-filters .ah-chip:active{transform:scale(.95)}
 :root .ah-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-:root .ah-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:20px;background:#fffdf9;box-shadow:0 2px 3px #fff inset,0 10px 18px -14px rgba(70,40,10,.35)}
+:root .ah-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:8px;background:#fffdf9;box-shadow:none}
 :root .ah-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e3f5ec;color:#1f9d6b}
 :root .ah-item.is-missed .ah-ico{background:#ffe9d6;color:#c2410c}
 :root .ah-item.is-upcoming .ah-ico{background:#eef0fb;color:#4b5bd0}
@@ -28,9 +28,9 @@
 :root .ah-main{display:grid;gap:1px;min-width:0}
 :root .ah-title{color:#1c1812;font-size:15px;font-weight:800;text-decoration:none;overflow-wrap:anywhere}
 :root .ah-main small{color:#8a7f70;font-size:12.5px;font-weight:600}
-:root .ah-st{padding:4px 10px;border-radius:99px;background:#f4ede3;color:#5b5143;font-size:11.5px;font-weight:800}
+:root .ah-st{padding:4px 10px;border-radius:8px;background:#f4ede3;color:#5b5143;font-size:11.5px;font-weight:800}
 :root .ah-item.is-attended .ah-st{background:#e3f5ec;color:#177a54}
-:root .ah-more{justify-self:center;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:#fffdf9;color:#1c1812;font:inherit;font-weight:800;box-shadow:0 2px 3px #fff inset,0 8px 14px -8px rgba(70,40,10,.4);cursor:pointer}
+:root .ah-more{justify-self:center;min-height:44px;padding:0 20px;border:0;border-radius:6px;background:#fffdf9;color:#1c1812;font:inherit;font-weight:800;box-shadow:none;cursor:pointer}
 @media(max-width:420px){:root .ah-hero{grid-template-columns:1fr;justify-items:center}
 :root .ah-sum{width:100%}
 :root .ah-item{grid-template-columns:auto 1fr}

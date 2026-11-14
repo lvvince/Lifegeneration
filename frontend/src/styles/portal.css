@@ -116,7 +116,7 @@ html[data-theme='dark'] .portal {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 4px;
   color: var(--p-text-2);
   font-size: 14px;
   font-weight: 500;
@@ -286,7 +286,7 @@ html[data-theme='dark'] .portal {
   gap: 1px;
   background: var(--p-border);
   border: 1px solid var(--p-border);
-  border-radius: 10px;
+  border-radius: 4px;
   overflow: hidden;
   margin-bottom: 22px;
 }
@@ -313,7 +313,7 @@ html[data-theme='dark'] .portal {
 .p-panel {
   background: var(--p-surface);
   border: 1px solid var(--p-border);
-  border-radius: 10px;
+  border-radius: 4px;
   overflow: hidden;
 }
 .p-panel + .p-panel {
@@ -375,7 +375,7 @@ html[data-theme='dark'] .portal {
   margin-top: 6px;
   padding: 8px 12px;
   background: var(--p-sunken);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 13.5px;
   color: var(--p-text-2);
 }
@@ -434,7 +434,7 @@ html[data-theme='dark'] .portal {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -465,7 +465,7 @@ html[data-theme='dark'] .portal {
   margin: 0;
   padding: 8px 14px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -549,7 +549,7 @@ html[data-theme='dark'] .portal {
   margin: 0;
   padding: 9px 12px;
   border: 1px solid var(--p-border-strong);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--p-surface);
   color: var(--p-text);
   font: inherit;
@@ -669,7 +669,7 @@ html[data-theme='dark'] .portal {
   height: 20px;
   margin: 0;
   padding: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--p-border-strong);
   background: var(--p-sunken);
   cursor: pointer;
@@ -707,14 +707,14 @@ html[data-theme='dark'] .portal {
 /* ---------- Progress ---------- */
 .p-bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--p-sunken);
   overflow: hidden;
 }
 .p-bar > i {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--p-accent);
 }
 
@@ -732,7 +732,7 @@ html[data-theme='dark'] .portal {
   width: 40px;
   height: 40px;
   margin-bottom: 4px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: var(--p-sunken);
   color: var(--p-text-3);
 }
@@ -747,7 +747,7 @@ html[data-theme='dark'] .portal {
 }
 .p-skel {
   height: 14px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--p-sunken);
   animation: p-pulse 1.2s ease-in-out infinite;
 }
@@ -782,7 +782,7 @@ html[data-theme='dark'] .portal {
   gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 14px;
   background: var(--p-sunken);
   color: var(--p-text);
@@ -819,7 +819,7 @@ html[data-theme='dark'] .portal {
   background: var(--p-surface);
   color: var(--p-text);
   border: 1px solid var(--p-border);
-  border-radius: 12px;
+  border-radius: 6px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 .p-modal-head {
@@ -855,7 +855,7 @@ html[data-theme='dark'] .portal {
   .p-modal {
     max-width: none;
     max-height: 92dvh;
-    border-radius: 14px 14px 0 0;
+    border-radius: 6px 6px 0 0;
   }
 }
 
@@ -871,13 +871,13 @@ html[data-theme='dark'] .portal {
 }
 .p-toast {
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 14px;
   line-height: 1.4;
   max-width: 380px;
   background: var(--p-text);
   color: var(--p-bg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 .p-toast.bad {
   background: var(--p-bad);
@@ -917,7 +917,7 @@ html[data-theme='dark'] .p-toast.bad {
 .portal .card {
   background: var(--p-surface);
   border: 1px solid var(--p-border);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 18px;
   margin-bottom: 12px;
   box-shadow: none;
@@ -943,7 +943,7 @@ html[data-theme='dark'] .p-toast.bad {
 .portal .p-main .btn {
   background: var(--p-accent);
   color: var(--p-accent-ink);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 9px 16px;
   font-size: 14px;
   box-shadow: none;
@@ -958,7 +958,7 @@ html[data-theme='dark'] .p-toast.bad {
 .portal .p-main .btn-ghost {
   color: var(--p-text);
   border: 1px solid var(--p-border-strong);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 9px 16px;
 }
 .portal .p-main .btn-ghost:hover {
@@ -969,7 +969,7 @@ html[data-theme='dark'] .p-toast.bad {
 .portal .p-main select,
 .portal .p-main textarea {
   border: 1px solid var(--p-border-strong);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--p-surface);
   color: var(--p-text);
 }
@@ -987,7 +987,7 @@ html[data-theme='dark'] .p-toast.bad {
   background: var(--p-bad-soft);
   color: var(--p-bad);
   border: 1px solid var(--p-border);
-  border-radius: 8px;
+  border-radius: 4px;
 }
 .portal .p-main .alert-success {
   background: var(--p-ok-soft);

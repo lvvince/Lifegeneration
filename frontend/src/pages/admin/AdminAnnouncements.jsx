@@ -3,7 +3,7 @@ import { Megaphone, Plus, Pencil, Trash2, Pin, Search, ExternalLink, Clock, Cale
 import { apiGet, apiPost } from '../../api.js'
 import { emit } from '../../lib/bus.js'
 import { fmtDate } from '../../lib/format.js'
-import { Modal, Field, ConfirmDialog, Empty, useToast } from '../../components/portal/ui.jsx'
+import { PageHeader, Modal, Field, ConfirmDialog, Empty, useToast } from '../../components/portal/ui.jsx'
 import { AnnouncementCard } from '../../components/portal/AnnouncementPopup.jsx'
 import { catOf } from '../../components/portal/announcements.jsx'
 
@@ -191,15 +191,15 @@ export default function AdminAnnouncements() {
 
   return (
     <div>
-      <div className="ad-head">
-        <div>
-          <h1>Announcements</h1>
-          <p>Pop up at the top of every member’s portal. Pin the important ones, hide them when they’re done.</p>
-        </div>
-        <button type="button" className="p-btn p-btn-primary" onClick={() => setForm({ ...blank })}>
-          <Plus size={18} /> New announcement
-        </button>
-      </div>
+      <PageHeader
+        title="Announcements"
+        desc="Pop up at the top of every member’s portal."
+        actions={
+          <button type="button" className="p-btn p-btn-primary" onClick={() => setForm({ ...blank })}>
+            <Plus size={18} /> New announcement
+          </button>
+        }
+      />
 
       <div className="ad-stats">
         {stats.map(([label, n]) => (

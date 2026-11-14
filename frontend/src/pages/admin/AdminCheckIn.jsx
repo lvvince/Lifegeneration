@@ -295,12 +295,7 @@ export default function AdminCheckIn() {
           display: none !important;
         }
       `}</style>
-      <header className="su-head ck-head">
-        <div>
-          <h1>Check-in</h1>
-          <p>Scan a QR pass or type an ID. Walk-ins are welcome.</p>
-        </div>
-      </header>
+      <PageHeader title="Check-in" desc="Scan a QR pass or type an ID. Walk-ins are welcome." />
 
       <div className="ck-grid">
         <div className="ck-side">

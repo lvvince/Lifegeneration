@@ -8,7 +8,7 @@ import '../../styles/staffui.css'
 import { apiGet, apiPost } from '../../api.js'
 import { fmtDate, fmtDateTime, fmtCurrency, resolveImageUrl } from '../../lib/format.js'
 import {
-  Empty, Loading, useToast,
+  Empty, Loading, PageHeader, useToast,
 } from '../../components/portal/ui.jsx'
 
 const TONE = { pending: 'warn', verified: 'ok', rejected: 'bad' }
@@ -138,15 +138,15 @@ export default function AdminDonations() {
 
   return (
     <div className="su">
-      <header className="su-head">
-        <div>
-          <h1>Donations</h1>
-          <p>Verify GCash, Maya and bank receipts.</p>
-        </div>
-        <button type="button" className="su-icon" onClick={() => { setLoading(true); loadData() }} title="Refresh" aria-label="Refresh donations">
-          <RefreshCw size={18} />
-        </button>
-      </header>
+      <PageHeader
+        title="Donations"
+        desc="Verify GCash, Maya and bank receipts."
+        actions={
+          <button type="button" className="p-btn" onClick={() => { setLoading(true); loadData() }} aria-label="Refresh donations">
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
+      />
 
       {error && <div className="alert" style={{ marginBottom: 12 }}>{error}</div>}
 

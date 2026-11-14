@@ -60,7 +60,7 @@ export default function Events() {
         <section className="pg-hero">
           <span className="pg-chip"><Calendar size={13} /> Gatherings</span>
           <h1>events and <em className="hl">gatherings</em></h1>
-          <p>Youth nights, worship, and special days. Sign up so we can save you a spot.</p>
+          <p>Youth nights, worship, and special days. Sign up so we can save you a spot. Check the date, time and venue, see how many seats are left, and add the event to your calendar so you never miss it.</p>
         </section>
 
         {error && <div className="pg-alert">{error}</div>}

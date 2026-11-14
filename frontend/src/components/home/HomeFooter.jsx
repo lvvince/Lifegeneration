@@ -5,10 +5,10 @@ import { useAuthModal } from '../../context/AuthModal.jsx'
 import { FacebookIcon, InstagramIcon, TikTokIcon, SOCIALS } from './SocialIcons.jsx'
 
 const FOLLOW = [
-  { name: 'Facebook', href: SOCIALS.facebook, icon: FacebookIcon },
-  { name: 'Radical LED Calapan on Facebook', href: SOCIALS.radical, icon: FacebookIcon },
-  { name: 'Instagram', href: SOCIALS.instagram, icon: InstagramIcon },
-  { name: 'TikTok', href: SOCIALS.tiktok, icon: TikTokIcon },
+  { name: 'Life Generation on Facebook', label: 'Facebook', cls: 'is-fb', href: SOCIALS.facebook, icon: FacebookIcon },
+  { name: 'Radical LED Calapan on Facebook', label: 'Radical LED', cls: 'is-fb', href: SOCIALS.radical, icon: FacebookIcon },
+  { name: 'Instagram', label: 'Instagram', cls: 'is-ig', href: SOCIALS.instagram, icon: InstagramIcon },
+  { name: 'TikTok', label: 'TikTok', cls: 'is-tt', href: SOCIALS.tiktok, icon: TikTokIcon },
 ]
 
 export default function HomeFooter() {
@@ -26,9 +26,12 @@ export default function HomeFooter() {
           <p>A Christ-centered youth organization in Calapan. Photos, recaps and announcements are posted on our pages first.</p>
           <h3>Follow us on</h3>
           <ul className="lg-ft-social">
-            {FOLLOW.map(({ name, href, icon: Icon }) => (
+            {FOLLOW.map(({ name, label, cls, href, icon: Icon }) => (
               <li key={name}>
-                <a href={href} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}><Icon size={22} /></a>
+                <a href={href} className={cls} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}>
+                  <span className="lg-ft-ico"><Icon size={20} /></span>
+                  <span className="lg-ft-lbl">{label}</span>
+                </a>
               </li>
             ))}
           </ul>

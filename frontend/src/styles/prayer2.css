@@ -3,21 +3,21 @@
 :root .pw .pw-head{margin-bottom:22px}
 :root .pw .pw-sub{max-width:44ch;margin-top:10px;color:#5b5143;font-size:15px;line-height:1.55}
 :root .pw .pw-stats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}
-:root .pw .pw-stats li{display:inline-flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:999px;background:#fffdf9;box-shadow:var(--cl);color:#6f6558;font-size:12.5px;font-weight:700}
+:root .pw .pw-stats li{display:inline-flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:6px;background:#fffdf9;box-shadow:var(--cl);color:#6f6558;font-size:12.5px;font-weight:700}
 :root .pw .pw-stats b{color:#1c1812;font-size:16px;font-weight:800}
 html[data-theme='dark'] .pw .pw-sub{color:#b4ad9f}
-:root .pw .pw-add,:root .pw .pw-search,:root .pw .pw-tabs,:root .pw .pw-tabs button,:root .pw .pw-pray,:root .pw .pw-ghost,:root .pw .pw-send,:root .pw .pw-sw,:root .pw .pw-sw button,:root .pw .pw-anon,:root .pw .pw-chip,:root .pw .pw-search button{border-radius:999px}
-:root .pw .pw-lang,:root .pw .pw-lang button{border-radius:999px}
-:root .pw .pw-add{min-height:50px;border:0;background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:0 2px 3px rgba(255,255,255,.45) inset,0 -3px 6px rgba(150,45,0,.3) inset,0 12px 20px -8px rgba(255,90,10,.7)}
+:root .pw .pw-add,:root .pw .pw-search,:root .pw .pw-tabs,:root .pw .pw-tabs button,:root .pw .pw-pray,:root .pw .pw-ghost,:root .pw .pw-send,:root .pw .pw-sw,:root .pw .pw-sw button,:root .pw .pw-anon,:root .pw .pw-chip,:root .pw .pw-search button{border-radius:6px}
+:root .pw .pw-lang,:root .pw .pw-lang button{border-radius:6px}
+:root .pw .pw-add{min-height:50px;border:0;background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:none}
 :root .pw .pw-add:hover{transform:translateY(-2px)}
 :root .pw .pw-search,:root .pw .pw-tabs{border:0;background:#fffdf9;box-shadow:var(--cl)}
-:root .pw .pw-tabs{background:#f1e9dd;box-shadow:0 3px 8px rgba(70,40,10,.14) inset}
+:root .pw .pw-tabs{background:#f1e9dd;box-shadow:none}
 :root .pw .pw-tabs button{transition:background .2s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
-:root .pw .pw-tabs button.is-on{background:#fffdf9;color:#1c1812;box-shadow:0 2px 3px #fff inset,0 6px 12px -6px rgba(70,40,10,.4)}
+:root .pw .pw-tabs button.is-on{background:#fffdf9;color:#1c1812;box-shadow:none}
 :root .pw .pw-tabs button.is-on small{color:#ff5a0a;opacity:1}
 :root .pw .pw-tabs button:active{transform:scale(.94)}
-:root .pw-board{border-image:none;border:0;border-radius:28px;padding:clamp(22px,3.6vw,46px);background-attachment:scroll;
-  box-shadow:0 0 0 clamp(8px,1.8vw,14px) #8a5a2b,0 0 0 clamp(10px,2vw,16px) #5e3a1a,0 2px 0 clamp(8px,1.8vw,14px) rgba(255,214,160,.35) inset,0 0 60px rgba(40,20,0,.45) inset,0 30px 50px -20px rgba(40,20,0,.6);
+:root .pw-board{border-image:none;border:0;border-radius:8px;padding:clamp(22px,3.6vw,46px);background-attachment:scroll;
+  box-shadow:0 0 0 clamp(8px,1.8vw,14px) #8a5a2b, 0 0 0 clamp(10px,2vw,16px) #5e3a1a, 0 30px 50px -20px rgba(40,20,0,.6);
   margin:clamp(10px,2vw,16px)}
 :root .pw-board::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(120% 80% at 15% 0%,rgba(255,240,200,.35),transparent 60%),linear-gradient(180deg,transparent 70%,rgba(40,20,0,.25))}
 :root .pw-wall{position:relative;z-index:1}
@@ -34,37 +34,37 @@ html[data-theme='dark'] .pw .pw-sub{color:#b4ad9f}
 65%{rotate:calc(var(--r,0deg) - 1.6deg)}
 }
 @media(hover:hover){:root .pw-item:hover{rotate:0deg;scale:1.03;animation:none;transition:rotate .5s cubic-bezier(.34,1.56,.64,1),scale .4s cubic-bezier(.34,1.56,.64,1)}
-:root .pw-item:hover .pw-note{box-shadow:0 2px 2px rgba(0,0,0,.1),0 26px 28px -14px rgba(40,20,0,.75)}
+:root .pw-item:hover .pw-note{box-shadow:0 2px 2px rgba(0,0,0,.1)}
 }
-:root .pw-note{background-image:linear-gradient(172deg,rgba(255,255,255,.4),transparent 38%,rgba(120,80,20,.07)),repeating-linear-gradient(0deg,rgba(120,90,30,.035) 0 1px,transparent 1px 3px);box-shadow:0 1px 1px rgba(0,0,0,.12),0 2px 3px rgba(40,20,0,.12),0 14px 18px -10px rgba(40,20,0,.7);transition:box-shadow .35s}
+:root .pw-note{background-image:linear-gradient(172deg,rgba(255,255,255,.4),transparent 38%,rgba(120,80,20,.07)),repeating-linear-gradient(0deg,rgba(120,90,30,.035) 0 1px,transparent 1px 3px);box-shadow:0 1px 1px rgba(0,0,0,.12), 0 2px 3px rgba(40,20,0,.12);transition:box-shadow .35s}
 :root .pw-note::after{width:30px;height:30px;background:linear-gradient(135deg,transparent 48%,rgba(0,0,0,.22) 50%,rgba(255,255,255,.7) 53%,rgba(255,255,255,.35));box-shadow:-2px -2px 6px -2px rgba(0,0,0,.18)}
 :root .pw-note h3{color:#2a2418}
-:root .pw-vod>.pw-pin,:root .k-pin>.pw-fix,:root .k-stack>.pw-fix,:root .pw-pin,:root .pw-big>.pw-fix{top:-12px;width:26px;height:26px;margin-left:-13px;background:radial-gradient(circle at 32% 28%,#fff 0 7%,rgba(255,255,255,0) 22%),radial-gradient(circle at 50% 50%,#ff5148 0 45%,#c8221a 72%,#7e120d 100%);box-shadow:0 0 0 1.5px rgba(80,10,5,.35) inset,-1px -2px 3px rgba(0,0,0,.35) inset,4px 9px 6px -2px rgba(0,0,0,.45),1px 2px 2px rgba(0,0,0,.4)}
+:root .pw-vod>.pw-pin,:root .k-pin>.pw-fix,:root .k-stack>.pw-fix,:root .pw-pin,:root .pw-big>.pw-fix{top:-12px;width:26px;height:26px;margin-left:-13px;background:radial-gradient(circle at 32% 28%,#fff 0 7%,rgba(255,255,255,0) 22%),radial-gradient(circle at 50% 50%,#ff5148 0 45%,#c8221a 72%,#7e120d 100%);box-shadow:0 0 0 1.5px rgba(80,10,5,.35) inset, 4px 9px 6px -2px rgba(0,0,0,.45), 1px 2px 2px rgba(0,0,0,.4)}
 :root .pw-vod>.pw-pin::after,:root .k-pin>.pw-fix::after,:root .k-stack>.pw-fix::after,:root .pw-pin::after{content:'';position:absolute;left:50%;top:78%;width:3px;height:8px;margin-left:-1.5px;background:linear-gradient(90deg,#9aa3ad,#eef1f4,#7d8791);border-radius:0 0 2px 2px;z-index:-1}
 :root .k-stack>.pw-fix{background:radial-gradient(circle at 32% 28%,#fff 0 7%,rgba(255,255,255,0) 22%),radial-gradient(circle at 50% 50%,#4d8dff 0 45%,#2556c4 72%,#142f78 100%)}
 :root .pw-item:nth-child(3n+2) .k-pin>.pw-fix{background:radial-gradient(circle at 32% 28%,#fff 0 7%,rgba(255,255,255,0) 22%),radial-gradient(circle at 50% 50%,#ffd23f 0 45%,#d99a00 72%,#8a5d00 100%)}
 :root .pw-fix.is-tape{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,248,220,.55));backdrop-filter:none;box-shadow:0 1px 2px rgba(0,0,0,.2);clip-path:polygon(0 8%,4% 0,8% 10%,12% 0,100% 0,100% 100%,96% 92%,92% 100%,88% 90%,84% 100%,0 100%)}
-:root .pw-photo{box-shadow:0 1px 1px rgba(0,0,0,.18),0 14px 18px -10px rgba(40,20,0,.8);background-image:linear-gradient(160deg,rgba(255,255,255,.7),transparent 40%)}
-:root .pw .pw-pray-mini{width:40px;height:40px;background:rgba(255,255,255,.65);box-shadow:0 2px 3px #fff inset,0 4px 8px -4px rgba(40,20,0,.5)}
-:root .pw-note.is-prayed .pw-pray-mini{background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:0 0 0 4px rgba(255,160,70,.35),0 0 18px rgba(255,140,40,.7)}
+:root .pw-photo{box-shadow:0 1px 1px rgba(0,0,0,.18);background-image:linear-gradient(160deg,rgba(255,255,255,.7),transparent 40%)}
+:root .pw .pw-pray-mini{width:40px;height:40px;background:rgba(255,255,255,.65);box-shadow:none}
+:root .pw-note.is-prayed .pw-pray-mini{background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:0 0 0 4px rgba(255,160,70,.35)}
 :root .pw-note.is-prayed::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none}
 :root .pw-over{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);background:rgba(28,18,8,.6)}
-:root .pw-big{border-radius:2px 2px 26px 2px;background-image:linear-gradient(172deg,rgba(255,255,255,.45),transparent 40%,rgba(120,80,20,.08)),repeating-linear-gradient(0deg,rgba(120,90,30,.035) 0 1px,transparent 1px 3px);box-shadow:0 1px 2px rgba(0,0,0,.2),0 40px 70px -24px rgba(0,0,0,.8);animation:pw-open .6s cubic-bezier(.34,1.3,.5,1) both}
+:root .pw-big{border-radius:2px 2px 8px 2px;background-image:linear-gradient(172deg,rgba(255,255,255,.45),transparent 40%,rgba(120,80,20,.08)),repeating-linear-gradient(0deg,rgba(120,90,30,.035) 0 1px,transparent 1px 3px);box-shadow:0 1px 2px rgba(0,0,0,.2), 0 40px 70px -24px rgba(0,0,0,.8);animation:pw-open .6s cubic-bezier(.34,1.3,.5,1) both}
 @keyframes pw-open{from{opacity:0;transform:translate3d(0,-30px,0) rotate(-4deg) scale(.9)}
 to{opacity:1;transform:none}
 }
-:root .pw .pw-pray{background:#1c1812;box-shadow:0 2px 3px rgba(255,255,255,.2) inset,0 10px 16px -8px rgba(0,0,0,.6);overflow:visible}
+:root .pw .pw-pray{background:#1c1812;box-shadow:none;overflow:visible}
 :root .pw .pw-pray.is-on{background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff}
-:root .pw .pw-pray.is-on::after{border-radius:999px}
-:root .pw-spark{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ffb347;box-shadow:0 0 8px #ff9a2e;pointer-events:none;animation:pw-spark .8s cubic-bezier(.16,1,.3,1) both}
+:root .pw .pw-pray.is-on::after{border-radius:6px}
+:root .pw-spark{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ffb347;box-shadow:none;pointer-events:none;animation:pw-spark .8s cubic-bezier(.16,1,.3,1) both}
 @keyframes pw-spark{from{opacity:1;transform:rotate(var(--a)) translateY(-8px) scale(1)}
 to{opacity:0;transform:rotate(var(--a)) translateY(-44px) scale(.2)}
 }
-:root .pw .pw-send{border-radius:999px;background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:0 2px 3px rgba(255,255,255,.45) inset,0 12px 20px -8px rgba(255,90,10,.7)}
+:root .pw .pw-send{border-radius:6px;background:linear-gradient(180deg,#ff8a47,#f24e00);color:#fff;box-shadow:none}
 :root .pw .pw-send:hover:not(:disabled){background:linear-gradient(180deg,#ff9a60,#ff5a0a);color:#fff}
 :root .pw-skel{border-radius:2px}
-@media(max-width:640px){:root .pw-board{border-radius:20px;padding:20px 14px 24px;margin:8px 4px}
-:root .pw-board{box-shadow:0 0 0 7px #8a5a2b,0 0 0 9px #5e3a1a,0 0 40px rgba(40,20,0,.45) inset,0 20px 30px -16px rgba(40,20,0,.6)}
+@media(max-width:640px){:root .pw-board{border-radius:8px;padding:20px 14px 24px;margin:8px 4px}
+:root .pw-board{box-shadow:0 0 0 7px #8a5a2b, 0 0 0 9px #5e3a1a}
 :root .pw-item{translate:none}
 :root .pw .pw-stats li{padding:6px 12px}
 }

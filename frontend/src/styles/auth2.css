@@ -44,18 +44,18 @@
 .au-top { position: fixed; z-index: 5; inset: 0 0 auto 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(14px, env(safe-area-inset-top)) clamp(16px, 3vw, 40px) 0; animation: au-fade 0.8s 0.1s both; }
 .au-brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .au-logo { display: grid; place-items: center; flex: none; width: 38px; height: 38px; object-fit: contain; }
-.au-logo.is-fallback { background: #fff; color: #111; font-size: 13px; font-weight: 900; border-radius: 11px; }
+.au-logo.is-fallback { background: #fff; color: #111; font-size: 13px; font-weight: 900; border-radius: 6px; }
 .au-brand-name { font-size: 13px; font-weight: 800; letter-spacing: 0.2em; white-space: nowrap; }
 .au-brand-name b { color: var(--or); font-weight: 800; }
 .au .au-nav { position: static; display: flex; align-items: center; gap: 4px; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.au .au-nav a { padding: 8px 14px; border-radius: 999px; color: #d6d0c7; font-size: 13px; font-weight: 700; letter-spacing: 0.03em; transition: color 0.2s, background 0.2s, border-color 0.2s; }
+.au .au-nav a { padding: 8px 14px; border-radius: 6px; color: #d6d0c7; font-size: 13px; font-weight: 700; letter-spacing: 0.03em; transition: color 0.2s, background 0.2s, border-color 0.2s; }
 .au .au-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .au .au-nav a.is-cta { border: 1.5px solid rgba(255, 255, 255, 0.35); color: #fff; }
 .au .au-nav a.is-cta:hover { border-color: var(--or); background: rgba(255, 90, 10, 0.18); }
 
 /* ---------- card ---------- */
 .au-stage { position: relative; z-index: 2; display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 68px 16px 20px; }
-.au-card { width: 100%; max-width: 440px; padding: 30px 30px 26px; border: 1px solid #2c2c2c; border-radius: 26px; background: #121212; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8); animation: au-card 0.7s var(--out) both; }
+.au-card { width: 100%; max-width: 440px; padding: 30px 30px 26px; border: 1px solid #2c2c2c; border-radius: 8px; background: #121212; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8); animation: au-card 0.7s var(--out) both; }
 @keyframes au-card { from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes au-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes au-rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } to { opacity: 1; transform: none; } }
@@ -78,7 +78,7 @@
 /* ---------- field ---------- */
 .au-f { display: grid; gap: 5px; min-width: 0; }
 .au-field { position: relative; display: block; margin: 0; }
-.au-field input { display: block; width: 100%; height: var(--fh); margin: 0; padding: 20px 44px 5px 44px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); color: #fff; font: inherit; font-size: 16px; font-weight: 600; transition: border-color 0.2s, box-shadow 0.25s, background 0.2s; -webkit-appearance: none; appearance: none; }
+.au-field input { display: block; width: 100%; height: var(--fh); margin: 0; padding: 20px 44px 5px 44px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--card); color: #fff; font: inherit; font-size: 16px; font-weight: 600; transition: border-color 0.2s, box-shadow 0.25s, background 0.2s; -webkit-appearance: none; appearance: none; }
 .au-field input::-webkit-outer-spin-button, .au-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .au-field input[type='number'] { -moz-appearance: textfield; }
 .au-field input:hover { border-color: #444; }
@@ -92,7 +92,7 @@
 .au-eye { position: absolute; right: 6px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #7d7870; cursor: pointer; transition: color 0.2s, background 0.2s; }
 .au-eye:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .au-f.has-err .au-field input { border-color: var(--bad); animation: au-shake 0.4s; }
-.au-field select { display: block; width: 100%; height: var(--fh); margin: 0; padding: 20px 44px 5px 44px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; outline: none; transition: border-color 0.2s, box-shadow 0.25s, background 0.2s; -webkit-appearance: none; appearance: none; }
+.au-field select { display: block; width: 100%; height: var(--fh); margin: 0; padding: 20px 44px 5px 44px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--card); color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; outline: none; transition: border-color 0.2s, box-shadow 0.25s, background 0.2s; -webkit-appearance: none; appearance: none; }
 .au-field select:hover { border-color: #444; }
 .au-field select:focus { border-color: var(--or); background: #1f1f1f; box-shadow: 0 0 0 4px rgba(255, 90, 10, 0.16); }
 .au-field select option { background: #1a1a1a; color: #fff; }
@@ -115,9 +115,9 @@
 .au-meter.l4 i { background: #2fb67c; }
 
 /* ---------- buttons ---------- */
-.au .au-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 54px; margin: 4px 0 0; padding: 0 22px; border: 0; border-radius: 999px; background: var(--or-g); color: #111; font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: transform 0.3s var(--out), box-shadow 0.3s, filter 0.2s; }
+.au .au-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 54px; margin: 4px 0 0; padding: 0 22px; border: 0; border-radius: 6px; background: var(--or-g); color: #111; font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: transform 0.3s var(--out), box-shadow 0.3s, filter 0.2s; }
 .au .au-btn svg { transition: transform 0.3s var(--out); }
-.au .au-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 28px -12px rgba(255, 90, 10, 0.75); }
+.au .au-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: none; }
 .au .au-btn:hover:not(:disabled) svg { transform: translateX(3px); }
 .au .au-btn:active:not(:disabled) { transform: scale(0.98); }
 .au .au-btn:disabled { cursor: progress; filter: saturate(0.7) brightness(0.9); }
@@ -132,7 +132,7 @@
 .au-or::before, .au-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .au-google { display: flex; justify-content: center; min-height: 44px; }
 .au-google > div { width: 100%; max-width: 400px; display: flex; justify-content: center; }
-.au-alert { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 11px 13px; border: 1px solid #5a2420; border-radius: 12px; background: #2a1514; color: #ffb4ad; font-size: 13.5px; font-weight: 600; animation: au-shake 0.4s; }
+.au-alert { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 11px 13px; border: 1px solid #5a2420; border-radius: 6px; background: #2a1514; color: #ffb4ad; font-size: 13.5px; font-weight: 600; animation: au-shake 0.4s; }
 .au-alert svg { flex: none; margin-top: 2px; }
 
 /* ---------- success ---------- */
@@ -141,7 +141,7 @@
 .au-check circle { stroke-dasharray: 176; stroke-dashoffset: 176; animation: au-draw 0.9s 0.2s var(--out) forwards; }
 .au-check path { stroke-dasharray: 50; stroke-dashoffset: 50; animation: au-draw 0.6s 0.8s var(--out) forwards; }
 @keyframes au-draw { to { stroke-dashoffset: 0; } }
-.au-mid { display: grid; gap: 2px; width: 100%; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); }
+.au-mid { display: grid; gap: 2px; width: 100%; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--card); }
 .au-mid small { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--mute); font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
 .au-mid b { color: #fff; font-size: 1.5rem; font-weight: 900; letter-spacing: 0.02em; }
 .au .au-done .au-btn { margin-top: 0; }
@@ -149,7 +149,7 @@
 /* ---------- phone: sheet sa ibaba, larawan sa taas ---------- */
 @media (max-width: 599px) {
   .au-stage { align-items: end; padding: 0; }
-  .au-card { max-width: none; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 26px 26px 0 0; animation-name: au-sheet; }
+  .au-card { max-width: none; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 8px 8px 0 0; animation-name: au-sheet; }
   @keyframes au-sheet { from { transform: translate3d(0, 40px, 0); opacity: 0; } to { transform: none; opacity: 1; } }
   .au-shade { background: linear-gradient(180deg, rgba(8, 8, 8, 0.35) 0%, rgba(8, 8, 8, 0.6) 100%); }
   .au-brand-name { font-size: 12px; letter-spacing: 0.16em; }
