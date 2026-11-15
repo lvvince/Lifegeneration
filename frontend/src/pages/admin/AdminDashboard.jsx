@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Plus, UserCheck, FileText, Mail, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight, HandCoins, MessageSquare } from 'lucide-react'
-import { apiGet, apiPost, getUser } from '../../api.js'
+import { CalendarDays, Plus, UserCheck, FileText, Users, Network, HeartHandshake, MessageCircleHeart, ClipboardList, Megaphone, ArrowUpRight, HandCoins, MessageSquare } from 'lucide-react'
+import { apiGet } from '../../api.js'
 import { fmtDate, fmtCurrency, isUpcoming } from '../../lib/format.js'
-import { PageHeader, Empty, Loading, useToast } from '../../components/portal/ui.jsx'
+import { PageHeader, Empty, Loading } from '../../components/portal/ui.jsx'
 import Roll from '../../components/fx/Roll.jsx'
 
 export default function AdminDashboard() {
-  const toast = useToast()
   const [stats, setStats] = useState(null)
   const [events, setEvents] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [sendingTest, setSendingTest] = useState(false)
 
   useEffect(() => {
     Promise.all([apiGet('/api/admin/stats'), apiGet('/api/events')])
@@ -26,28 +24,6 @@ export default function AdminDashboard() {
 
   const nextEvents = events.filter((e) => isUpcoming(e.event_date)).slice(0, 4)
   const pending = stats?.pending_applications ?? 0
-
-  async function handleTestEmail() {
-    const user = getUser()
-    const targetEmail = prompt('Enter recipient email for Gmail SMTP test:', user?.email || 'admin@lifegeneration.org')
-    if (!targetEmail || !targetEmail.trim()) return
-
-    setSendingTest(true)
-    try {
-      const res = await apiPost('/api/admin/test-email', { email: targetEmail.trim() })
-      if (!res.success) {
-        toast(res.message || 'SMTP delivery failed. Check your Gmail credentials.', 'bad')
-      } else if (res.simulated) {
-        toast('Logged in simulation mode! Check runtime/logs/email.log', 'ok')
-      } else {
-        toast('Test email sent successfully via Gmail SMTP!', 'ok')
-      }
-    } catch (e) {
-      toast(e.message || 'SMTP test failed', 'bad')
-    } finally {
-      setSendingTest(false)
-    }
-  }
 
   const tiles = [
     { label: 'Active members', value: stats?.members, to: '/admin/members', Icon: Users },
@@ -140,11 +116,7 @@ export default function AdminDashboard() {
             <Link to="/admin/check-in"><UserCheck size={18} /><span>Check-in</span></Link>
             <Link to="/admin/reports"><FileText size={18} /><span>Reports</span></Link>
             <Link to="/admin/announcements"><Megaphone size={18} /><span>Announce</span></Link>
-            <button type="button" onClick={handleTestEmail} disabled={sendingTest}>
-              <Mail size={18} /><span>{sendingTest ? 'Sending…' : 'Test email'}</span>
-            </button>
           </div>
-          <p className="ao-note">Test email sends a sample RSVP / D-Group acceptance message through Gmail SMTP.</p>
         </section>
       </div>
     </div>
