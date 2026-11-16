@@ -18,6 +18,9 @@ class Chat extends Controller
     {
         parent::__construct();
         $this->call->database();
+        try {
+            $this->db->raw("SET time_zone = '+08:00'");
+        } catch (\Throwable $e) {}
         $this->ensure_schema();
     }
 
@@ -27,6 +30,16 @@ class Chat extends Controller
 
     private function ensure_schema()
     {
+        // One-time fix: migrate existing chat messages created in UTC to Asia/Manila (+8 hours)
+        try {
+            $migrated = $this->db->raw("SHOW TABLES LIKE 'chat_tz_migrated'")->fetch();
+            if (!$migrated) {
+                $this->db->raw("UPDATE chat_messages SET created_at = DATE_ADD(created_at, INTERVAL 8 HOUR)");
+                $this->db->raw("CREATE TABLE chat_tz_migrated (id INT PRIMARY KEY, migrated_at DATETIME)");
+                $this->db->raw("INSERT INTO chat_tz_migrated VALUES (1, NOW())");
+            }
+        } catch (\Throwable $e) {}
+
         // A leftover chat_messages from an older draft (no channel_id) is set aside, not overwritten.
         $hasMsg = $this->db->raw("SHOW TABLES LIKE 'chat_messages'")->fetch(PDO::FETCH_NUM);
         if ($hasMsg && !$this->db->raw("SHOW COLUMNS FROM chat_messages LIKE 'channel_id'")->fetch(PDO::FETCH_NUM)) {
@@ -524,10 +537,11 @@ class Chat extends Controller
             if (!$ok) $replyTo = 0;
         }
 
+        $now = date('Y-m-d H:i:s');
         $this->db->raw(
             "INSERT INTO chat_messages (channel_id, user_id, kind, title, body, image, reply_to, is_important, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-            [(int) $ch['id'], $me['id'], $kind, $title !== '' ? mb_substr($title, 0, 160) : null, $body, $image, $replyTo ?: null, $important ? 1 : 0]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(int) $ch['id'], $me['id'], $kind, $title !== '' ? mb_substr($title, 0, 160) : null, $body, $image, $replyTo ?: null, $important ? 1 : 0, $now]
         );
         $mid = (int) $this->db->last_id();
 
@@ -1017,9 +1031,10 @@ class Chat extends Controller
                 $label = ['fellowship' => 'Online fellowship', 'bible_study' => 'Online Bible study', 'prayer' => 'Online prayer', 'meeting' => 'Online meeting'][$kind];
                 $when = date('D, M j \a\t g:i A', $ts);
                 $body = "{$label} on {$when} ({$dur} min). Open Sessions in the chat toolbar to RSVP and join." . ($desc !== '' ? "\n\n" . $desc : '');
+                $now = date('Y-m-d H:i:s');
                 $this->db->raw(
-                    "INSERT INTO chat_messages (channel_id, user_id, kind, title, body, is_important, created_at) VALUES (?, ?, 'announcement', ?, ?, 1, NOW())",
-                    [(int) $target['id'], $me['id'], mb_substr($title, 0, 160), $body]
+                    "INSERT INTO chat_messages (channel_id, user_id, kind, title, body, is_important, created_at) VALUES (?, ?, 'announcement', ?, ?, 1, ?)",
+                    [(int) $target['id'], $me['id'], mb_substr($title, 0, 160), $body, $now]
                 );
             }
         }
@@ -1085,9 +1100,10 @@ class Chat extends Controller
         if ($eid) $this->google_delete_event($eid);
         $target = $s['channel_id'] ? ['id' => $s['channel_id']] : $this->db->raw("SELECT id FROM chat_channels WHERE slug = 'announcements' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($target) {
+            $now = date('Y-m-d H:i:s');
             $this->db->raw(
-                "INSERT INTO chat_messages (channel_id, user_id, kind, title, body, is_important, created_at) VALUES (?, ?, 'announcement', ?, ?, 1, NOW())",
-                [(int) $target['id'], $me['id'], mb_substr('Cancelled: ' . $s['title'], 0, 160), 'The online session scheduled for ' . date('D, M j \a\t g:i A', strtotime($s['starts_at'])) . ' has been cancelled.']
+                "INSERT INTO chat_messages (channel_id, user_id, kind, title, body, is_important, created_at) VALUES (?, ?, 'announcement', ?, ?, 1, ?)",
+                [(int) $target['id'], $me['id'], mb_substr('Cancelled: ' . $s['title'], 0, 160), 'The online session scheduled for ' . date('D, M j \a\t g:i A', strtotime($s['starts_at'])) . ' has been cancelled.', $now]
             );
         }
         api_response(['success' => true]);

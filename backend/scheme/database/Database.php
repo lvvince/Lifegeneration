@@ -274,9 +274,19 @@ class Database {
             $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
         }
 
+        // Set MySQL session timezone to Asia/Manila (+08:00) so NOW() and CURRENT_TIMESTAMP match Philippine time
+        if ($driver === 'mysql') {
+            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET time_zone = '+08:00'";
+        }
+
         try {
             $this->db = new PDO($dsn, $username, $password, $options);
             $this->driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($this->driver === 'mysql') {
+                try {
+                    $this->db->exec("SET time_zone = '+08:00'");
+                } catch (\Throwable $te) {}
+            }
         } catch (Exception $e) {
             $error = load_class('Errors', 'kernel');
             $error->show_database_error(

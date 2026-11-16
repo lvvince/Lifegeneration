@@ -141,7 +141,22 @@ export default function Chat() {
     }
   }, [])
 
-  const loadSessions = useCallback(() => apiGet('/api/chat/sessions').then((d) => setSessions({ upcoming: d.upcoming || [], past: d.past || [] })).catch(() => {}), [])
+  const enrichSession = useCallback((s) => {
+    if (!s) return s
+    const now = Date.now()
+    const startMs = parse(s.starts_at).getTime()
+    const endMs = parse(s.ends_at).getTime()
+    const live = !s.cancelled && (now >= startMs && now < endMs)
+    const over = s.cancelled ? false : now >= endMs
+    const starts_in = Math.round((startMs - now) / 60000)
+    const can_join = !s.cancelled && !over && (starts_in <= 15)
+    return { ...s, live: Boolean(s.live || live), over: Boolean(s.over || over), starts_in, can_join: Boolean(s.can_join || can_join) }
+  }, [])
+
+  const loadSessions = useCallback(() => apiGet('/api/chat/sessions').then((d) => setSessions({
+    upcoming: (d.upcoming || []).map(enrichSession).filter((x) => !x.over),
+    past: (d.past || []).map(enrichSession),
+  })).catch(() => {}), [enrichSession])
 
   useEffect(() => {
     const g = new URLSearchParams(window.location.search).get('google')
@@ -926,10 +941,14 @@ function whenText(s) {
 }
 function countdown(s) {
   if (s.cancelled) return 'Cancelled'
-  if (s.over) return 'Ended'
-  if (s.live) return 'Live now'
-  const m = s.starts_in
-  if (m <= 1) return 'Starting now'
+  const now = Date.now()
+  const startMs = parse(s.starts_at).getTime()
+  const endMs = parse(s.ends_at).getTime()
+  if (s.over || now >= endMs) return 'Ended'
+  if (s.live || (now >= startMs && now < endMs)) return 'Live now'
+  const m = Math.round((startMs - now) / 60000)
+  if (m <= 1 && m >= -1) return 'Starting now'
+  if (m < 0) return 'Live now'
   if (m < 60) return `Starts in ${m} min`
   if (m < 1440) return `Starts in ${Math.floor(m / 60)} h ${m % 60 ? `${m % 60} min` : ''}`.trim()
   return `In ${Math.round(m / 1440)} d`
