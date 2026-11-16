@@ -10,6 +10,15 @@ export function isInAppBrowser() {
   return /FBAN|FBAV|Instagram|Messenger|Line|MicroMessenger/i.test(ua)
 }
 
+/** Checks if the app is running as an installed PWA (standalone mode) */
+export function isStandalonePWA() {
+  if (typeof window === 'undefined') return false
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true // iOS Safari
+  )
+}
+
 /* Ilalagay ang opisyal na Google button sa loob ng ref. Hinihintay muna na ma-load ang script. */
 export function useGoogleButton(ref, { text = 'continue_with', onCredential }) {
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
-import { useGoogleButton, isInAppBrowser } from '../lib/useGoogleButton.js'
+import { useGoogleButton, isInAppBrowser, isStandalonePWA } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
 import AuthInput from '../components/auth/AuthInput.jsx'
 
@@ -13,6 +13,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [caps, setCaps] = useState(false)
   const isWebview = isInAppBrowser()
+  const isPWA = isStandalonePWA()
   const gRef = useRef(null)
 
   const finish = (data) => {
@@ -85,7 +86,33 @@ export default function Login() {
       </form>
 
       <div className="au-or"><span>or</span></div>
-      <div className="au-google"><div ref={gRef} /></div>
+      {isPWA ? (
+        <div style={{ textAlign: 'center', marginTop: '8px' }}>
+          <p style={{ fontSize: '0.82rem', color: '#ffaa44', lineHeight: 1.5, marginBottom: '10px' }}>
+            ⚠️ Google sign-in doesn&apos;t work inside the installed app.<br />
+            Please open in Chrome browser to use it.
+          </p>
+          <a
+            href="https://lifegeneration.onrender.com/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              padding: '10px 22px',
+              backgroundColor: '#e85d04',
+              color: '#fff',
+              borderRadius: '999px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Open in Chrome →
+          </a>
+        </div>
+      ) : (
+        <div className="au-google"><div ref={gRef} /></div>
+      )}
       {isWebview && (
         <p style={{ fontSize: '0.8rem', color: '#ffaa44', textAlign: 'center', marginTop: '10px', lineHeight: 1.4 }}>
           ⚠️ Opened inside Messenger or Facebook? Tap the menu (⋮ or •••) at the top and select <b>Open in Chrome / Safari</b> to use Google sign-in.
