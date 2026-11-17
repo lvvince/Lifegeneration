@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Image as ImageIcon, Film, Play, Pause } from 'lucide-react'
+import { Image as ImageIcon, Film, Play, Pause, Volume2, VolumeX } from 'lucide-react'
 import { MEDIA } from '../../lib/mediaSlots.js'
 
 /* Picture / video slot na may placeholder.
@@ -18,6 +18,7 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
   const [ok, setOk] = useState(false)
   const [bad, setBad] = useState(!file)
   const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(true)
   const vid = useRef(null)
   const box = useRef(null)
   const paused = useRef(false) // ang user mismo ang nag-pause
@@ -50,10 +51,29 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
     if (!v) return
     if (v.paused) {
       paused.current = false
-      v.play().catch(() => setBad(true))
+      // For showcase video (not ambient background), unmute upon explicit play click
+      if (!auto && muted) {
+        setMuted(false)
+        v.muted = false
+      }
+      v.play().catch(() => {
+        // Fallback to muted playback if browser policy restricts unmuted start
+        v.muted = true
+        setMuted(true)
+        v.play().catch(() => setBad(true))
+      })
     } else {
       paused.current = true
       v.pause()
+    }
+  }
+
+  const toggleSound = (e) => {
+    e.stopPropagation()
+    const next = !muted
+    setMuted(next)
+    if (vid.current) {
+      vid.current.muted = next
     }
   }
 
@@ -92,7 +112,7 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
             poster={cover}
             playsInline
             loop
-            muted
+            muted={muted}
             preload="metadata"
             disablePictureInPicture
             controlsList="nodownload noplaybackrate noremoteplayback"
@@ -103,9 +123,39 @@ export default function MediaSlot({ slot, src, poster, kind, label, ratio, hint,
             onPause={() => setPlaying(false)}
           />
           {ok && (
-            <button type="button" className="sk-media-play" onClick={toggle} aria-label={playing ? 'Pause video' : 'Play video'}>
-              <span>{playing ? <Pause size={22} /> : <Play size={22} />}</span>
-            </button>
+            <>
+              <button type="button" className="sk-media-play" onClick={toggle} aria-label={playing ? 'Pause video' : 'Play video'}>
+                <span>{playing ? <Pause size={22} /> : <Play size={22} />}</span>
+              </button>
+              <button
+                type="button"
+                className="sk-media-sound"
+                onClick={toggleSound}
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                title={muted ? 'Unmute' : 'Mute'}
+                style={{
+                  position: 'absolute',
+                  bottom: '14px',
+                  right: '14px',
+                  zIndex: 4,
+                  display: 'grid',
+                  placeItems: 'center',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  background: 'rgba(15,15,15,0.75)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                  transition: 'transform 0.15s, background 0.2s',
+                  userSelect: 'none',
+                }}
+              >
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
+            </>
           )}
         </>
       )}
