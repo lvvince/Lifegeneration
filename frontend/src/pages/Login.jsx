@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { User, Lock, ArrowRight, AlertCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { apiPost, setUser, saveTokens } from '../api.js'
 import { useGoogleButton, isInAppBrowser, isStandalonePWA } from '../lib/useGoogleButton.js'
 import AuthShell from '../components/auth/AuthShell.jsx'
@@ -88,16 +88,23 @@ export default function Login() {
       <div className="au-or"><span>or</span></div>
       {isPWA ? (
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
-          <p style={{ fontSize: '0.82rem', color: '#ffaa44', lineHeight: 1.5, marginBottom: '10px' }}>
-            ⚠️ Google sign-in doesn&apos;t work inside the installed app.<br />
-            Please open in Chrome browser to use it.
+          <p style={{
+            display: 'flex', alignItems: 'flex-start', gap: '8px',
+            fontSize: '0.82rem', color: '#ffaa44', lineHeight: 1.5,
+            marginBottom: '12px', textAlign: 'left',
+          }}>
+            <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>
+              Google sign-in requires Chrome browser.
+              You are currently in the installed app.
+            </span>
           </p>
           <a
             href="https://lifegeneration.onrender.com/login"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: 'inline-block',
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
               padding: '10px 22px',
               backgroundColor: '#e85d04',
               color: '#fff',
@@ -107,15 +114,24 @@ export default function Login() {
               textDecoration: 'none',
             }}
           >
-            Open in Chrome →
+            <ExternalLink size={14} />
+            Open in Chrome
           </a>
         </div>
       ) : (
         <div className="au-google"><div ref={gRef} /></div>
       )}
       {isWebview && (
-        <p style={{ fontSize: '0.8rem', color: '#ffaa44', textAlign: 'center', marginTop: '10px', lineHeight: 1.4 }}>
-          ⚠️ Opened inside Messenger or Facebook? Tap the menu (⋮ or •••) at the top and select <b>Open in Chrome / Safari</b> to use Google sign-in.
+        <p style={{
+          display: 'flex', alignItems: 'flex-start', gap: '8px',
+          fontSize: '0.8rem', color: '#ffaa44',
+          marginTop: '10px', lineHeight: 1.4,
+        }}>
+          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <span>
+            Opened inside Messenger or Facebook? Tap the menu (⋮ or •••) at the top
+            and select <b>Open in Chrome / Safari</b> to use Google sign-in.
+          </span>
         </p>
       )}
     </AuthShell>

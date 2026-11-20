@@ -11,6 +11,7 @@ import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PortalLayout from './components/portal/PortalLayout.jsx'
 import OfflineBanner from './components/OfflineBanner.jsx'
+import IOSInstallBanner from './components/IOSInstallBanner.jsx'
 import { getUser } from './api.js'
 
 // Direct imports for 100% reliable, zero-chunk-fail navigation during defense
@@ -174,6 +175,7 @@ export default function App() {
   return (
     <>
       <OfflineBanner />
+      <IOSInstallBanner />
       <AppRoutes />
     </>
   )
