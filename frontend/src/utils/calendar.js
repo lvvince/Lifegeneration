@@ -1,14 +1,39 @@
 // Google Calendar URL Generator & Share Helpers for Life Generation Events
 
 /**
- * Parses time string (e.g. '10:00 AM', '2:30 PM', '18:00', '7:00pm') into 24-hr { hr, min }
+ * Parses time string (e.g. '10:00 AM', '2:30 PM', '18:00', '10:00 AM - 2:00 PM') into 24-hr { hr, min } for start time
  * @param {string} timeStr
  * @returns {{ hr: number, min: number } | null}
  */
 export function parseEventTime(timeStr) {
   if (!timeStr) return null
   const cleaned = String(timeStr).trim()
-  const match = cleaned.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?$/i)
+  const firstPart = (cleaned.split(/\s*(?:[-–—]|\bto\b)\s*/i)[0] || cleaned).trim()
+  const match = firstPart.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?$/i)
+  if (!match) return null
+
+  let hr = parseInt(match[1], 10)
+  const min = parseInt(match[2], 10)
+  const meridiem = match[3] ? match[3].toUpperCase() : null
+
+  if (meridiem === 'PM' && hr < 12) hr += 12
+  if (meridiem === 'AM' && hr === 12) hr = 0
+
+  return { hr, min }
+}
+
+/**
+ * Parses end time from a time range string (e.g. '10:00 AM - 2:00 PM' -> 2:00 PM) into 24-hr { hr, min }
+ * @param {string} timeStr
+ * @returns {{ hr: number, min: number } | null}
+ */
+export function parseEventEndTime(timeStr) {
+  if (!timeStr) return null
+  const cleaned = String(timeStr).trim()
+  const parts = cleaned.split(/\s*(?:[-–—]|\bto\b)\s*/i)
+  if (parts.length < 2) return null
+  const endPart = parts[1].trim()
+  const match = endPart.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?$/i)
   if (!match) return null
 
   let hr = parseInt(match[1], 10)
@@ -28,7 +53,7 @@ export function parseEventTime(timeStr) {
  * @param {string|number} event.id
  * @param {string} event.title
  * @param {string} event.event_date - YYYY-MM-DD
- * @param {string} [event.event_time] - e.g. '14:30' or '2:30 PM'
+ * @param {string} [event.event_time] - e.g. '14:30' or '10:00 AM - 2:00 PM'
  * @param {string} [event.location]
  * @param {string} [event.description]
  * @returns {string} Google Calendar render URL
@@ -45,12 +70,22 @@ export function getGoogleCalendarUrl(event) {
   const day = parseInt(parts[2], 10)
 
   const timeParsed = parseEventTime(event.event_time)
+  const endTimeParsed = parseEventEndTime(event.event_time)
   let datesParam = ''
 
   if (timeParsed) {
     const start = new Date(year, month - 1, day, timeParsed.hr, timeParsed.min, 0)
-    // Default duration is 2 hours for youth gatherings & services
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+    let end
+    if (endTimeParsed) {
+      end = new Date(year, month - 1, day, endTimeParsed.hr, endTimeParsed.min, 0)
+      if (end <= start) {
+        // Fallback: If end is before or equal to start, default to 2 hours
+        end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+      }
+    } else {
+      // Default duration is 2 hours for youth gatherings & services
+      end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+    }
 
     const formatGCal = (d) => {
       const yr = d.getFullYear()
