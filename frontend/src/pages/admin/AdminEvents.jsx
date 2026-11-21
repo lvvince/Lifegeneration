@@ -49,7 +49,14 @@ function EventForm({ initial, onClose, onSaved }) {
         body: fd,
       })
 
-      const data = await res.json()
+      let data
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        data = await res.json()
+      } else {
+        const text = await res.text()
+        throw new Error('Server error. Please try again. (' + res.status + ')')
+      }
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to upload image')
       }
