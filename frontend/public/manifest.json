@@ -1,13 +1,13 @@
 {
   "name": "Life Generation",
   "short_name": "LifeGen",
-  "description": "Life Generation Church App — connect, grow, and serve.",
+  "description": "Life Generation Church App - connect, grow, and serve.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0d0d0d",
+  "background_color": "#0d0f1a",
+  "theme_color": "#0d0f1a",
   "icons": [
     {
       "src": "/icon-192.png",
