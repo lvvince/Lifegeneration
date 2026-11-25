@@ -294,21 +294,35 @@ class SocialHub extends Controller
     }
 
     /**
-     * Save an uploaded social image to ImgBB cloud storage if available,
-     * falling back to local public/uploads/social/ disk storage.
+     * Save an uploaded social image.
+     * On localhost, saves directly to public/uploads/social/ so local uploads
+     * work offline and are never blocked by external image CDN restrictions.
+     * On hosted environments (e.g., Render), uploads to ImgBB cloud storage first
+     * and falls back to local disk if unavailable.
      */
     private function save_social_image($tmpPath, $mimeType, $origName, $ext, $dir)
     {
-        try {
-            if (function_exists('upload_to_imgbb')) {
-                $cloudUrl = upload_to_imgbb($tmpPath, $mimeType ?: 'image/jpeg', $origName ?: 'social.' . $ext);
-                if (!empty($cloudUrl)) {
-                    return $cloudUrl;
+        $host = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '')));
+        $isLocal = PHP_SAPI === 'cli-server'
+            || $host === 'localhost'
+            || str_starts_with($host, 'localhost:')
+            || $host === '127.0.0.1'
+            || str_starts_with($host, '127.0.0.1:')
+            || $host === '[::1]'
+            || str_starts_with($host, '[::1]:');
+
+        if (!$isLocal) {
+            try {
+                if (function_exists('upload_to_imgbb')) {
+                    $cloudUrl = upload_to_imgbb($tmpPath, $mimeType ?: 'image/jpeg', $origName ?: 'social.' . $ext);
+                    if (!empty($cloudUrl)) {
+                        return $cloudUrl;
+                    }
                 }
-            }
-        } catch (\Throwable $e) {
-            if (function_exists('auth_log')) {
-                auth_log('SocialHub ImgBB upload fallback: ' . $e->getMessage());
+            } catch (\Throwable $e) {
+                if (function_exists('auth_log')) {
+                    auth_log('SocialHub ImgBB upload fallback: ' . $e->getMessage());
+                }
             }
         }
 

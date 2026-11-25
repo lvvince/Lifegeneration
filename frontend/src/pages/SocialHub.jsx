@@ -484,7 +484,15 @@ function PostCard({ post, user, highlighted, onReact, onRsvp, onEdit, onDelete, 
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              if (e.target.parentElement) e.target.parentElement.style.display = 'none'
+              e.currentTarget.style.display = 'none'
+              const wrap = e.currentTarget.parentElement
+              if (wrap && !wrap.querySelector('.sh-img-fallback')) {
+                const msg = document.createElement('div')
+                msg.className = 'sh-img-fallback'
+                msg.textContent = 'Photo unavailable (external host unreachable)'
+                msg.style.cssText = 'padding:18px 14px;text-align:center;font-size:12.5px;opacity:0.7;'
+                wrap.appendChild(msg)
+              }
             }}
           />
           <div className="sh-img-zoom-hint" aria-hidden="true">

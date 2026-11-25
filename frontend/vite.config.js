@@ -13,6 +13,10 @@ export default defineConfig(({ mode }) => {
           target,
           changeOrigin: true,
         },
+        '/uploads': {
+          target,
+          changeOrigin: true,
+        },
       },
     },
   }
