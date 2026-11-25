@@ -121,6 +121,7 @@ $router->get('/share/event/{id}', 'Share::event');
 // 12. Social Hub (Fellowships, Bible Studies, Verses, Posts, RSVPs)
 $router->get('/api/social/posts',               'SocialHub::index');
 $router->post('/api/social/posts',              'SocialHub::submit');
+$router->post('/api/social/update',             'SocialHub::update');
 $router->post('/api/social/react',              'SocialHub::react');
 $router->post('/api/social/rsvp',               'SocialHub::rsvp');
 $router->get('/api/social/posts/{id}/comments', 'SocialHub::comments');

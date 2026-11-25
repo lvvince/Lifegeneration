@@ -457,6 +457,59 @@ CREATE TABLE IF NOT EXISTS chat_presence (
   PRIMARY KEY (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS social_posts (
+  id              INT NOT NULL AUTO_INCREMENT,
+  user_id         INT NOT NULL,
+  author_name     VARCHAR(120) NOT NULL,
+  author_avatar   VARCHAR(255) NULL,
+  category        VARCHAR(50) NOT NULL DEFAULT 'general',
+  body            TEXT NOT NULL,
+  image           VARCHAR(255) NULL,
+  images          TEXT NULL,
+  event_title     VARCHAR(200) NULL,
+  event_type      VARCHAR(80) NULL,
+  event_date      DATETIME NULL,
+  event_location  VARCHAR(255) NULL,
+  event_link      VARCHAR(255) NULL,
+  verse_reference VARCHAR(120) NULL,
+  verse_text      TEXT NULL,
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY spost_user_idx (user_id),
+  KEY spost_cat_idx (category),
+  KEY spost_created_idx (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS social_reactions (
+  post_id       INT NOT NULL,
+  user_id       INT NOT NULL,
+  reaction_type VARCHAR(20) NOT NULL DEFAULT 'like',
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (post_id, user_id),
+  KEY sreact_user_idx (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS social_rsvps (
+  post_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  user_name  VARCHAR(120) NOT NULL,
+  status     VARCHAR(20) NOT NULL DEFAULT 'going',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (post_id, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS social_comments (
+  id            INT NOT NULL AUTO_INCREMENT,
+  post_id       INT NOT NULL,
+  user_id       INT NOT NULL,
+  author_name   VARCHAR(120) NOT NULL,
+  author_avatar VARCHAR(255) NULL,
+  body          TEXT NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY scomm_post_idx (post_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================

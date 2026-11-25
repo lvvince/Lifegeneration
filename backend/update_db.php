@@ -399,6 +399,103 @@ try {
     echo "Notice: " . $e->getMessage() . "\n";
 }
 
+// Life Hub (Social Hub) tables
+echo "Checking 'social_posts' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `social_posts` (
+          `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `user_id` INT NOT NULL,
+          `author_name` VARCHAR(120) NOT NULL,
+          `author_avatar` VARCHAR(255) DEFAULT NULL,
+          `category` VARCHAR(50) NOT NULL DEFAULT 'general',
+          `body` TEXT NOT NULL,
+          `image` VARCHAR(255) DEFAULT NULL,
+          `images` TEXT DEFAULT NULL,
+          `event_title` VARCHAR(200) DEFAULT NULL,
+          `event_type` VARCHAR(80) DEFAULT NULL,
+          `event_date` DATETIME DEFAULT NULL,
+          `event_location` VARCHAR(255) DEFAULT NULL,
+          `event_link` VARCHAR(255) DEFAULT NULL,
+          `verse_reference` VARCHAR(120) DEFAULT NULL,
+          `verse_text` TEXT DEFAULT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          KEY `spost_user_idx` (`user_id`),
+          KEY `spost_cat_idx` (`category`),
+          KEY `spost_created_idx` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'images' column in 'social_posts'... ";
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM `social_posts` LIKE 'images'")->fetchAll();
+    if (empty($cols)) {
+        $pdo->exec("ALTER TABLE `social_posts` ADD COLUMN `images` TEXT DEFAULT NULL AFTER `image`");
+        echo "✓ Column added\n";
+    } else {
+        echo "✓ Already exists\n";
+    }
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'social_reactions' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `social_reactions` (
+          `post_id` INT NOT NULL,
+          `user_id` INT NOT NULL,
+          `reaction_type` VARCHAR(20) NOT NULL DEFAULT 'like',
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`post_id`, `user_id`),
+          KEY `sreact_user_idx` (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'social_rsvps' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `social_rsvps` (
+          `post_id` INT NOT NULL,
+          `user_id` INT NOT NULL,
+          `user_name` VARCHAR(120) NOT NULL,
+          `status` VARCHAR(20) NOT NULL DEFAULT 'going',
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`post_id`, `user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
+echo "Checking 'social_comments' table... ";
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `social_comments` (
+          `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `post_id` INT NOT NULL,
+          `user_id` INT NOT NULL,
+          `author_name` VARCHAR(120) NOT NULL,
+          `author_avatar` VARCHAR(255) DEFAULT NULL,
+          `body` TEXT NOT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          KEY `scomm_post_idx` (`post_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "✓ OK\n";
+} catch (Exception $e) {
+    echo "Notice: " . $e->getMessage() . "\n";
+}
+
 echo "\n========================================================\n";
 echo "✓ ALL DATABASE UPDATES COMPLETED SUCCESSFULLY!\n";
 echo "You can now refresh your browser and use all features.\n";

@@ -54,6 +54,11 @@ class Create_social_hub_tables {
                         'null'       => TRUE,
                         'default'    => NULL,
                     ],
+                    'images' => [
+                        'type'    => 'TEXT',
+                        'null'    => TRUE,
+                        'default' => NULL,
+                    ],
                     'event_title' => [
                         'type'       => 'VARCHAR',
                         'constraint' => 200,

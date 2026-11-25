@@ -63,7 +63,7 @@ $database['main'] = array(
     'port'      => getenv('DB_PORT') ?: '3306',
     'username'  => getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'root',
     'password'  => getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '',
-    'database'  => getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'lifeGenSocial',
+    'database'  => getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'lifegenerationdb',
     'charset'   => getenv('DB_CHARSET') ?: 'utf8mb4',
     'dbprefix'  => getenv('DB_PREFIX') ?: '',
     // SSL para sa TiDB Cloud. Walang laman sa local.

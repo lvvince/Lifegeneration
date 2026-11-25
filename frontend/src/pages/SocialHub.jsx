@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
   BookOpen,
   Calendar,
@@ -45,10 +46,20 @@ const photoUrl = (p) => {
   return `${API_URL.replace(/\/+$/, '')}/${str.replace(/^\/+/, '')}`
 }
 
+const parseManilaDate = (dt) => {
+  if (!dt) return null
+  let s = String(dt).trim().replace(' ', 'T')
+  if (!/[Z+-]\d*(:?\d*)?$/i.test(s) && !s.endsWith('Z')) {
+    s += '+08:00'
+  }
+  const d = new Date(s)
+  return isNaN(d) ? null : d
+}
+
 const formatDateTime = (dt) => {
   if (!dt) return ''
-  const d = new Date(dt.replace(' ', 'T'))
-  if (isNaN(d)) return dt
+  const d = parseManilaDate(dt)
+  if (!d) return dt
   return d.toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
@@ -57,9 +68,9 @@ const formatDateTime = (dt) => {
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return ''
-  const d = new Date(dateStr.replace(' ', 'T'))
-  if (isNaN(d)) return dateStr
-  const seconds = Math.floor((new Date() - d) / 1000)
+  const d = parseManilaDate(dateStr)
+  if (!d) return dateStr
+  const seconds = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000))
   if (seconds < 60) return 'just now'
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) return `${minutes}m ago`
@@ -69,6 +80,48 @@ const timeAgo = (dateStr) => {
   if (days < 30) return `${days}d ago`
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
+
+/**
+ * Resize and compress large mobile photos client-side before upload.
+ * Animated GIFs are kept untouched.
+ */
+const compressImageFile = (file, maxDim = 1600, quality = 0.82) => new Promise((resolve) => {
+  if (!file || file.type === 'image/gif' || file.size <= 400 * 1024) {
+    return resolve(file)
+  }
+  const img = new Image()
+  const url = URL.createObjectURL(file)
+  img.onload = () => {
+    URL.revokeObjectURL(url)
+    let { width, height } = img
+    if (width <= maxDim && height <= maxDim && file.size <= 1.2 * 1024 * 1024) {
+      return resolve(file)
+    }
+    const scale = Math.min(1, maxDim / Math.max(width, height))
+    width = Math.round(width * scale)
+    height = Math.round(height * scale)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return resolve(file)
+    ctx.drawImage(img, 0, 0, width, height)
+
+    const outType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+    canvas.toBlob((blob) => {
+      if (!blob || blob.size >= file.size) return resolve(file)
+      const ext = outType === 'image/png' ? '.png' : '.jpg'
+      const baseName = (file.name || 'photo').replace(/\.[^.]+$/, '')
+      resolve(new File([blob], `${baseName}${ext}`, { type: outType, lastModified: Date.now() }))
+    }, outType, quality)
+  }
+  img.onerror = () => {
+    URL.revokeObjectURL(url)
+    resolve(file)
+  }
+  img.src = url
+})
 
 const CATEGORY_META = {
   event:   { label: 'Fellowship', Icon: CalendarDays, color: 'is-event' },
@@ -237,7 +290,7 @@ function PhotoLightbox({ images = [], initialIndex = 0, onClose }) {
 }
 
 /* ─── Post Card ───────────────────────────────────────────── */
-function PostCard({ post, user, onReact, onRsvp, onDelete, onShare, onOpenLightbox }) {
+function PostCard({ post, user, highlighted, onReact, onRsvp, onEdit, onDelete, onShare, onOpenLightbox }) {
   const [commentsOpen, setCommentsOpen]       = useState(false)
   const [comments, setComments]               = useState(null)
   const [commentsCount, setCommentsCount]     = useState(post.comments_count || 0)
@@ -303,10 +356,11 @@ function PostCard({ post, user, onReact, onRsvp, onDelete, onShare, onOpenLightb
     } catch (err) { toast(err.message || 'Could not delete comment.', 'bad') }
   }
 
-  const canDelete = post.is_mine || user?.role === 'admin' || user?.role === 'officer'
+  const canManage = post.is_mine || user?.role === 'admin' || user?.role === 'officer'
+  const safeEventLink = post.event_link && /^https?:\/\//i.test(post.event_link.trim()) ? post.event_link.trim() : ''
 
   return (
-    <article className="sh-card">
+    <article id={`sh-post-${post.id}`} className={`sh-card ${highlighted ? 'is-highlighted' : ''}`}>
       {/* ── Header row ── */}
       <div className="sh-card-header">
         <div className="sh-author-row">
@@ -323,13 +377,16 @@ function PostCard({ post, user, onReact, onRsvp, onDelete, onShare, onOpenLightb
             {meta.label}
           </span>
 
-          {canDelete && (
+          {canManage && (
             <div className="sh-menu-wrap" ref={menuRef}>
               <button type="button" className="sh-icon-btn" onClick={() => setMenuOpen(v => !v)} aria-label="Post options">
                 <MoreHorizontal size={18} />
               </button>
               {menuOpen && (
                 <div className="sh-dropdown">
+                  <button type="button" className="sh-dropdown-item" onClick={() => { setMenuOpen(false); onEdit(post) }}>
+                    <Pencil size={14} /> Edit Post
+                  </button>
                   <button type="button" className="sh-dropdown-item is-danger" onClick={() => { setMenuOpen(false); onDelete(post) }}>
                     <Trash2 size={14} /> Delete Post
                   </button>
@@ -361,10 +418,10 @@ function PostCard({ post, user, onReact, onRsvp, onDelete, onShare, onOpenLightb
                 <span>{post.event_location}</span>
               </div>
             )}
-            {post.event_link && (
+            {safeEventLink && (
               <div className="sh-event-detail-item">
                 <Link2 size={14} />
-                <a href={post.event_link} target="_blank" rel="noreferrer" className="sh-event-link">
+                <a href={safeEventLink} target="_blank" rel="noreferrer" className="sh-event-link">
                   Join Online <ExternalLink size={11} />
                 </a>
               </div>
@@ -556,7 +613,7 @@ function PostCard({ post, user, onReact, onRsvp, onDelete, onShare, onOpenLightb
                       <span className="sh-comm-name">{c.author_name}</span>
                       <span className="sh-comm-dot">•</span>
                       <span className="sh-comm-time">{timeAgo(c.created_at)}</span>
-                      {(c.is_mine || post.is_mine || user?.role === 'admin') && (
+                      {(c.is_mine || post.is_mine || user?.role === 'admin' || user?.role === 'officer') && (
                         <button
                           type="button"
                           className="sh-comm-del"
@@ -630,12 +687,14 @@ function CustomSelect({ value, onChange, options }) {
   )
 }
 
-/* ─── Compose Modal ───────────────────────────────────────── */
-function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose, onSuccess }) {
+/* ─── Compose / Edit Modal ────────────────────────────────── */
+function ComposeModal({ open, initialCategory = 'general', editingPost = null, quickVerses, onClose, onSuccess }) {
   const toast = useToast()
   const fileRef = useRef(null)
+  const isEditing = Boolean(editingPost?.id)
   const [category, setCategory]       = useState(initialCategory)
   const [submitting, setSubmitting]   = useState(false)
+  const [existingImages, setExistingImages] = useState([])
   const [imageFiles, setImageFiles]   = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
   const [isDark, setIsDark] = useState(() => document.documentElement.dataset.theme === 'dark')
@@ -645,7 +704,40 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
     verse_reference: '', verse_text: '', image_url: ''
   })
 
-  useEffect(() => { if (open) setCategory(initialCategory) }, [open, initialCategory])
+  useEffect(() => {
+    if (!open) return
+    if (editingPost) {
+      setCategory(editingPost.category || 'general')
+      const dtLocal = editingPost.event_date
+        ? String(editingPost.event_date).replace(' ', 'T').slice(0, 16)
+        : ''
+      setForm({
+        body: editingPost.body || '',
+        event_title: editingPost.event_title || '',
+        event_type: editingPost.event_type || 'Fellowship Gathering',
+        event_date: dtLocal,
+        event_location: editingPost.event_location || '',
+        event_link: editingPost.event_link || '',
+        verse_reference: editingPost.verse_reference || '',
+        verse_text: editingPost.verse_text || '',
+        image_url: ''
+      })
+      const existing = Array.isArray(editingPost.images) && editingPost.images.length > 0
+        ? editingPost.images
+        : (editingPost.image ? [editingPost.image] : [])
+      setExistingImages(existing)
+      setImageFiles([])
+    } else {
+      setCategory(initialCategory)
+      setForm({
+        body: '', event_title: '', event_type: 'Fellowship Gathering',
+        event_date: '', event_location: '', event_link: '',
+        verse_reference: '', verse_text: '', image_url: ''
+      })
+      setExistingImages([])
+      setImageFiles([])
+    }
+  }, [open, initialCategory, editingPost])
 
   // Track dark mode changes
   useEffect(() => {
@@ -665,32 +757,41 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
 
   if (!open) return null
 
+  const totalPhotosCount = existingImages.length + imageFiles.length
+
   const reset = () => {
     setForm({ body: '', event_title: '', event_type: 'Fellowship Gathering', event_date: '', event_location: '', event_link: '', verse_reference: '', verse_text: '', image_url: '' })
+    setExistingImages([])
     setImageFiles([])
     setImagePreviews([])
   }
 
-  const addFiles = (files) => {
+  const addFiles = async (files) => {
     if (!files || files.length === 0) return
     const incoming = Array.from(files).filter(f => f.type.startsWith('image/'))
     if (incoming.length === 0) return toast('Please attach valid JPG, PNG, or WEBP images.', 'bad')
+
+    const slotsLeft = Math.max(0, 10 - totalPhotosCount)
+    if (slotsLeft === 0) return toast('Maximum 10 photos per post.', 'bad')
+
     const valid = []
-    for (const f of incoming) {
-      if (f.size > 10 * 1024 * 1024) {
-        toast(`"${f.name}" is over 10 MB and was skipped.`, 'bad')
+    for (const f of incoming.slice(0, slotsLeft)) {
+      if (f.size > 15 * 1024 * 1024) {
+        toast(`"${f.name}" is over 15 MB and was skipped.`, 'bad')
       } else {
-        valid.push(f)
+        const compressed = await compressImageFile(f)
+        valid.push(compressed)
       }
     }
+    if (incoming.length > slotsLeft) {
+      toast('Maximum 10 photos per post.', 'bad')
+    }
     if (valid.length === 0) return
-    setImageFiles(prev => {
-      const combined = [...prev, ...valid].slice(0, 10)
-      if (prev.length + valid.length > 10) {
-        toast('Maximum 10 photos per post.', 'bad')
-      }
-      return combined
-    })
+    setImageFiles(prev => [...prev, ...valid].slice(0, Math.max(0, 10 - existingImages.length)))
+  }
+
+  const removeExisting = (idx) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== idx))
   }
 
   const removeFile = (idx) => {
@@ -711,23 +812,31 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
     e.preventDefault()
     setSubmitting(true)
     try {
+      const endpoint = isEditing ? '/api/social/update' : '/api/social/posts'
       let opts = {}
       if (imageFiles.length > 0) {
         const fd = new FormData()
+        if (isEditing) {
+          fd.append('id', editingPost.id)
+          fd.append('existing_images', JSON.stringify(existingImages))
+        }
         fd.append('category', category)
         Object.entries(form).forEach(([k, v]) => fd.append(k, v))
         imageFiles.forEach(f => fd.append('images[]', f))
         opts = { body: fd }
       } else {
-        opts = { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category, ...form }) }
+        const payload = isEditing
+          ? { id: editingPost.id, category, existing_images: existingImages, ...form }
+          : { category, ...form }
+        opts = { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       }
-      await apiRequest('/api/social/posts', { method: 'POST', ...opts })
+      await apiRequest(endpoint, { method: 'POST', ...opts })
       reset()
       onClose()
       onSuccess()
-      toast('Post published to Life Hub!', 'good')
+      toast(isEditing ? 'Post updated!' : 'Post published to Life Hub!', 'good')
     } catch (err) {
-      toast(err.message || 'Failed to publish post.', 'bad')
+      toast(err.message || (isEditing ? 'Failed to update post.' : 'Failed to publish post.'), 'bad')
     } finally { setSubmitting(false) }
   }
 
@@ -744,7 +853,8 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
       <div className="sh-modal" data-sh-dark={isDark ? 'true' : undefined} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         {/* Header */}
         <div className="sh-modal-header">
-          <h3 className="sh-modal-title"><Pencil size={18} /> New Post</h3>
+          <h3 className="sh-modal-title"><Pencil size={18} /> {isEditing ? 'Edit Post' : 'New Post'}</h3>
+          <button type="button" className="sh-icon-btn" onClick={onClose} aria-label="Close dialog"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -838,11 +948,28 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
               />
             </div>
 
-            {/* Image upload — single or multi-photo preview gallery */}
-            {imagePreviews.length > 0 ? (
+            {/* Image upload — existing + new multi-photo preview gallery */}
+            {totalPhotosCount > 0 ? (
               <div className="sh-compose-gallery">
+                {existingImages.map((imgPath, idx) => (
+                  <div key={`ex-${idx}`} className="sh-compose-thumb">
+                    <img src={photoUrl(imgPath)} alt={`Existing ${idx + 1}`} />
+                    <button
+                      type="button"
+                      className="sh-compose-thumb-del"
+                      title="Remove photo"
+                      aria-label="Remove photo"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeExisting(idx)
+                      }}
+                    >
+                      <X size={13} strokeWidth={2.8} />
+                    </button>
+                  </div>
+                ))}
                 {imagePreviews.map((previewUrl, idx) => (
-                  <div key={idx} className="sh-compose-thumb">
+                  <div key={`new-${idx}`} className="sh-compose-thumb">
                     <img src={previewUrl} alt={`Upload ${idx + 1}`} />
                     <button
                       type="button"
@@ -858,7 +985,7 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
                     </button>
                   </div>
                 ))}
-                {imagePreviews.length < 10 && (
+                {totalPhotosCount < 10 && (
                   <button
                     type="button"
                     className="sh-compose-add-tile"
@@ -879,7 +1006,7 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
               >
                 <ImageIcon size={22} />
                 <span>Add photos — click or drag &amp; drop</span>
-                <small>JPEG / PNG / WEBP · up to 10 photos, max 10 MB each</small>
+                <small>JPEG / PNG / WEBP · up to 10 photos (auto-compressed for mobile)</small>
               </div>
             )}
             <input
@@ -895,7 +1022,9 @@ function ComposeModal({ open, initialCategory = 'general', quickVerses, onClose,
           <div className="sh-modal-footer">
             <button type="button" className="sh-btn-ghost" onClick={onClose}>Cancel</button>
             <button type="submit" className="sh-btn-primary" disabled={submitting}>
-              {submitting ? <><RefreshCw size={14} className="animate-spin" /> Publishing…</> : 'Publish Post'}
+              {submitting
+                ? <><RefreshCw size={14} className="animate-spin" /> {isEditing ? 'Saving…' : 'Publishing…'}</>
+                : (isEditing ? 'Save Changes' : 'Publish Post')}
             </button>
           </div>
         </form>
@@ -995,42 +1124,78 @@ function ShareModal({ post, onClose, toast }) {
 export default function SocialHub() {
   const user  = getUser()
   const toast = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const targetPostId = Number(searchParams.get('post') || 0)
 
   const [posts, setPosts]                 = useState([])
   const [loading, setLoading]             = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery]     = useState('')
-  const [sort]                            = useState('recent')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [sort, setSort]                   = useState('recent')
+  const [highlightedId, setHighlightedId] = useState(0)
 
   const [composeOpen, setComposeOpen]     = useState(false)
   const [composeCategory, setComposeCategory] = useState('general')
+  const [editingPost, setEditingPost]     = useState(null)
   const [sharePost, setSharePost]         = useState(null)
   const [toDeletePost, setToDeletePost]   = useState(null)
   const [quickVerses, setQuickVerses]     = useState([])
   const [lightboxData, setLightboxData]   = useState(null)
+
+  // 300ms debounce for search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300)
+    return () => clearTimeout(t)
+  }, [searchQuery])
 
   const loadPosts = useCallback(async () => {
     setLoading(true)
     try {
       const mine   = activeCategory === 'mine' ? '1' : '0'
       const catP   = activeCategory === 'mine' ? 'all' : activeCategory
-      const q      = encodeURIComponent(searchQuery.trim())
+      const q      = encodeURIComponent(debouncedQuery.trim())
       const res    = await apiGet(`/api/social/posts?category=${catP}&sort=${sort}&mine=${mine}&q=${q}`)
       setPosts(Array.isArray(res) ? res : [])
     } catch (err) {
       toast(err.message || 'Could not load Life Hub posts.', 'bad')
     } finally { setLoading(false) }
-  }, [activeCategory, sort, searchQuery, toast])
+  }, [activeCategory, sort, debouncedQuery, toast])
 
   useEffect(() => { loadPosts() }, [loadPosts])
   useEffect(() => { apiGet('/api/social/verses/quick').then(d => setQuickVerses(Array.isArray(d) ? d : [])).catch(() => {}) }, [])
+
+  // Deep-link ?post=<id>: scroll to & highlight target post once loaded
+  useEffect(() => {
+    if (!targetPostId || loading || posts.length === 0) return
+    const found = posts.find(p => p.id === targetPostId)
+    if (!found) {
+      if (activeCategory !== 'all' || searchQuery !== '') {
+        setActiveCategory('all')
+        setSearchQuery('')
+        setDebouncedQuery('')
+      }
+      return
+    }
+    setHighlightedId(targetPostId)
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`sh-post-${targetPostId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setSearchParams({}, { replace: true })
+    }, 120)
+    const clearHi = setTimeout(() => setHighlightedId(0), 3600)
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(clearHi)
+    }
+  }, [targetPostId, loading, posts, activeCategory, searchQuery, setSearchParams])
 
   // Escape key
   useEffect(() => {
     const fn = (e) => {
       if (e.key !== 'Escape') return
       if (toDeletePost) setToDeletePost(null)
-      else if (composeOpen) setComposeOpen(false)
+      else if (composeOpen) { setComposeOpen(false); setEditingPost(null) }
       else if (sharePost) setSharePost(null)
     }
     window.addEventListener('keydown', fn)
@@ -1069,7 +1234,15 @@ export default function SocialHub() {
 
   const openCompose = (cat = 'general') => {
     if (!user) return toast('Sign in to create a post.', 'bad')
+    setEditingPost(null)
     setComposeCategory(cat)
+    setComposeOpen(true)
+  }
+
+  const openEdit = (post) => {
+    if (!user) return toast('Sign in to edit posts.', 'bad')
+    setEditingPost(post)
+    setComposeCategory(post.category || 'general')
     setComposeOpen(true)
   }
 
@@ -1140,24 +1313,42 @@ export default function SocialHub() {
             </button>
           ))}
         </div>
-        <div className="sh-search-box">
-          <Search size={15} className="sh-search-icon" />
-          <input
-            type="text"
-            placeholder="Search posts…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
+        <div className="sh-controls-right">
+          <div className="sh-sort-toggle" role="group" aria-label="Sort posts">
             <button
               type="button"
-              className="sh-search-clear"
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
+              className={`sh-sort-btn ${sort === 'recent' ? 'is-on' : ''}`}
+              onClick={() => setSort('recent')}
             >
-              <X size={13} />
+              Recent
             </button>
-          )}
+            <button
+              type="button"
+              className={`sh-sort-btn ${sort === 'top' ? 'is-on' : ''}`}
+              onClick={() => setSort('top')}
+            >
+              Top
+            </button>
+          </div>
+          <div className="sh-search-box">
+            <Search size={15} className="sh-search-icon" />
+            <input
+              type="text"
+              placeholder="Search posts…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="sh-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1180,8 +1371,10 @@ export default function SocialHub() {
             key={post.id}
             post={post}
             user={user}
+            highlighted={highlightedId === post.id}
             onReact={handleReact}
             onRsvp={handleRsvp}
+            onEdit={openEdit}
             onDelete={setToDeletePost}
             onShare={setSharePost}
             onOpenLightbox={(images, index) => setLightboxData({ images, index })}
@@ -1189,19 +1382,19 @@ export default function SocialHub() {
         ))}
       </div>
 
-      {/* Compose modal */}
+      {/* Compose / Edit modal */}
       <ComposeModal
         open={composeOpen}
         initialCategory={composeCategory}
+        editingPost={editingPost}
         quickVerses={quickVerses}
-        onClose={() => setComposeOpen(false)}
+        onClose={() => { setComposeOpen(false); setEditingPost(null) }}
         onSuccess={loadPosts}
       />
 
       {/* Share modal */}
-      {sharePost && createPortal(
-        <ShareModal post={sharePost} onClose={() => setSharePost(null)} toast={toast} />,
-        document.body
+      {sharePost && (
+        <ShareModal post={sharePost} onClose={() => setSharePost(null)} toast={toast} />
       )}
 
       {/* Delete confirm */}

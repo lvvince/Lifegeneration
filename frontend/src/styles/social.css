@@ -2972,3 +2972,49 @@ html[data-theme='dark'] .sh-custom-select-opt.is-on,
     font-size: 10.5px;
   }
 }
+
+/* ── Sort toggle + Deep-link highlight ── */
+.sh-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sh-sort-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--sh-surface, #f4f4f5);
+  border: 1px solid var(--sh-border, rgba(0, 0, 0, 0.08));
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+[data-theme="dark"] .sh-sort-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sh-sort-btn {
+  border: none;
+  background: transparent;
+  color: var(--sh-muted, #71717a);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sh-sort-btn.is-on {
+  background: #e85d04;
+  color: #fff;
+}
+
+.sh-card.is-highlighted {
+  outline: 2px solid #e85d04;
+  box-shadow: 0 0 0 6px rgba(232, 93, 4, 0.16);
+  transition: box-shadow 0.3s ease, outline-color 0.3s ease;
+}

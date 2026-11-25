@@ -6,12 +6,147 @@ class SocialHub extends Controller
     public function __construct()
     {
         parent::__construct();
+        date_default_timezone_set('Asia/Manila');
         $this->call->database();
+        try {
+            $this->db->raw("SET time_zone = '+08:00'");
+        } catch (\Throwable $e) {}
     }
 
     private function is_staff($u)
     {
         return $u && in_array($u['role'], ['admin', 'officer', 'secretary', 'moderator'], true);
+    }
+
+    /**
+     * Allow only safe http/https URLs; return empty string otherwise.
+     */
+    private function sanitize_http_url($url)
+    {
+        $url = trim((string) $url);
+        if ($url === '') return '';
+        if (!preg_match('/^https?:\/\//i', $url)) return '';
+        return filter_var($url, FILTER_VALIDATE_URL) ? $url : '';
+    }
+
+    /**
+     * Validate and normalize post payload shared between submit() and update().
+     */
+    private function parse_post_payload($input)
+    {
+        $category = trim($input['category'] ?? 'general');
+        if (!in_array($category, ['event', 'verse', 'general'], true)) {
+            $category = 'general';
+        }
+
+        $body          = trim($input['body'] ?? '');
+        $eventTitle    = trim($input['event_title'] ?? '');
+        $eventType     = trim($input['event_type'] ?? '');
+        $eventDate     = !empty($input['event_date']) ? trim($input['event_date']) : null;
+        $eventLocation = trim($input['event_location'] ?? '');
+        $eventLink     = $this->sanitize_http_url($input['event_link'] ?? '');
+        $verseRef      = trim($input['verse_reference'] ?? '');
+        $verseText     = trim($input['verse_text'] ?? '');
+
+        if ($category === 'event') {
+            if ($eventTitle === '') {
+                if (ob_get_level()) ob_end_clean();
+                api_response(['error' => 'Please provide a title or name for your fellowship/event.'], 422);
+            }
+            if ($body === '') {
+                $body = "Join us for " . $eventTitle . "!";
+            }
+        } elseif ($category === 'verse') {
+            if ($verseRef === '') {
+                if (ob_get_level()) ob_end_clean();
+                api_response(['error' => 'Please provide the Scripture reference (e.g. Philippians 4:13).'], 422);
+            }
+            if ($body === '') {
+                $body = "Sharing today's verse for encouragement and meditation.";
+            }
+        } else {
+            if ($body === '') {
+                if (ob_get_level()) ob_end_clean();
+                api_response(['error' => 'Please write your message or testimony.'], 422);
+            }
+        }
+
+        $parsedDate = null;
+        if ($category === 'event' && $eventDate) {
+            $ts = strtotime($eventDate);
+            if ($ts !== false) {
+                $parsedDate = date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        return [
+            'category'        => $category,
+            'body'            => $body,
+            'event_title'     => $category === 'event' ? $eventTitle : null,
+            'event_type'      => $category === 'event' ? ($eventType ?: 'Fellowship Gathering') : null,
+            'event_date'      => $parsedDate,
+            'event_location'  => $category === 'event' ? $eventLocation : null,
+            'event_link'      => $category === 'event' ? ($eventLink ?: null) : null,
+            'verse_reference' => $category === 'verse' ? $verseRef : null,
+            'verse_text'      => $category === 'verse' ? $verseText : null,
+        ];
+    }
+
+    /**
+     * Collect uploaded images from $_FILES['images'] and $_FILES['image'].
+     */
+    private function collect_uploaded_images($maxTotal = 10)
+    {
+        $savedImages = [];
+        $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'social' . DIRECTORY_SEPARATOR;
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp', IMAGETYPE_GIF => 'gif'];
+
+        if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+            $count = count($_FILES['images']['name']);
+            $maxUploads = min($count, $maxTotal);
+            for ($i = 0; $i < $maxUploads; $i++) {
+                if (($_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK && ($_FILES['images']['size'][$i] ?? 0) <= 10 * 1024 * 1024) {
+                    $tmp = $_FILES['images']['tmp_name'][$i];
+                    $info = @getimagesize($tmp);
+                    if ($info && isset($map[$info[2]])) {
+                        $saved = $this->save_social_image(
+                            $tmp,
+                            $_FILES['images']['type'][$i] ?? ($info['mime'] ?? 'image/jpeg'),
+                            $_FILES['images']['name'][$i] ?? 'social.' . $map[$info[2]],
+                            $map[$info[2]],
+                            $dir
+                        );
+                        if ($saved) {
+                            $savedImages[] = $saved;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (count($savedImages) < $maxTotal && isset($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+            $f = $_FILES['image'];
+            if (($f['size'] ?? 0) <= 10 * 1024 * 1024) {
+                $info = @getimagesize($f['tmp_name']);
+                if ($info && isset($map[$info[2]])) {
+                    $saved = $this->save_social_image(
+                        $f['tmp_name'],
+                        $f['type'] ?? ($info['mime'] ?? 'image/jpeg'),
+                        $f['name'] ?? 'social.' . $map[$info[2]],
+                        $map[$info[2]],
+                        $dir
+                    );
+                    if ($saved) {
+                        $savedImages[] = $saved;
+                    }
+                }
+            }
+        }
+
+        return $savedImages;
     }
 
     /**
@@ -159,93 +294,55 @@ class SocialHub extends Controller
     }
 
     /**
+     * Save an uploaded social image to ImgBB cloud storage if available,
+     * falling back to local public/uploads/social/ disk storage.
+     */
+    private function save_social_image($tmpPath, $mimeType, $origName, $ext, $dir)
+    {
+        try {
+            if (function_exists('upload_to_imgbb')) {
+                $cloudUrl = upload_to_imgbb($tmpPath, $mimeType ?: 'image/jpeg', $origName ?: 'social.' . $ext);
+                if (!empty($cloudUrl)) {
+                    return $cloudUrl;
+                }
+            }
+        } catch (\Throwable $e) {
+            if (function_exists('auth_log')) {
+                auth_log('SocialHub ImgBB upload fallback: ' . $e->getMessage());
+            }
+        }
+
+        $name = 'social_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $targetPath = $dir . $name;
+        if (@move_uploaded_file($tmpPath, $targetPath) || @copy($tmpPath, $targetPath)) {
+            return 'uploads/social/' . $name;
+        }
+        return null;
+    }
+
+    /**
      * POST /api/social/posts
      * Create a new post (Event Invite, Verse, or General Fellowship)
      */
     public function submit()
     {
+        while (ob_get_level()) ob_end_clean();
+        ob_start();
+        header('Content-Type: application/json; charset=utf-8');
+
         $user = require_auth_user();
         $input = api_input();
-
-        $category = trim($input['category'] ?? 'general');
-        if (!in_array($category, ['event', 'verse', 'general'], true)) {
-            $category = 'general';
-        }
-
-        $body = trim($input['body'] ?? '');
-        $eventTitle    = trim($input['event_title'] ?? '');
-        $eventType     = trim($input['event_type'] ?? '');
-        $eventDate     = !empty($input['event_date']) ? trim($input['event_date']) : null;
-        $eventLocation = trim($input['event_location'] ?? '');
-        $eventLink     = trim($input['event_link'] ?? '');
-        $verseRef      = trim($input['verse_reference'] ?? '');
-        $verseText     = trim($input['verse_text'] ?? '');
-
-        if ($category === 'event') {
-            if ($eventTitle === '') {
-                api_response(['error' => 'Please provide a title or name for your fellowship/event.'], 422);
-            }
-            if ($body === '') {
-                $body = "Join us for " . $eventTitle . "!";
-            }
-        } elseif ($category === 'verse') {
-            if ($verseRef === '') {
-                api_response(['error' => 'Please provide the Scripture reference (e.g. Philippians 4:13).'], 422);
-            }
-            if ($body === '') {
-                $body = "Sharing today's verse for encouragement and meditation.";
-            }
-        } else {
-            if ($body === '') {
-                api_response(['error' => 'Please write your message or testimony.'], 422);
-            }
-        }
+        $data = $this->parse_post_payload($input);
 
         // Handle images (multi-image upload or single image or URL)
-        $savedImages = [];
-        $dir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'social' . DIRECTORY_SEPARATOR;
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-        $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp', IMAGETYPE_GIF => 'gif'];
+        $savedImages = $this->collect_uploaded_images(10);
 
-        // 1. Check $_FILES['images'] (array of files from multi-upload)
-        if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
-            $count = count($_FILES['images']['name']);
-            $maxUploads = min($count, 10);
-            for ($i = 0; $i < $maxUploads; $i++) {
-                if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK && $_FILES['images']['size'][$i] <= 10 * 1024 * 1024) {
-                    $tmp = $_FILES['images']['tmp_name'][$i];
-                    $info = @getimagesize($tmp);
-                    if ($info && isset($map[$info[2]])) {
-                        $name = 'social_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
-                        $targetPath = $dir . $name;
-                        if (@move_uploaded_file($tmp, $targetPath) || @copy($tmp, $targetPath)) {
-                            $savedImages[] = 'uploads/social/' . $name;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Check $_FILES['image'] (single file upload)
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $f = $_FILES['image'];
-            if ($f['size'] <= 10 * 1024 * 1024) {
-                $info = @getimagesize($f['tmp_name']);
-                if ($info && isset($map[$info[2]])) {
-                    $name = 'social_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $map[$info[2]];
-                    $targetPath = $dir . $name;
-                    if (@move_uploaded_file($f['tmp_name'], $targetPath) || @copy($f['tmp_name'], $targetPath)) {
-                        $savedImages[] = 'uploads/social/' . $name;
-                    }
-                }
-            }
-        }
-
-        // 3. Fallback to image_url if provided
+        // Fallback to image_url if provided and safe http(s)
         if (empty($savedImages) && !empty($input['image_url'])) {
-            $savedImages[] = trim($input['image_url']);
+            $safeImgUrl = $this->sanitize_http_url($input['image_url']);
+            if ($safeImgUrl !== '') {
+                $savedImages[] = $safeImgUrl;
+            }
         }
 
         $primaryImage = !empty($savedImages) ? $savedImages[0] : null;
@@ -264,23 +361,23 @@ class SocialHub extends Controller
             $user['id'],
             $authorName,
             $authorAvatar,
-            $category,
-            $body,
+            $data['category'],
+            $data['body'],
             $primaryImage,
             $imagesJson,
-            $category === 'event' ? $eventTitle : null,
-            $category === 'event' ? ($eventType ?: 'Fellowship Gathering') : null,
-            $category === 'event' && $eventDate ? date('Y-m-d H:i:s', strtotime($eventDate)) : null,
-            $category === 'event' ? $eventLocation : null,
-            $category === 'event' ? $eventLink : null,
-            $category === 'verse' ? $verseRef : null,
-            $category === 'verse' ? $verseText : null,
+            $data['event_title'],
+            $data['event_type'],
+            $data['event_date'],
+            $data['event_location'],
+            $data['event_link'],
+            $data['verse_reference'],
+            $data['verse_text'],
         ]);
 
         $newId = (int) $this->db->last_id();
 
         // If it's an event, automatically mark author as going
-        if ($category === 'event') {
+        if ($data['category'] === 'event') {
             $this->db->raw("INSERT IGNORE INTO social_rsvps (post_id, user_id, user_name, status) VALUES (?, ?, ?, 'going')", [
                 $newId,
                 $user['id'],
@@ -288,11 +385,104 @@ class SocialHub extends Controller
             ]);
         }
 
+        if (ob_get_level()) ob_end_clean();
         api_response([
             'success' => true,
             'id'      => $newId,
             'message' => 'Post published successfully!'
         ], 201);
+    }
+
+    /**
+     * POST /api/social/update
+     * Edit an existing post (author or staff)
+     */
+    public function update()
+    {
+        while (ob_get_level()) ob_end_clean();
+        ob_start();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $user = require_auth_user();
+        $input = api_input();
+        $id = (int) ($input['id'] ?? 0);
+
+        if ($id <= 0) {
+            ob_end_clean();
+            api_response(['error' => 'Post ID is required.'], 422);
+        }
+
+        $existing = $this->db->raw("SELECT * FROM social_posts WHERE id = ?", [$id])->fetch(PDO::FETCH_ASSOC);
+        if (!$existing) {
+            ob_end_clean();
+            api_response(['error' => 'Post not found.'], 404);
+        }
+
+        if (!$this->is_staff($user) && (int) $existing['user_id'] !== (int) $user['id']) {
+            ob_end_clean();
+            api_response(['error' => 'Not allowed to edit this post.'], 403);
+        }
+
+        $data = $this->parse_post_payload($input);
+
+        // Merge kept existing images + newly uploaded images (up to 10 total)
+        $keptImages = [];
+        if (isset($input['existing_images'])) {
+            $rawKept = is_array($input['existing_images'])
+                ? $input['existing_images']
+                : json_decode((string) $input['existing_images'], true);
+            if (is_array($rawKept)) {
+                foreach ($rawKept as $img) {
+                    if (is_string($img) && trim($img) !== '') {
+                        $keptImages[] = trim($img);
+                    }
+                }
+            }
+        } else {
+            // Preserve existing if caller didn't send existing_images field
+            if (!empty($existing['images'])) {
+                $dec = json_decode($existing['images'], true);
+                if (is_array($dec)) $keptImages = $dec;
+            } elseif (!empty($existing['image'])) {
+                $keptImages = [$existing['image']];
+            }
+        }
+
+        $remainingSlots = max(0, 10 - count($keptImages));
+        $newImages = $remainingSlots > 0 ? $this->collect_uploaded_images($remainingSlots) : [];
+        $finalImages = array_slice(array_merge($keptImages, $newImages), 0, 10);
+
+        $primaryImage = !empty($finalImages) ? $finalImages[0] : null;
+        $imagesJson = !empty($finalImages) ? json_encode($finalImages) : null;
+
+        $this->db->raw(
+            "UPDATE social_posts
+             SET category = ?, body = ?, image = ?, images = ?,
+                 event_title = ?, event_type = ?, event_date = ?, event_location = ?, event_link = ?,
+                 verse_reference = ?, verse_text = ?
+             WHERE id = ?",
+            [
+                $data['category'],
+                $data['body'],
+                $primaryImage,
+                $imagesJson,
+                $data['event_title'],
+                $data['event_type'],
+                $data['event_date'],
+                $data['event_location'],
+                $data['event_link'],
+                $data['verse_reference'],
+                $data['verse_text'],
+                $id,
+            ]
+        );
+
+        if (ob_get_level()) ob_end_clean();
+        api_response([
+            'success' => true,
+            'id'      => $id,
+            'message' => 'Post updated successfully!'
+        ]);
     }
 
     /**
@@ -472,10 +662,23 @@ class SocialHub extends Controller
         $this->db->raw("DELETE FROM social_comments WHERE post_id = ?", [$id]);
         $this->db->raw("DELETE FROM social_posts WHERE id = ?", [$id]);
 
-        if (!empty($p['image']) && strpos($p['image'], 'uploads/social/') === 0) {
-            $path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $p['image']);
-            if (is_file($path)) {
-                @unlink($path);
+        $filesToUnlink = [];
+        if (!empty($p['image'])) {
+            $filesToUnlink[] = $p['image'];
+        }
+        if (!empty($p['images'])) {
+            $decodedImgs = json_decode($p['images'], true);
+            if (is_array($decodedImgs)) {
+                $filesToUnlink = array_unique(array_merge($filesToUnlink, $decodedImgs));
+            }
+        }
+        $publicBase = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR;
+        foreach ($filesToUnlink as $imgPath) {
+            if (is_string($imgPath) && strpos($imgPath, 'uploads/social/') === 0) {
+                $path = $publicBase . str_replace('/', DIRECTORY_SEPARATOR, $imgPath);
+                if (is_file($path)) {
+                    @unlink($path);
+                }
             }
         }
 
