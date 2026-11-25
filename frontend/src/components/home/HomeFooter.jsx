@@ -50,6 +50,7 @@ export default function HomeFooter() {
         <div className="lg-ft-col" role="navigation" aria-label="Community">
           <h3>Community</h3>
           <ul>
+            <li><Link to="/social">Life Hub</Link></li>
             <li><Link to="/prayer">Prayer Wall</Link></li>
             <li><Link to="/god-today">Where have you seen God today?</Link></li>
             {user ? (

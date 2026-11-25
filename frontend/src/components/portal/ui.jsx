@@ -159,7 +159,9 @@ export function Modal({ title, onClose, children, footer }) {
   )
 }
 
-export function ConfirmDialog({ title, message, confirmLabel = 'Confirm', danger, busy, onConfirm, onCancel }) {
+export function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', confirmText, danger, busy, onConfirm, onCancel }) {
+  if (open !== undefined && !open) return null
+  const label = confirmText || confirmLabel || 'Confirm'
   return (
     <Modal
       title={title}
@@ -176,7 +178,7 @@ export function ConfirmDialog({ title, message, confirmLabel = 'Confirm', danger
             disabled={busy}
             autoFocus
           >
-            {busy ? 'Please wait…' : confirmLabel}
+            {busy ? 'Please wait…' : label}
           </button>
         </div>
       }

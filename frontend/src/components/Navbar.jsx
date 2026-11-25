@@ -10,6 +10,7 @@ import '../styles/home.css'
 
 const LINKS = [
   { to: '/events', label: 'Events' },
+  { to: '/social', label: 'Life Hub' },
   { to: '/dgroups', label: 'D-Groups' },
   { to: '/ministries', label: 'Ministries' },
   { to: '/prayer', label: 'Prayer Wall' },

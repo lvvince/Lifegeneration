@@ -58,12 +58,12 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 */
 
 $database['main'] = array(
-    'driver'    => getenv('DB_DRIVER') ?: 'mysql',
+    'driver'    => getenv('DB_DRIVER') ?: getenv('DB_CONNECTION') ?: 'mysql',
     'hostname'  => getenv('DB_HOST') ?: '127.0.0.1',
-    'port'      => getenv('DB_PORT') ?: '3307',
-    'username'  => getenv('DB_USER') ?: 'root',
+    'port'      => getenv('DB_PORT') ?: '3306',
+    'username'  => getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'root',
     'password'  => getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '',
-    'database'  => getenv('DB_NAME') ?: 'lifegenerationdb',
+    'database'  => getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'lifeGenSocial',
     'charset'   => getenv('DB_CHARSET') ?: 'utf8mb4',
     'dbprefix'  => getenv('DB_PREFIX') ?: '',
     // SSL para sa TiDB Cloud. Walang laman sa local.

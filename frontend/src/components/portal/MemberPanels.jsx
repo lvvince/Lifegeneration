@@ -478,6 +478,16 @@ export function SectionPanel({ item, nav = [], user, onClose, onOpenFaq }) {
           </div>
         )}
 
+        {(item.id === 'social' || item.id === 'a-social' || item.id === 'o-social') && (
+          <div className="sk-mine">
+            <span className="sk-tile is-lg">
+              <Icon size={22} strokeWidth={1.7} />
+            </span>
+            <small>Life Hub</small>
+            <b>Invite to personal fellowships, Bible studies, and share verses of the day.</b>
+          </div>
+        )}
+
         {item.id === 'prayer' && (
           <div className="sk-mine">
             <span className="sk-tile is-lg">
