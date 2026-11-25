@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CalendarDays, Plus, Pencil, Trash2, UserCheck, Upload, Image as ImageIcon, X, MapPin, ExternalLink, Compass } from 'lucide-react'
 import { apiGet, apiPost, API_URL } from '../../api.js'
-import { fmtDate, isUpcoming, to12h, to24h, resolveImageUrl } from '../../lib/format.js'
+import { fmtDate, isUpcoming, to12h, to24h, parseTimeRange, formatEventTimeRange, resolveImageUrl } from '../../lib/format.js'
 import { getGoogleMapEmbedUrl, getGoogleMapsDirectionsUrl } from '../../utils/maps.js'
 import {
   PageHeader, Empty, Loading, Tabs, Modal, Field, ConfirmDialog, useToast,
@@ -15,7 +15,8 @@ const blank = {
   location: '',
   map_url: '',
   event_date: '',
-  time: '10:00',
+  start_time: '10:00',
+  end_time: '14:00',
   capacity: '',
   banner_image: '',
 }
@@ -49,7 +50,14 @@ function EventForm({ initial, onClose, onSaved }) {
         body: fd,
       })
 
-      const data = await res.json()
+      let data
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        data = await res.json()
+      } else {
+        const text = await res.text()
+        throw new Error('Server error. Please try again. (' + res.status + ')')
+      }
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to upload image')
       }
@@ -73,13 +81,14 @@ function EventForm({ initial, onClose, onSaved }) {
     setSaving(true)
     setErr('')
     try {
+      const formattedTime = formatEventTimeRange(f.start_time, f.end_time)
       const body = {
         title: f.title.trim(),
         description: f.description.trim(),
         location: f.location.trim(),
         map_url: f.map_url?.trim() || '',
         event_date: f.event_date,
-        event_time: to12h(f.time),
+        event_time: formattedTime || '10:00 AM',
         capacity: f.capacity === '' ? '' : Number(f.capacity),
         banner_image: f.banner_image?.trim() || '',
       }
@@ -195,12 +204,38 @@ function EventForm({ initial, onClose, onSaved }) {
           <Field label="Title" htmlFor="ev-title">
             <input id="ev-title" className="p-input" value={f.title} onChange={set('title')} autoFocus required />
           </Field>
+          <Field label="Date" htmlFor="ev-date">
+            <input id="ev-date" type="date" className="p-input" value={f.event_date} onChange={set('event_date')} required />
+          </Field>
           <div className="p-field-row">
-            <Field label="Date" htmlFor="ev-date">
-              <input id="ev-date" type="date" className="p-input" value={f.event_date} onChange={set('event_date')} required />
+            <Field label="Start Time" htmlFor="ev-start-time">
+              <input
+                id="ev-start-time"
+                type="time"
+                className="p-input"
+                value={f.start_time || ''}
+                onChange={set('start_time')}
+                required
+              />
             </Field>
-            <Field label="Time" htmlFor="ev-time">
-              <input id="ev-time" type="time" className="p-input" value={f.time} onChange={set('time')} />
+            <Field
+              label="End Time (Optional)"
+              htmlFor="ev-end-time"
+              hint={
+                f.start_time && f.end_time
+                  ? `Event Schedule: ${to12h(f.start_time)} - ${to12h(f.end_time)}`
+                  : f.start_time
+                  ? `Starts at ${to12h(f.start_time)}`
+                  : 'e.g. 2:00 PM'
+              }
+            >
+              <input
+                id="ev-end-time"
+                type="time"
+                className="p-input"
+                value={f.end_time || ''}
+                onChange={set('end_time')}
+              />
             </Field>
           </div>
           <Field label="Venue & Physical Location" htmlFor="ev-loc" hint="e.g. LifeGen Hall, Main Campus or CCF Center, Pasig City">
@@ -355,6 +390,7 @@ export default function AdminEvents() {
   }
 
   function edit(e) {
+    const { start, end } = parseTimeRange(e.event_time)
     setForm({
       id: e.id,
       title: e.title || '',
@@ -362,7 +398,8 @@ export default function AdminEvents() {
       location: e.location || '',
       map_url: e.map_url || '',
       event_date: String(e.event_date || '').slice(0, 10),
-      time: to24h(e.event_time),
+      start_time: start || '10:00',
+      end_time: end || '',
       capacity: e.capacity ?? '',
       banner_image: e.banner_image || '',
     })

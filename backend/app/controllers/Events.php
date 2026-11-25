@@ -338,53 +338,99 @@ class Events extends Controller
 
     public function upload_banner()
     {
+        // ── Output-buffer guard ──────────────────────────────────────────────
+        // Any PHP notice/warning printed before json_encode() corrupts the JSON.
+        // We capture everything and discard it right before we send our response.
+        while (ob_get_level()) ob_end_clean();
+        ob_start();
+
+        // Force JSON content-type early so the browser never tries to parse HTML
+        header('Content-Type: application/json; charset=utf-8');
+
         require_admin_user();
 
-        if (!isset($_FILES['banner']) || $_FILES['banner']['error'] !== UPLOAD_ERR_OK) {
-            api_response(['error' => 'No image file uploaded or upload error occurred.'], 400);
+        // ── Upload error codes ───────────────────────────────────────────────
+        $errCode = $_FILES['banner']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if (!isset($_FILES['banner']) || $errCode !== UPLOAD_ERR_OK) {
+            $msg = match ((int) $errCode) {
+                UPLOAD_ERR_INI_SIZE,
+                UPLOAD_ERR_FORM_SIZE  => 'Image is too large. Please use a smaller photo.',
+                UPLOAD_ERR_PARTIAL    => 'Upload was interrupted. Please try again.',
+                UPLOAD_ERR_NO_FILE    => 'No image selected.',
+                default               => 'Upload error (' . $errCode . '). Please try again.',
+            };
+            ob_end_clean();
+            api_response(['error' => $msg], 400);
         }
 
         $file = $_FILES['banner'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg');
+
+        // ── Determine MIME and extension ─────────────────────────────────────
+        // mime_content_type() reads the actual file bytes → reliable on mobile uploads
+        // where $_FILES['type'] or the file extension may be absent/wrong (HEIC, etc.)
+        $detectedMime = @mime_content_type($file['tmp_name']) ?: ($file['type'] ?? 'image/jpeg');
+        $mimeToExt = [
+            'image/jpeg' => 'jpg',
+            'image/jpg'  => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+        ];
+
+        // Prefer mime-detected ext; fall back to filename ext
+        $ext = $mimeToExt[$detectedMime]
+            ?? strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION) ?: '');
+
         $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-
-        if (!in_array($ext, $allowed)) {
-            api_response(['error' => 'Invalid file format. Allowed: JPG, PNG, WEBP, GIF.'], 422);
+        if (!in_array($ext, $allowed, true)) {
+            ob_end_clean();
+            api_response(['error' => 'Unsupported image format. Please use JPG, PNG, or WEBP.'], 422);
         }
 
-        if ($file['size'] > 60 * 1024 * 1024) {
-            api_response(['error' => 'File size exceeds 60MB limit.'], 422);
+        if (($file['size'] ?? 0) > 60 * 1024 * 1024) {
+            ob_end_clean();
+            api_response(['error' => 'Image exceeds the 60 MB size limit.'], 422);
         }
 
-        $cloudUrl = upload_to_imgbb($file['tmp_name'], $file['type'] ?? 'image/jpeg', $file['name'] ?? 'banner.jpg');
-        if ($cloudUrl) {
-            api_response([
-                'success' => true,
-                'url'     => $cloudUrl,
-                'message' => 'Event banner uploaded successfully.'
-            ]);
+        // ── Try ImgBB cloud upload ───────────────────────────────────────────
+        try {
+            $cloudUrl = upload_to_imgbb(
+                $file['tmp_name'],
+                $detectedMime,
+                ($file['name'] ?: 'banner.' . $ext)
+            );
+            if ($cloudUrl) {
+                ob_end_clean();
+                api_response([
+                    'success' => true,
+                    'url'     => $cloudUrl,
+                    'message' => 'Event banner uploaded successfully.',
+                ]);
+            }
+        } catch (\Throwable $imgbbErr) {
+            // ImgBB failed — fall through to local disk save
+            auth_log('upload_banner ImgBB exception: ' . $imgbbErr->getMessage());
         }
 
-        $filename = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-        
-        // Base public path
+        // ── Local-disk fallback ──────────────────────────────────────────────
+        $filename  = 'event_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         $publicDir = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'public';
         $uploadDir = $publicDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0755, true);
         }
 
         if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-            api_response(['error' => 'Failed to save uploaded image.'], 500);
+            ob_end_clean();
+            api_response(['error' => 'Failed to save image. Please try again.'], 500);
         }
 
-        // Return relative path
-        $relativeUrl = 'uploads/events/' . $filename;
+        ob_end_clean();
         api_response([
             'success' => true,
-            'url'     => $relativeUrl,
-            'message' => 'Event banner uploaded successfully.'
+            'url'     => 'uploads/events/' . $filename,
+            'message' => 'Event banner uploaded successfully.',
         ]);
     }
 }
