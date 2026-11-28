@@ -1,20 +1,3 @@
-# ---------- Stage 1: Build React (Vite) ----------
-FROM node:20-slim AS frontend-build
-WORKDIR /app
-
-# Build-time Vite variables (set the same names in Render's Environment tab)
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
-COPY frontend/package*.json ./
-# Fall back to npm install if a Windows-made lockfile is missing Linux binaries
-RUN npm ci || npm install
-
-COPY frontend/ ./
-RUN npm run build
-
-
-# ---------- Stage 2: PHP + Apache ----------
 FROM php:8.3-apache
 
 RUN apt-get update \
@@ -30,9 +13,6 @@ COPY backend/ /var/www/html/
 
 RUN if [ -f composer.json ]; then composer install --no-dev --optimize-autoloader --no-interaction; fi \
  && if [ -f app/composer.json ]; then cd app && composer install --no-dev --optimize-autoloader --no-interaction; fi
-
-# React build -> public/
-COPY --from=frontend-build /app/dist/ /var/www/html/public/
 
 RUN mkdir -p public/uploads/receipts public/uploads/chat public/uploads/prayers public/uploads/avatars public/uploads/ministries public/uploads/dgroups public/uploads/social runtime
 
